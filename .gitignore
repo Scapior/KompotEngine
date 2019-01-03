@@ -1,3 +1,8 @@
+# Qt Creator
+
+build-debug
+build-release
+
 # CMake
 
 CMakeLists.txt.user
