@@ -1,3 +1,8 @@
+# executable file and config
+
+KompotEngine
+engine.ini
+
 # Qt Creator
 
 build-debug
