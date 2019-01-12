@@ -1,54 +1,39 @@
+#include "global.hpp"
+#include "Engine/Engine.hpp"
+#include "Misc/ProgramOptions/ProgramOptions.hpp"
 #include <iostream>
 #include <fstream>
-#include <boost/program_options.hpp>
 
-namespace boost_options = boost::program_options;
-
-struct EngineConfig
-{
-    bool editMode;
-    bool fullscreen;
-    uint32_t windowWidth;
-    uint32_t windowHeight;
-};
+using namespace KompotEngine;
 
 int main(int argc, char **argv)
 {
     EngineConfig engineConfig;
 
-    boost_options::options_description description;
-    boost_options::variables_map optionsMap;
-
-    description.add_options()
-            ("help",        "Show this help screen")
-            ("editmode",    boost_options::bool_switch(&engineConfig.editMode)->default_value(false),           "Run engine as editor")
-            ("fullscreen",  boost_options::bool_switch(&engineConfig.fullscreen)->default_value(false),         "Fullscreen mode")
-            ("width",       boost_options::value<uint32_t>(&engineConfig.windowWidth)->default_value(640u),     "Window width")
-            ("height",      boost_options::value<uint32_t>(&engineConfig.windowHeight)->default_value(480u),    "Window height");
-
+    ProgramOptions options;
+    options.addOptions()
+        ("editmode",   "Run engine as editor", false,               &engineConfig.editMode)
+        ("fullscreen", "Fullscreen mode",      false,               &engineConfig.fullscreen)
+        ("width",      "Window width",         640_u32t,            &engineConfig.windowWidth)
+        ("height",     "Window height",        480_u32t,            &engineConfig.windowHeight)
+        ("gapi",       "Graphic API",          Renderer::GAPI::OGL, &engineConfig.gapi);
 
     std::ifstream configFile("engine.ini");
     if (configFile.is_open())
     {
-        boost_options::store(boost_options::parse_config_file(configFile, description), optionsMap);
-        boost_options::notify(optionsMap);
+        options.loadFromFile(configFile);
     }
+    options.loadFromArguments(argc, argv);
+    options.notify();
 
-    auto optionsParser = boost_options::command_line_parser(argc, argv).options(description);
-    const auto parsedOptions = optionsParser.allow_unregistered().run();
-    boost_options::store(parsedOptions, optionsMap);
-    boost_options::notify(optionsMap);
+    //Engine engine("Test", engineConfig);
+    //engine.run();
 
-    if (optionsMap.count("help"))
-    {
-        std::cout << description << std::endl;
-        return 0;
-    }
-
-    std::cout << "Width: " << engineConfig.windowWidth << std::endl;
-    std::cout << "Height: " << engineConfig.windowHeight << std::endl;
-
-    // create engine and set config here
+    std::cout << " Edit Mode:" << engineConfig.editMode
+              << "\nFullscreen:" << engineConfig.fullscreen
+              << "\n     Width:" << engineConfig.windowWidth
+              << "\n    Height:" << engineConfig.windowHeight
+              << "\n      GAPI:" << engineConfig.gapi << std::endl;
 
     return 0;
 }

@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 3.1)
-list(APPEND CMAKE_CXX_FLAGS "-pthread -std=c++17 ${CMAKE_CXX_FLAGS}")
+cmake_minimum_required(VERSION 3.12)
+list(APPEND CMAKE_CXX_FLAGS "-pthread -std=c++17 ${CMAKE_CXX_FLAGS} -fno-exceptions")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../ )
 project(KompotEngine)
-
-#set(Boost_USE_STATIC_LIBS ON)
 find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(GLEW REQUIRED)
@@ -16,10 +14,17 @@ include_directories(
         ${Boost_INCLUDE_DIRS}
 )
 link_directories(${Boost_LIBRARY_DIR})
-
-file(GLOB_RECURSE KompotEngine_SRC "Source/*.hpp" "Source/*.cpp")
-add_executable(KompotEngine ${KompotEngine_SRC})
-
+FILE(GLOB_RECURSE SOURCES "Source/*.cpp")
+FILE(GLOB_RECURSE HEADERS "Source/*.hpp")
+add_executable(
+    KompotEngine
+    ${SOURCES}
+    ${HEADERS}
+)
+target_include_directories(
+    KompotEngine
+    PUBLIC "${CMAKE_SOURCE_DIR}/Source"
+)
 target_link_libraries(KompotEngine
         ${OPENGL_gl_LIBRARY}
         ${GLFW_LIBRARIES}
