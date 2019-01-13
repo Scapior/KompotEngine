@@ -1,19 +1,13 @@
 #pragma once
+
 #include "global.hpp"
+#include "Renderer/Renderer.hpp"
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
-#include <iostream>
+#include <thread>
 
 namespace KompotEngine {
-
-namespace Renderer
-{
-
-class IRenderer
-{
-};
-
-}
 
 struct EngineConfig
 {
@@ -31,8 +25,10 @@ public:
 
     void run();
 private:
-    std::string  m_instanceName;
-    EngineConfig m_engineSettings;
+    std::string         m_instanceName;
+    EngineConfig        m_engineSettings;
+    Renderer::Renderer *m_renderer = nullptr;
+
 
     GLFWwindow* m_glfwWindowHandler;
 };
