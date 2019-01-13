@@ -1,16 +1,11 @@
 #pragma once
 
 #include "global.hpp"
-#include "Engine/GAPI_enum.hpp"
 #include <boost/algorithm/string.hpp>
-#include <vector>
 #include <string>
 #include <variant>
 #include <fstream>
 #include <sstream>
-#include <iterator>
-
-#include <iostream>
 
 namespace KompotEngine
 {
@@ -18,11 +13,11 @@ namespace KompotEngine
 class ProgramOptions
 {
 private:
-    typedef std::variant<std::string, bool, Renderer::GAPI,
+    typedef std::variant<std::string, bool,
                         int8_t, int16_t, int32_t, int64_t,
                         uint8_t, uint16_t, uint32_t, uint64_t> Variant;
 
-    typedef std::variant<std::string*, bool*, Renderer::GAPI*,
+    typedef std::variant<std::string*, bool*,
                         int8_t*, int16_t*, int32_t*, int64_t*,
                         uint8_t*, uint16_t*, uint32_t*, uint64_t*> PointerVariant;
     class Options

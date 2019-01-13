@@ -1,6 +1,5 @@
 #pragma once
 #include "global.hpp"
-#include "GAPI_enum.hpp"
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
@@ -22,7 +21,6 @@ struct EngineConfig
     bool fullscreen;
     uint32_t windowWidth;
     uint32_t windowHeight;
-    Renderer::GAPI gapi;
 };
 
 class Engine

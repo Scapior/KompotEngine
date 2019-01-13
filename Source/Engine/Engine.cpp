@@ -8,10 +8,7 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     glfwInit();
     glfwSwapInterval(0);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    if (m_engineSettings.gapi == Renderer::GAPI::Vulkan)
-    {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    }
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 }
 
 Engine::~Engine()

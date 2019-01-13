@@ -12,12 +12,15 @@ void ProgramOptions::Options::Option::setByPointer(const Variant &variant, Point
 template<typename T>
 void ProgramOptions::Options::Option::setFromStream(std::stringstream &optionsStream)
 {
-    std::cout << "Stringstream position before setting:" << optionsStream.tellg() << std::endl;
     T valueBuffer;
     optionsStream >> valueBuffer;
+    if (optionsStream.fail())
+    {
+        optionsStream.clear();
+        return;
+    }
     value = valueBuffer;
-    std::cout << "Setted variant key '" << key << "' with value [" << valueBuffer << ']' << std::endl;
-    std::cout << "Stringstream position after setting:" << optionsStream.tellg() << std::endl;
+    //std::cout << "Setted variant key '" << key << "' with value [" << valueBuffer << ']' << std::endl;
 }
 
 void ProgramOptions::Options::Option::notify() const
@@ -29,10 +32,6 @@ void ProgramOptions::Options::Option::notify() const
     else if(std::holds_alternative<bool>(value))
     {
         setByPointer<bool>(value, pointer);
-    }
-    else if(std::holds_alternative<Renderer::GAPI>(value))
-    {
-        setByPointer<Renderer::GAPI>(value, pointer);
     }
     else if(std::holds_alternative<int8_t>(value))
     {
@@ -77,10 +76,6 @@ void ProgramOptions::Options::Option::set(std::stringstream &optionsStream)
     else if(std::holds_alternative<bool>(value))
     {
         setFromStream<bool>(optionsStream);
-    }
-    else if(std::holds_alternative<Renderer::GAPI>(value))
-    {
-        setFromStream<Renderer::GAPI>(optionsStream);
     }
     else if(std::holds_alternative<int8_t>(value))
     {
@@ -165,6 +160,9 @@ void ProgramOptions::loadFromArguments(int argc, char **argv)
     std::stringstream argumentStream;
     for (int i = 1; i < argc; ++i)
     {
+        const bool isLastArgument = i+1 >= argc;
+        const bool nextArgumentIsKey = isLastArgument ? false : std::string(argv[i+1]).find("--") == 0;
+
         std::string argument(argv[i]);
         if (argument.find("--") != 0)
         {
@@ -177,14 +175,30 @@ void ProgramOptions::loadFromArguments(int argc, char **argv)
         }
         if (m_options.keyIsBoolean(argument))
         {
-            argumentStream << argument << ' ' << true << ' ';
+            if (isLastArgument || nextArgumentIsKey)
+            {
+                argumentStream << argument << ' ' << true << ' ';
+            }
+            else
+            {
+                const std::string nextArgument(argv[++i]);
+
+                if (boost::iequals(nextArgument, "1") or boost::iequals(nextArgument, "true"))
+                {
+                    argumentStream << argument << ' ' << true << ' ';
+                }
+                else if (boost::iequals(nextArgument, "0") or boost::iequals(nextArgument, "false"))
+                {
+                    argumentStream << argument << ' ' << false << ' ';
+                }
+            }
             continue;
         }
-        if (++i >= argc)
+        if (isLastArgument)
         {
             continue;
         }
-        const std::string argumentValue(argv[i]);
+        const std::string argumentValue(argv[++i]);
         argumentStream << argument << ' ' << argumentValue << ' ';
     }
     SetOptionsFromStringstream(argumentStream);
@@ -192,7 +206,7 @@ void ProgramOptions::loadFromArguments(int argc, char **argv)
 
 void ProgramOptions::loadFromFile(std::ifstream& inputStream)
 {
-    std::stringstream optionsStream;
+    std::stringstream optionsStream{};
     while (!inputStream.eof())
     {
         std::string buffer;
@@ -207,15 +221,29 @@ void ProgramOptions::loadFromFile(std::ifstream& inputStream)
         {
             continue;
         }
-        const std::string value = buffer.substr(equalsSignPosition + 1u);
-        optionsStream << key << ' ' << value << ' ';
+
+        if (m_options.keyIsBoolean(key))
+        {
+            if (boost::iequals(key, "1") or boost::iequals(key, "true"))
+            {
+                optionsStream << key << ' ' << true << ' ';
+            }
+            else if (boost::iequals(key, "0") or boost::iequals(key, "false"))
+            {
+                optionsStream << key << ' ' << false << ' ';
+            }
+        }
+        else
+        {
+            const std::string value = buffer.substr(equalsSignPosition + 1u);
+            optionsStream << key << ' ' << value << ' ';
+        }
     }
     SetOptionsFromStringstream(optionsStream);
 }
 
 void ProgramOptions::SetOptionsFromStringstream(std::stringstream &optionsStream)
 {
-    std::cout << optionsStream.str() << std::endl;
     while (!optionsStream.eof())
     {
         std::string key;
