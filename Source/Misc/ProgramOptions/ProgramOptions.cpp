@@ -7,6 +7,7 @@ void ProgramOptions::Options::Option::setByPointer(const Variant &variant, Point
 {
     T &reference = *std::get<T*>(pointerVariant);
     reference = std::get<T>(variant);
+    Log::getInstance() << "Program options loaded: " << key << " = " << reference << std::endl;
 }
 
 template<typename T>
@@ -20,7 +21,6 @@ void ProgramOptions::Options::Option::setFromStream(std::stringstream &optionsSt
         return;
     }
     value = valueBuffer;
-    //std::cout << "Setted variant key '" << key << "' with value [" << valueBuffer << ']' << std::endl;
 }
 
 void ProgramOptions::Options::Option::notify() const
@@ -216,7 +216,10 @@ void ProgramOptions::loadFromFile(std::ifstream& inputStream)
         {
             continue;
         }
-        const std::string key = buffer.substr(0u, equalsSignPosition);
+        std::string key = buffer.substr(0u, equalsSignPosition);
+        std::string value = buffer.substr(equalsSignPosition + 1u);
+        boost::trim(key);
+        boost::trim(value);
         if (!m_options.contains(key))
         {
             continue;
@@ -224,18 +227,17 @@ void ProgramOptions::loadFromFile(std::ifstream& inputStream)
 
         if (m_options.keyIsBoolean(key))
         {
-            if (boost::iequals(key, "1") or boost::iequals(key, "true"))
+            if (boost::iequals(value, "1") or boost::iequals(value, "true"))
             {
                 optionsStream << key << ' ' << true << ' ';
             }
-            else if (boost::iequals(key, "0") or boost::iequals(key, "false"))
+            else if (boost::iequals(value, "0") or boost::iequals(value, "false"))
             {
                 optionsStream << key << ' ' << false << ' ';
             }
         }
         else
         {
-            const std::string value = buffer.substr(equalsSignPosition + 1u);
             optionsStream << key << ' ' << value << ' ';
         }
     }

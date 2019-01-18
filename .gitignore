@@ -1,7 +1,7 @@
-# executable file and config
+# executable file and log
 
 KompotEngine
-engine.ini
+log.txt
 
 # Qt Creator
 

@@ -11,8 +11,8 @@ namespace KompotEngine {
 
 struct EngineConfig
 {
-    bool editMode;
-    bool fullscreen;
+    bool isEditMode;
+    bool isFullscreen;
     uint32_t windowWidth;
     uint32_t windowHeight;
 };
