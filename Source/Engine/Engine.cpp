@@ -5,17 +5,42 @@ using namespace KompotEngine;
 Engine::Engine(const std::string& name, const EngineConfig& config)
     : m_instanceName(name), m_engineSettings(config)
 {
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    auto &log = Log::getInstance();
+    log << "GLFW init code: " <<  glfwInit() << std::endl;
+    glfwSetErrorCallback(Log::callbackForGlfw);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); //no GL context
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     const int width = static_cast<int>(m_engineSettings.windowWidth);
     const int height = static_cast<int>(m_engineSettings.windowHeight);
     m_glfwWindowHandler = glfwCreateWindow(width, height, m_instanceName.c_str(), nullptr, nullptr);
-    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_engineSettings.windowWidth, m_engineSettings.windowHeight);
+    if (m_glfwWindowHandler == nullptr)
+    {
+        log << "glfwCreateWindow error: " <<  glfwInit() << std::endl;
+        std::terminate();
+    }
+    else
+    {
+        log << "Created GLFW window \"" <<  m_instanceName << "\"." << std::endl;
+    }
+    glfwSetInputMode(m_glfwWindowHandler, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    if (m_engineSettings.isMaximized)
+    {
+        glfwMaximizeWindow(m_glfwWindowHandler); // not work
+    }
+    if (!glfwVulkanSupported())
+    {
+        log << "Vulkan not supported! Terminated." << std::endl;
+        std::terminate();
+    }
+
+    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_engineSettings.windowWidth, m_engineSettings.windowHeight, m_instanceName);
+    log << "Renderer initialized." << std::endl;
 }
 
 Engine::~Engine()
 {
     glfwDestroyWindow(m_glfwWindowHandler);
+    glfwTerminate();
 }
 
 void Engine::run()

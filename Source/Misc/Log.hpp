@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -14,6 +13,8 @@ public:
         static Log logSingltone;
         return logSingltone;
     }
+
+    static void callbackForGlfw(int, const char*);
 
     template <typename T>
     Log& operator<<(const T& value)

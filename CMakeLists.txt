@@ -7,6 +7,9 @@ set(SOURCES
     Source/main.cpp
     Source/Engine/Engine.cpp
     Source/Engine/Renderer/Renderer.cpp
+    Source/Engine/Renderer/VulkanUtils.cpp
+
+    Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
     Source/Misc/ProgramOptions/ProgramOptions.cpp)
 
@@ -14,6 +17,7 @@ set(HEADERS
     Source/global.hpp
     Source/Engine/Engine.hpp
     Source/Engine/Renderer/Renderer.hpp
+    Source/Engine/Renderer/VulkanUtils.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
     Source/Misc/ProgramOptions/ProgramOptions.hpp)
@@ -46,4 +50,5 @@ target_include_directories(
 target_link_libraries(KompotEngine
         ${GLFW_LIBRARIES}
         ${PYTHON_LIBRARIES}
+        vulkan
 )
