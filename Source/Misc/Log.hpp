@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -15,6 +16,11 @@ public:
     }
 
     static void callbackForGlfw(int, const char*);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT,
+        VkDebugUtilsMessageTypeFlagsEXT,
+        const VkDebugUtilsMessengerCallbackDataEXT*,
+        void*);
 
     template <typename T>
     Log& operator<<(const T& value)

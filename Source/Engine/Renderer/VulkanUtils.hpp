@@ -15,6 +15,13 @@ namespace KompotEngine
 namespace Renderer
 {
 
+static PFN_vkCreateDebugUtilsMessengerEXT  pfn_vkCreateDebugUtilsMessengerEXT  = nullptr;
+static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
+
+void createVkInstance(VkInstance&, const std::string&);
+void loadFuntions(VkInstance&);
+void setupDebugCallback(VkInstance&, VkDebugUtilsMessengerEXT&);
+
 std::vector<std::string> getLayers();
 std::vector<std::string> getExtensions();
 

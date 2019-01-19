@@ -8,10 +8,10 @@ set(SOURCES
     Source/Engine/Engine.cpp
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/VulkanUtils.cpp
-
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
-    Source/Misc/ProgramOptions/ProgramOptions.cpp)
+    Source/Misc/ProgramOptions/ProgramOptions.cpp
+)
 
 set(HEADERS
     Source/global.hpp
@@ -20,7 +20,8 @@ set(HEADERS
     Source/Engine/Renderer/VulkanUtils.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
-    Source/Misc/ProgramOptions/ProgramOptions.hpp)
+    Source/Misc/ProgramOptions/ProgramOptions.hpp
+)
 
 find_package(PythonLibs REQUIRED)
 find_package(PkgConfig REQUIRED)

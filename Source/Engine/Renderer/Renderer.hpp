@@ -28,6 +28,7 @@ private:
     // vulkan members
 
     VkInstance  m_vkInstance;
+    VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 
     // vulkan methods
 
