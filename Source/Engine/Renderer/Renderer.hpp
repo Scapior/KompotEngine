@@ -20,18 +20,15 @@ public:
     ~Renderer();
 private:
     // window
-
     GLFWwindow *m_glfwWindowHandler;
     uint32_t    m_screenWidth;
     uint32_t    m_screenHeight;
 
     // vulkan members
+    VkInstance       m_vkInstance;
+    VkPhysicalDevice m_vkPhysicalDevice; // will be implicitly destroyed with VkInstance
 
-    VkInstance  m_vkInstance;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
-
-    // vulkan methods
-
 
 };
 

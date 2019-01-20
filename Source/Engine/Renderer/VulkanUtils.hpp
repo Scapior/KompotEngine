@@ -21,6 +21,7 @@ static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT =
 void createVkInstance(VkInstance&, const std::string&);
 void loadFuntions(VkInstance&);
 void setupDebugCallback(VkInstance&, VkDebugUtilsMessengerEXT&);
+void selectPhysicalDevice(VkInstance&, VkPhysicalDevice&);
 
 std::vector<std::string> getLayers();
 std::vector<std::string> getExtensions();

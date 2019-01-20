@@ -34,7 +34,7 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     }
 
     m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_engineSettings.windowWidth, m_engineSettings.windowHeight, m_instanceName);
-    log << "Renderer initialized." << std::endl;
+    log << "Renderer successfully initialized." << std::endl;
 }
 
 Engine::~Engine()

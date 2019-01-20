@@ -147,3 +147,67 @@ std::vector<std::string> KompotEngine::Renderer::getExtensions()
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     return extensions;
 }
+
+void KompotEngine::Renderer::selectPhysicalDevice(VkInstance &vkInstance, VkPhysicalDevice &vkPhysicalDevice)
+{
+    Log &log = Log::getInstance();
+
+    auto physicalDevicesCount = 0_u32t;
+    vkEnumeratePhysicalDevices(vkInstance, &physicalDevicesCount, nullptr);
+
+    if (physicalDevicesCount == 0_u32t)
+    {
+        log << "No physical devices found" << std::endl;
+        std::terminate();
+    }
+
+    std::vector<VkPhysicalDevice> physicalDevices(physicalDevicesCount);
+    vkEnumeratePhysicalDevices(vkInstance, &physicalDevicesCount, physicalDevices.data());
+
+    std::string lastDeviceName;
+    auto lastPhysicalDeviceMemorySize = 0_u32t;
+    for (auto &physicalDevice : physicalDevices)
+    {
+        VkPhysicalDeviceProperties physicalDeviceProperties;
+        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
+        lastDeviceName = physicalDeviceProperties.deviceName;
+
+        VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
+        auto memoryHeaps = std::vector<VkMemoryHeap>(physicalDeviceMemoryProperties.memoryHeaps,
+                                               physicalDeviceMemoryProperties.memoryHeaps + physicalDeviceMemoryProperties.memoryHeapCount);
+        uint32_t physicalDeviceMemorySize;
+        for (const auto& heap : memoryHeaps)
+        {
+            if (heap.flags & VkMemoryHeapFlagBits::VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+            {
+                physicalDeviceMemorySize = static_cast<uint32_t>(heap.size);
+                break;
+            }
+        }
+
+        if (physicalDeviceProperties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        {
+            if (physicalDeviceMemorySize > lastPhysicalDeviceMemorySize)
+            {
+                vkPhysicalDevice = physicalDevice;
+            }
+        }
+        else if (physicalDeviceProperties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+        {
+            if (vkPhysicalDevice == nullptr)
+            {
+                vkPhysicalDevice = physicalDevice;
+            }
+        }
+    }
+
+    if (vkPhysicalDevice == nullptr)
+    {
+        log << "No situable devices found" << std::endl;
+        std::terminate();
+    }
+
+    log << "Founded physical device \"" << lastDeviceName << "\"." << std::endl;
+}

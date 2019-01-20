@@ -3,11 +3,12 @@
 using namespace KompotEngine::Renderer;
 
 Renderer::Renderer(GLFWwindow *window, uint32_t width, uint32_t height, const std::string &windowName)
-    : m_glfwWindowHandler(window), m_screenWidth(width), m_screenHeight(height), m_vkInstance(nullptr)
+    : m_glfwWindowHandler(window), m_screenWidth(width), m_screenHeight(height)
 {
     createVkInstance(m_vkInstance, windowName);
     loadFuntions(m_vkInstance);
     setupDebugCallback(m_vkInstance, m_vkDebugMessenger);
+    selectPhysicalDevice(m_vkInstance, m_vkPhysicalDevice);
 }
 
 Renderer::~Renderer()
