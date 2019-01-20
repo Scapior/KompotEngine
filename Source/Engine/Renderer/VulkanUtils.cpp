@@ -44,7 +44,7 @@ void KompotEngine::Renderer::createVkInstance(VkInstance &vkInstance, const std:
     }
 }
 
-void KompotEngine::Renderer::loadFuntions(VkInstance &vkInstance)
+void KompotEngine::Renderer::loadFuntions(VkInstance vkInstance)
 {
     Log &log = Log::getInstance();
     pfn_vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vkInstance, "vkDestroyDebugUtilsMessengerEXT");
@@ -61,7 +61,7 @@ void KompotEngine::Renderer::loadFuntions(VkInstance &vkInstance)
     }
 }
 
-void KompotEngine::Renderer::setupDebugCallback(VkInstance &vkInstance, VkDebugUtilsMessengerEXT &vkDebugMessenger)
+void KompotEngine::Renderer::setupDebugCallback(VkInstance vkInstance, VkDebugUtilsMessengerEXT &vkDebugMessenger)
 {
     VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo = {};
     messengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -148,7 +148,7 @@ std::vector<std::string> KompotEngine::Renderer::getExtensions()
     return extensions;
 }
 
-void KompotEngine::Renderer::selectPhysicalDevice(VkInstance &vkInstance, VkPhysicalDevice &vkPhysicalDevice)
+void KompotEngine::Renderer::selectPhysicalDevice(VkInstance vkInstance, VkPhysicalDevice &vkPhysicalDevice)
 {
     Log &log = Log::getInstance();
 
@@ -177,7 +177,7 @@ void KompotEngine::Renderer::selectPhysicalDevice(VkInstance &vkInstance, VkPhys
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
         auto memoryHeaps = std::vector<VkMemoryHeap>(physicalDeviceMemoryProperties.memoryHeaps,
                                                physicalDeviceMemoryProperties.memoryHeaps + physicalDeviceMemoryProperties.memoryHeapCount);
-        uint32_t physicalDeviceMemorySize;
+        auto physicalDeviceMemorySize = 1_u32t;
         for (const auto& heap : memoryHeaps)
         {
             if (heap.flags & VkMemoryHeapFlagBits::VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
@@ -210,4 +210,91 @@ void KompotEngine::Renderer::selectPhysicalDevice(VkInstance &vkInstance, VkPhys
     }
 
     log << "Founded physical device \"" << lastDeviceName << "\"." << std::endl;
+}
+
+QueueFamilyIndices KompotEngine::Renderer::findQueueFamilies(VkPhysicalDevice vkPhysicalDevice)
+{
+    QueueFamilyIndices indices;
+
+    auto queueFamiliesCount = 0_u32t;
+    vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamiliesCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamiliesCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamiliesCount, queueFamilies.data());
+
+    for ( auto i = 0_u32t; i < queueFamilies.size(); ++i)
+    {
+        if (queueFamilies[i].queueCount > 0_u32t && queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            indices.graphicIndex = i;
+        }
+
+        if (indices.isComplete())
+        {
+            break;
+        }
+    }
+
+    if (!indices.isComplete())
+    {
+        Log &log = Log::getInstance();
+        log << "Not all queue families found. Terminated." << std::endl;
+        std::terminate();
+    }
+
+    return indices;
+}
+
+void KompotEngine::Renderer::createLogicalDeviceAndQueue(
+        VkPhysicalDevice vkPhysicalDevice,
+        VkDevice &vkDevice,
+        VkQueue &graphicQueue)
+{
+    //VkQueueFamilyProperties
+    const auto familiesIndexes = findQueueFamilies(vkPhysicalDevice);
+    const auto queuePriority = 1.0f;
+
+    VkDeviceQueueCreateInfo graphicQueueInfo = {};
+    graphicQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    //graphicQueueInfo.flags = ???
+    graphicQueueInfo.queueFamilyIndex = familiesIndexes.graphicIndex.value();
+    graphicQueueInfo.queueCount = 1_u32t;
+    graphicQueueInfo.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
+
+    auto layersStrings = getLayers();
+    std::vector<const char*> layers(layersStrings.size());
+    std::transform(std::begin(layersStrings), std::end(layersStrings), std::begin(layers),
+                   [&](const auto& layerString)
+    {
+        return layerString.c_str();
+    });
+
+//    auto extensionsStrings = getExtensions();
+//    std::vector<const char*> extensions(extensionsStrings.size());
+//    std::transform(std::begin(extensionsStrings), std::end(extensionsStrings), std::begin(extensions),
+//                   [&](const auto& extensionString)
+//    {
+//        return extensionString.c_str();
+//    });
+
+    VkDeviceCreateInfo deviceInfo = {};
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.queueCreateInfoCount = 1_u32t;
+    deviceInfo.pQueueCreateInfos = &graphicQueueInfo;
+    deviceInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+    deviceInfo.ppEnabledLayerNames = layers.data();
+    deviceInfo.enabledExtensionCount = 0_u32t;//static_cast<uint32_t>(extensions.size());
+    deviceInfo.ppEnabledExtensionNames = nullptr; //extensions.data();
+    deviceInfo.pEnabledFeatures = &physicalDeviceFeatures;
+
+    const auto resultCode = vkCreateDevice(vkPhysicalDevice, &deviceInfo, nullptr, &vkDevice);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log &log = Log::getInstance();
+        log << "vkCreateDevice failed. Terminated." << std::endl;
+        std::terminate();
+    }
+
+    vkGetDeviceQueue(vkDevice, familiesIndexes.graphicIndex.value(), 0_u32t, &graphicQueue);
 }

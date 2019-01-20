@@ -9,10 +9,12 @@ Renderer::Renderer(GLFWwindow *window, uint32_t width, uint32_t height, const st
     loadFuntions(m_vkInstance);
     setupDebugCallback(m_vkInstance, m_vkDebugMessenger);
     selectPhysicalDevice(m_vkInstance, m_vkPhysicalDevice);
+    createLogicalDeviceAndQueue(m_vkPhysicalDevice, m_vkDevice, m_vkGraphicQueue);
 }
 
 Renderer::~Renderer()
 {
+    vkDestroyDevice(m_vkDevice, nullptr);
     pfn_vkDestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
     vkDestroyInstance(m_vkInstance, nullptr);    
 }
