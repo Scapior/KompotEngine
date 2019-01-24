@@ -17,12 +17,13 @@ namespace Renderer
 
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t> graphicIndex;
-    std::optional<uint32_t> tranferIndex;
+    std::optional<uint32_t> graphicFamilyIndex;
+    std::optional<uint32_t> presentFamilyIndex;
 
     bool isComplete() const
     {
-        return graphicIndex.has_value();
+        return graphicFamilyIndex.has_value() &&
+               presentFamilyIndex.has_value();
     }
 
 };
@@ -38,8 +39,9 @@ void createVkInstance(VkInstance&, const std::string&);
 void loadFuntions(VkInstance);
 void setupDebugCallback(VkInstance, VkDebugUtilsMessengerEXT&);
 void selectPhysicalDevice(VkInstance, VkPhysicalDevice&);
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice);
-void createLogicalDeviceAndQueue(VkPhysicalDevice, VkDevice&, VkQueue&);
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice, VkSurfaceKHR);
+void createLogicalDeviceAndQueue(VkPhysicalDevice, VkDevice&, VkQueue&, VkQueue&, VkSurfaceKHR);
+void createSurface(VkInstance, GLFWwindow*, VkSurfaceKHR&);
 
 } // namespace Renderer
 

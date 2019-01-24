@@ -28,8 +28,10 @@ private:
     VkInstance       m_vkInstance;
     VkPhysicalDevice m_vkPhysicalDevice; // will be implicitly destroyed with VkInstance
     VkDevice         m_vkDevice;
+    VkSurfaceKHR     m_vkSurface;
 
     VkQueue          m_vkGraphicQueue;
+    VkQueue          m_vkPresentQueue;
 
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 

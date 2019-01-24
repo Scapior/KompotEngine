@@ -142,7 +142,7 @@ void KompotEngine::Renderer::selectPhysicalDevice(VkInstance vkInstance, VkPhysi
     log << "Founded physical device \"" << lastDeviceName << "\"." << std::endl;
 }
 
-QueueFamilyIndices KompotEngine::Renderer::findQueueFamilies(VkPhysicalDevice vkPhysicalDevice)
+QueueFamilyIndices KompotEngine::Renderer::findQueueFamilies(VkPhysicalDevice vkPhysicalDevice, VkSurfaceKHR vkSurface)
 {
     QueueFamilyIndices indices;
 
@@ -153,9 +153,17 @@ QueueFamilyIndices KompotEngine::Renderer::findQueueFamilies(VkPhysicalDevice vk
 
     for ( auto i = 0_u32t; i < queueFamilies.size(); ++i)
     {
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &presentSupport);
+
+        if (queueFamilies[i].queueCount > 0_u32t && presentSupport)
+        {
+            indices.presentFamilyIndex = i;
+        }
+
         if (queueFamilies[i].queueCount > 0_u32t && queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
-            indices.graphicIndex = i;
+            indices.graphicFamilyIndex = i;
         }
 
         if (indices.isComplete())
@@ -177,29 +185,39 @@ QueueFamilyIndices KompotEngine::Renderer::findQueueFamilies(VkPhysicalDevice vk
 void KompotEngine::Renderer::createLogicalDeviceAndQueue(
         VkPhysicalDevice vkPhysicalDevice,
         VkDevice &vkDevice,
-        VkQueue &graphicQueue)
+        VkQueue &graphicQueue,
+        VkQueue &presentQueue,
+        VkSurfaceKHR vkSurface)
 {
     //VkQueueFamilyProperties
-    const auto familiesIndexes = findQueueFamilies(vkPhysicalDevice);
+    const auto familiesIndecies = findQueueFamilies(vkPhysicalDevice, vkSurface);
+    std::set<uint32_t> indices = {
+        familiesIndecies.graphicFamilyIndex.value(),
+        familiesIndecies.presentFamilyIndex.value()
+    };
     const auto queuePriority = 1.0f;
 
-    VkDeviceQueueCreateInfo graphicQueueInfo = {};
-    graphicQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    //graphicQueueInfo.flags = ???
-    graphicQueueInfo.queueFamilyIndex = familiesIndexes.graphicIndex.value();
-    graphicQueueInfo.queueCount = 1_u32t;
-    graphicQueueInfo.pQueuePriorities = &queuePriority;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    for (const auto familyIndex : indices)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        //graphicQueueInfo.flags = ???
+        queueCreateInfo.queueFamilyIndex = familyIndex;
+        queueCreateInfo.queueCount = 1_u32t;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
-
     std::vector<const char*> extensions = {
         "VK_KHR_swapchain"
     };
 
     VkDeviceCreateInfo deviceInfo = {};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceInfo.queueCreateInfoCount = 1_u32t;
-    deviceInfo.pQueueCreateInfos = &graphicQueueInfo;
+    deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(indices.size());
+    deviceInfo.pQueueCreateInfos = queueCreateInfos.data();
     deviceInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     deviceInfo.ppEnabledLayerNames = validationLayers.data();
     deviceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -214,5 +232,17 @@ void KompotEngine::Renderer::createLogicalDeviceAndQueue(
         std::terminate();
     }
 
-    vkGetDeviceQueue(vkDevice, familiesIndexes.graphicIndex.value(), 0_u32t, &graphicQueue);
+    vkGetDeviceQueue(vkDevice, familiesIndecies.graphicFamilyIndex.value(), 0_u32t, &graphicQueue);
+    vkGetDeviceQueue(vkDevice, familiesIndecies.presentFamilyIndex.value(), 0_u32t, &presentQueue);
+}
+
+void KompotEngine::Renderer::createSurface(VkInstance vkInstance, GLFWwindow *window, VkSurfaceKHR &vkSurface)
+{
+    Log &log = Log::getInstance();
+    const auto resultCode = glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface);
+    if (resultCode != VK_SUCCESS)
+    {
+        log << "glfwCreateWindowSurface failed. Terminated" << std::endl;
+        std::terminate();
+    }
 }
