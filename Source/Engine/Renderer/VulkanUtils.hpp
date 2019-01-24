@@ -30,15 +30,16 @@ struct QueueFamilyIndices
 static PFN_vkCreateDebugUtilsMessengerEXT  pfn_vkCreateDebugUtilsMessengerEXT  = nullptr;
 static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
 
+static std::vector<const char*> validationLayers {
+    "VK_LAYER_LUNARG_standard_validation"
+};
+
 void createVkInstance(VkInstance&, const std::string&);
 void loadFuntions(VkInstance);
 void setupDebugCallback(VkInstance, VkDebugUtilsMessengerEXT&);
 void selectPhysicalDevice(VkInstance, VkPhysicalDevice&);
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice);
 void createLogicalDeviceAndQueue(VkPhysicalDevice, VkDevice&, VkQueue&);
-
-std::vector<std::string> getLayers();
-std::vector<std::string> getExtensions();
 
 } // namespace Renderer
 

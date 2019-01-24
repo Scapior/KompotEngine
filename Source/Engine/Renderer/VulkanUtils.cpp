@@ -12,34 +12,28 @@ void KompotEngine::Renderer::createVkInstance(VkInstance &vkInstance, const std:
     applicationInfo.engineVersion = VK_MAKE_VERSION(ENGINE_VESRION_MAJOR, ENGINE_VESRION_MINOR, ENGINE_VESRION_PATCH);
     applicationInfo.apiVersion = VK_API_VERSION_1_1;
 
-    auto layersStrings = getLayers();
-    std::vector<const char*> layers(layersStrings.size());
-    std::transform(std::begin(layersStrings), std::end(layersStrings), std::begin(layers),
-                   [&](const auto& layerString)
+    auto extensionsCount = 0_u32t;
+    auto glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionsCount);
+    std::vector<const char*> extensions(extensionsCount);
+    for (auto i = 0_u32t; i < extensionsCount; ++i)
     {
-        return layerString.c_str();
-    });
-
-    auto extensionsStrings = getExtensions();
-    std::vector<const char*> extensions(extensionsStrings.size());
-    std::transform(std::begin(extensionsStrings), std::end(extensionsStrings), std::begin(extensions),
-                   [&](const auto& extensionString)
-    {
-        return extensionString.c_str();
-    });
+        extensions[i] = glfwExtensions[i];
+    }
+    extensions.push_back("VK_EXT_debug_utils");
 
     VkInstanceCreateInfo instanceInfo = {};
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &applicationInfo;
-    instanceInfo.enabledLayerCount = static_cast<unsigned int>(layers.size());
-    instanceInfo.ppEnabledLayerNames = layers.data();
-    instanceInfo.enabledExtensionCount = static_cast<unsigned int>(extensions.size());
+    instanceInfo.enabledLayerCount = static_cast<unsigned int>(validationLayers.size());
+    instanceInfo.ppEnabledLayerNames = validationLayers.data();
+    instanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     instanceInfo.ppEnabledExtensionNames = extensions.data();
 
-    if (vkCreateInstance(&instanceInfo, nullptr, &vkInstance) != VK_SUCCESS)
+    const auto resultCode = vkCreateInstance(&instanceInfo, nullptr, &vkInstance);
+    if (resultCode != VK_SUCCESS)
     {
         Log &log = Log::getInstance();
-        log << "vkCreateInstance failed. Terminated." << std::endl;
+        log << "vkCreateInstance failed with code " << resultCode << ". Terminated." << std::endl;
         std::terminate();
     }
 }
@@ -47,13 +41,17 @@ void KompotEngine::Renderer::createVkInstance(VkInstance &vkInstance, const std:
 void KompotEngine::Renderer::loadFuntions(VkInstance vkInstance)
 {
     Log &log = Log::getInstance();
-    pfn_vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vkInstance, "vkDestroyDebugUtilsMessengerEXT");
-    pfn_vkCreateDebugUtilsMessengerEXT  = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vkInstance, "vkCreateDebugUtilsMessengerEXT");
+
+    pfn_vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>
+                                          (vkGetInstanceProcAddr(vkInstance, "vkCreateDebugUtilsMessengerEXT"));
     if (pfn_vkCreateDebugUtilsMessengerEXT == nullptr)
     {
         log << "vkGetInstanceProcAddr for vkCreateDebugUtilsMessengerEXT failed. Terminated." << std::endl;
         std::terminate();
     }
+
+    pfn_vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>
+                                          (vkGetInstanceProcAddr(vkInstance, "vkDestroyDebugUtilsMessengerEXT"));
     if (pfn_vkDestroyDebugUtilsMessengerEXT == nullptr)
     {
         log << "vkGetInstanceProcAddr for vkDestroyDebugUtilsMessengerEXT failed. Terminated." << std::endl;
@@ -78,74 +76,6 @@ void KompotEngine::Renderer::setupDebugCallback(VkInstance vkInstance, VkDebugUt
         Log &log = Log::getInstance();
         log << "vkCreateDebugUtilsMessengerEXT failed wih code " << debugMessengerCreatingCode << std::endl;
     }
-}
-
-std::vector<std::string> KompotEngine::Renderer::getLayers()
-{
-    std::vector<std::string> layers;
-    Log &log = Log::getInstance();
-    std::vector<const char*> validationLayers {
-        "VK_LAYER_LUNARG_standard_validation"
-    };
-
-    auto availablelayersCount = 0_u32t;
-    vkEnumerateInstanceLayerProperties(&availablelayersCount, nullptr);
-    std::vector<VkLayerProperties> availablelayers(availablelayersCount);
-    vkEnumerateInstanceLayerProperties(&availablelayersCount, availablelayers.data());
-
-    for (const auto& validationLayer : validationLayers)
-    {
-        const auto index = std::find_if(availablelayers.begin(), availablelayers.end(),
-                                        [validationLayer](const auto& availablelayer) -> bool
-        {
-            return boost::iequals(availablelayer.layerName, validationLayer);
-        });
-        if (index == availablelayers.end())
-        {
-            log << "Required validation layer \"" <<  validationLayer << "\n not available." << std::endl;
-            std::terminate();
-        }
-    }
-
-    for (const auto& availablelayer : availablelayers)
-    {
-        layers.push_back(availablelayer.layerName);
-    }    
-    return layers;
-}
-
-
-std::vector<std::string> KompotEngine::Renderer::getExtensions()
-{
-    std::vector<std::string> extensions;
-    Log &log = Log::getInstance();
-    auto glfwRequiredExtensionsCount = 0_u32t;
-    auto glfwRequiredExtensions = glfwGetRequiredInstanceExtensions(&glfwRequiredExtensionsCount);
-    auto availableVulkanExtensionsCount = 0_u32t;
-    vkEnumerateInstanceExtensionProperties(nullptr, &availableVulkanExtensionsCount, nullptr);
-    std::vector<VkExtensionProperties> availableVulkanExtensions(availableVulkanExtensionsCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &availableVulkanExtensionsCount, availableVulkanExtensions.data());
-    for (auto i = 0_u32t; i < glfwRequiredExtensionsCount; ++i)
-    {
-        const auto &requiredExtensionName = glfwRequiredExtensions[i];
-        const auto index = std::find_if(availableVulkanExtensions.begin(), availableVulkanExtensions.end(),
-                                  [requiredExtensionName](const auto &extension) -> bool
-        {
-            return boost::iequals(extension.extensionName, requiredExtensionName);
-        });
-        if (index == availableVulkanExtensions.end())
-        {
-           log << "Required by GLFW extension \"" <<  requiredExtensionName << "\n not available." << std::endl;
-           std::terminate();
-        }
-    }
-
-    for (const auto &extensionProperty : availableVulkanExtensions)
-    {
-        extensions.push_back(extensionProperty.extensionName);
-    }
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    return extensions;
 }
 
 void KompotEngine::Renderer::selectPhysicalDevice(VkInstance vkInstance, VkPhysicalDevice &vkPhysicalDevice)
@@ -262,30 +192,18 @@ void KompotEngine::Renderer::createLogicalDeviceAndQueue(
 
     VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
 
-    auto layersStrings = getLayers();
-    std::vector<const char*> layers(layersStrings.size());
-    std::transform(std::begin(layersStrings), std::end(layersStrings), std::begin(layers),
-                   [&](const auto& layerString)
-    {
-        return layerString.c_str();
-    });
-
-//    auto extensionsStrings = getExtensions();
-//    std::vector<const char*> extensions(extensionsStrings.size());
-//    std::transform(std::begin(extensionsStrings), std::end(extensionsStrings), std::begin(extensions),
-//                   [&](const auto& extensionString)
-//    {
-//        return extensionString.c_str();
-//    });
+    std::vector<const char*> extensions = {
+        "VK_KHR_swapchain"
+    };
 
     VkDeviceCreateInfo deviceInfo = {};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.queueCreateInfoCount = 1_u32t;
     deviceInfo.pQueueCreateInfos = &graphicQueueInfo;
-    deviceInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
-    deviceInfo.ppEnabledLayerNames = layers.data();
-    deviceInfo.enabledExtensionCount = 0_u32t;//static_cast<uint32_t>(extensions.size());
-    deviceInfo.ppEnabledExtensionNames = nullptr; //extensions.data();
+    deviceInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    deviceInfo.ppEnabledLayerNames = validationLayers.data();
+    deviceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    deviceInfo.ppEnabledExtensionNames = extensions.data();
     deviceInfo.pEnabledFeatures = &physicalDeviceFeatures;
 
     const auto resultCode = vkCreateDevice(vkPhysicalDevice, &deviceInfo, nullptr, &vkDevice);
