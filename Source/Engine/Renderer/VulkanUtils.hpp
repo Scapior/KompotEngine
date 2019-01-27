@@ -15,6 +15,13 @@ namespace KompotEngine
 namespace Renderer
 {
 
+struct SwapchainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR capabilities;
+    VkSurfaceFormatKHR       format;
+    VkPresentModeKHR         presentMode;
+};
+
 struct QueueFamilyIndices
 {
     std::optional<uint32_t> graphicFamilyIndex;
@@ -42,6 +49,11 @@ void selectPhysicalDevice(VkInstance, VkPhysicalDevice&);
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice, VkSurfaceKHR);
 void createLogicalDeviceAndQueue(VkPhysicalDevice, VkDevice&, VkQueue&, VkQueue&, VkSurfaceKHR);
 void createSurface(VkInstance, GLFWwindow*, VkSurfaceKHR&);
+SwapchainSupportDetails getSwapchainDetails(VkPhysicalDevice, VkSurfaceKHR);
+VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
+VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>&);
+VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR&, uint32_t, uint32_t);
+void createSwapchain(VkDevice, VkPhysicalDevice, VkSurfaceKHR, uint32_t, uint32_t, VkSwapchainKHR&);
 
 } // namespace Renderer
 

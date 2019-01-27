@@ -29,6 +29,7 @@ private:
     VkPhysicalDevice m_vkPhysicalDevice; // will be implicitly destroyed with VkInstance
     VkDevice         m_vkDevice;
     VkSurfaceKHR     m_vkSurface;
+    VkSwapchainKHR   m_vkSwapchain;
 
     VkQueue          m_vkGraphicQueue;
     VkQueue          m_vkPresentQueue;
