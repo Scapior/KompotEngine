@@ -15,6 +15,45 @@ namespace KompotEngine
 namespace Renderer
 {
 
+struct VulkanDevice
+{
+    VkPhysicalDevice physicalDevice; // will be implicitly destroyed with VkInstance
+    VkDevice         device;
+
+    VkQueue graphicQueue;
+    VkQueue presentQueue;
+
+    ~VulkanDevice()
+    {
+        vkDestroyDevice(device, nullptr);
+    }
+};
+
+struct VulkanSwapchain
+{
+    VkSwapchainKHR           swapchain;
+    std::vector<VkImage>     images;
+    std::vector<VkImageView> imagesViews;
+
+    VkFormat   imageFormat;
+    VkExtent2D imageExtent;
+
+    void setDevice(VkDevice device)
+    {
+        m_device = device;
+    }
+    ~VulkanSwapchain()
+    {
+        vkDestroySwapchainKHR(m_device, swapchain, nullptr);
+        for (auto &imageView : imagesViews)
+        {
+            vkDestroyImageView(m_device, imageView, nullptr);
+        }
+    }
+private:
+    VkDevice m_device;
+};
+
 struct SwapchainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -45,15 +84,17 @@ static std::vector<const char*> validationLayers {
 void createVkInstance(VkInstance&, const std::string&);
 void loadFuntions(VkInstance);
 void setupDebugCallback(VkInstance, VkDebugUtilsMessengerEXT&);
+void createSurface(VkInstance, GLFWwindow*, VkSurfaceKHR&);
+void createVulkanDevice(VkInstance, VkSurfaceKHR, VulkanDevice&);
 void selectPhysicalDevice(VkInstance, VkPhysicalDevice&);
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice, VkSurfaceKHR);
-void createLogicalDeviceAndQueue(VkPhysicalDevice, VkDevice&, VkQueue&, VkQueue&, VkSurfaceKHR);
-void createSurface(VkInstance, GLFWwindow*, VkSurfaceKHR&);
+void createLogicalDeviceAndQueue(VulkanDevice&, VkSurfaceKHR);
 SwapchainSupportDetails getSwapchainDetails(VkPhysicalDevice, VkSurfaceKHR);
 VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
 VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>&);
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR&, uint32_t, uint32_t);
-void createSwapchain(VkDevice, VkPhysicalDevice, VkSurfaceKHR, uint32_t, uint32_t, VkSwapchainKHR&);
+void createSwapchain(const VulkanDevice&, VkSurfaceKHR, uint32_t, uint32_t, VulkanSwapchain&);
+
 
 } // namespace Renderer
 

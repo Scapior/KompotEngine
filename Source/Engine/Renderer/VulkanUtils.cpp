@@ -182,15 +182,10 @@ QueueFamilyIndices KompotEngine::Renderer::findQueueFamilies(VkPhysicalDevice vk
     return indices;
 }
 
-void KompotEngine::Renderer::createLogicalDeviceAndQueue(
-        VkPhysicalDevice vkPhysicalDevice,
-        VkDevice &vkDevice,
-        VkQueue &graphicQueue,
-        VkQueue &presentQueue,
-        VkSurfaceKHR vkSurface)
+void KompotEngine::Renderer::createLogicalDeviceAndQueue(VulkanDevice &vulkanDevice, VkSurfaceKHR vkSurface)
 {
     //VkQueueFamilyProperties
-    const auto familiesIndecies = findQueueFamilies(vkPhysicalDevice, vkSurface);
+    const auto familiesIndecies = findQueueFamilies(vulkanDevice.physicalDevice, vkSurface);
     std::set<uint32_t> indices = {
         familiesIndecies.graphicFamilyIndex.value(),
         familiesIndecies.presentFamilyIndex.value()
@@ -224,7 +219,7 @@ void KompotEngine::Renderer::createLogicalDeviceAndQueue(
     deviceInfo.ppEnabledExtensionNames = extensions.data();
     deviceInfo.pEnabledFeatures = &physicalDeviceFeatures;
 
-    const auto resultCode = vkCreateDevice(vkPhysicalDevice, &deviceInfo, nullptr, &vkDevice);
+    const auto resultCode = vkCreateDevice(vulkanDevice.physicalDevice, &deviceInfo, nullptr, &vulkanDevice.device);
     if (resultCode != VK_SUCCESS)
     {
         Log &log = Log::getInstance();
@@ -232,8 +227,14 @@ void KompotEngine::Renderer::createLogicalDeviceAndQueue(
         std::terminate();
     }
 
-    vkGetDeviceQueue(vkDevice, familiesIndecies.graphicFamilyIndex.value(), 0_u32t, &graphicQueue);
-    vkGetDeviceQueue(vkDevice, familiesIndecies.presentFamilyIndex.value(), 0_u32t, &presentQueue);
+    vkGetDeviceQueue(vulkanDevice.device, familiesIndecies.graphicFamilyIndex.value(), 0_u32t, &vulkanDevice.graphicQueue);
+    vkGetDeviceQueue(vulkanDevice.device, familiesIndecies.presentFamilyIndex.value(), 0_u32t, &vulkanDevice.presentQueue);
+}
+
+void KompotEngine::Renderer::createVulkanDevice(VkInstance vkInstance, VkSurfaceKHR vkSurface, VulkanDevice &vulkanDevice)
+{
+    selectPhysicalDevice(vkInstance, vulkanDevice.physicalDevice);
+    createLogicalDeviceAndQueue(vulkanDevice, vkSurface);
 }
 
 void KompotEngine::Renderer::createSurface(VkInstance vkInstance, GLFWwindow *window, VkSurfaceKHR &vkSurface)
@@ -295,8 +296,8 @@ VkExtent2D KompotEngine::Renderer::chooseExtent(const VkSurfaceCapabilitiesKHR &
     else
     {
         VkExtent2D extent = {width, height};
-        extent.width = std::max(vkSurfaceCapabilities.minImageExtent.width, std::min(vkSurfaceCapabilities.maxImageExtent.width, extent.width));
-        extent.height = std::max(vkSurfaceCapabilities.minImageExtent.height, std::min(vkSurfaceCapabilities.maxImageExtent.height, extent.height));
+        extent.width = std::clamp(extent.width, vkSurfaceCapabilities.minImageExtent.width, vkSurfaceCapabilities.maxImageExtent.width);
+        extent.height = std::clamp(extent.height, vkSurfaceCapabilities.minImageExtent.height, vkSurfaceCapabilities.maxImageExtent.height);
         return extent;
     }
 }
@@ -313,14 +314,19 @@ VkPresentModeKHR KompotEngine::Renderer::choosePresentMode(const std::vector<VkP
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-void KompotEngine::Renderer::createSwapchain(VkDevice vkDevice, VkPhysicalDevice vkPhysicalDevice, VkSurfaceKHR vkSurface, uint32_t width, uint32_t height, VkSwapchainKHR &vkSwapchain)
+void KompotEngine::Renderer::createSwapchain(const VulkanDevice &vulkanDevice, VkSurfaceKHR vkSurface, uint32_t width, uint32_t height, VulkanSwapchain& vulkanSwapchain)
 {
-    const auto swapchainDetails = getSwapchainDetails(vkPhysicalDevice, vkSurface);
-    const auto queuefamilies = findQueueFamilies(vkPhysicalDevice, vkSurface);
+    Log &log = Log::getInstance();
+    vulkanSwapchain.setDevice(vulkanDevice.device);
+    const auto swapchainDetails = getSwapchainDetails(vulkanDevice.physicalDevice, vkSurface);
+    const auto queuefamilies = findQueueFamilies(vulkanDevice.physicalDevice, vkSurface);
     uint32_t queuefamiliesIndicies[] = {
         queuefamilies.graphicFamilyIndex.value(),
         queuefamilies.presentFamilyIndex.value()
     };
+
+    vulkanSwapchain.imageExtent = chooseExtent(swapchainDetails.capabilities, width, height);
+    vulkanSwapchain.imageFormat = swapchainDetails.format.format;
 
     VkSwapchainCreateInfoKHR swapchainInfo = {};
     swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -348,12 +354,40 @@ void KompotEngine::Renderer::createSwapchain(VkDevice vkDevice, VkPhysicalDevice
     swapchainInfo.clipped = VK_TRUE;
     swapchainInfo.oldSwapchain = nullptr;
 
-    const auto resultCode = vkCreateSwapchainKHR(vkDevice, &swapchainInfo, nullptr, &vkSwapchain);
+    const auto resultCode = vkCreateSwapchainKHR(vulkanDevice.device, &swapchainInfo, nullptr, &vulkanSwapchain.swapchain);
     if (resultCode != VK_SUCCESS)
     {
-        Log &log = Log::getInstance();
         log << "vkCreateSwapchainKHR failed. Terminated." << std::endl;
         std::terminate();
     }
+    auto swapchainImagesCount = 0_u32t;
+    vkGetSwapchainImagesKHR(vulkanDevice.device, vulkanSwapchain.swapchain, &swapchainImagesCount, nullptr);
+    vulkanSwapchain.images.resize(swapchainImagesCount);
+    vkGetSwapchainImagesKHR(vulkanDevice.device, vulkanSwapchain.swapchain, &swapchainImagesCount, vulkanSwapchain.images.data());
 
+    vulkanSwapchain.imagesViews.resize(swapchainImagesCount);
+    for (auto i = 0_u32t; i < swapchainImagesCount; ++i)
+    {
+        VkImageViewCreateInfo imageViewInfo;
+        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewInfo.image = vulkanSwapchain.images[i];
+        imageViewInfo.format = vulkanSwapchain.imageFormat;
+        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageViewInfo.subresourceRange.layerCount     = 1_u32t;
+        imageViewInfo.subresourceRange.levelCount     = 1_u32t;
+        imageViewInfo.subresourceRange.baseMipLevel   = 0_u32t;
+        imageViewInfo.subresourceRange.baseArrayLayer = 0_u32t;
+
+        const auto resultCode = vkCreateImageView(vulkanDevice.device, &imageViewInfo, nullptr, &vulkanSwapchain.imagesViews[i]);
+        if (resultCode != VK_SUCCESS)
+        {
+            log << "vkCreateSwapchainKHR failed (i = " << i  << "). Terminated." << std::endl;
+            std::terminate();
+        }
+    }
 }

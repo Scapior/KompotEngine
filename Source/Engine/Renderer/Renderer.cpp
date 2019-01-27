@@ -8,16 +8,13 @@ Renderer::Renderer(GLFWwindow *window, uint32_t width, uint32_t height, const st
     createVkInstance(m_vkInstance, windowName);
     loadFuntions(m_vkInstance);
     setupDebugCallback(m_vkInstance, m_vkDebugMessenger);
-    selectPhysicalDevice(m_vkInstance, m_vkPhysicalDevice);
     createSurface(m_vkInstance, m_glfwWindowHandler, m_vkSurface);
-    createLogicalDeviceAndQueue(m_vkPhysicalDevice, m_vkDevice, m_vkGraphicQueue, m_vkPresentQueue, m_vkSurface);
-    createSwapchain(m_vkDevice, m_vkPhysicalDevice, m_vkSurface, width, height, m_vkSwapchain);
+    createVulkanDevice(m_vkInstance, m_vkSurface, m_device);
+    createSwapchain(m_device, m_vkSurface, width, height, m_swapchain);
 }
 
 Renderer::~Renderer()
 {
-    vkDestroySwapchainKHR(m_vkDevice, m_vkSwapchain, nullptr);
-    vkDestroyDevice(m_vkDevice, nullptr);
     vkDestroySurfaceKHR(m_vkInstance, m_vkSurface, nullptr);
     pfn_vkDestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
     vkDestroyInstance(m_vkInstance, nullptr);    

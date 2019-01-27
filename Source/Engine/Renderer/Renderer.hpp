@@ -26,13 +26,10 @@ private:
 
     // vulkan members
     VkInstance       m_vkInstance;
-    VkPhysicalDevice m_vkPhysicalDevice; // will be implicitly destroyed with VkInstance
-    VkDevice         m_vkDevice;
     VkSurfaceKHR     m_vkSurface;
-    VkSwapchainKHR   m_vkSwapchain;
 
-    VkQueue          m_vkGraphicQueue;
-    VkQueue          m_vkPresentQueue;
+    VulkanDevice m_device;
+    VulkanSwapchain m_swapchain;
 
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 
