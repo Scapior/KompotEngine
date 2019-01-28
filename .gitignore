@@ -3,6 +3,10 @@
 KompotEngine
 log.txt
 
+# SPIR-V byte code
+
+*.spv
+
 # Qt Creator
 
 build-debug
