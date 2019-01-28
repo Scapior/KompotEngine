@@ -28,8 +28,10 @@ private:
     VkInstance       m_vkInstance;
     VkSurfaceKHR     m_vkSurface;
 
-    VulkanDevice m_device;
+    VulkanDevice    m_device;
     VulkanSwapchain m_swapchain;
+    VkRenderPass    m_renderPass;
+    VulkanPipeline  m_pipeline;
 
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 

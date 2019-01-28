@@ -8,6 +8,7 @@ set(SOURCES
     Source/Engine/Engine.cpp
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/VulkanUtils.cpp
+    Source/Engine/Renderer/Shader.cpp
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
     Source/Misc/ProgramOptions/ProgramOptions.cpp
@@ -18,6 +19,7 @@ set(HEADERS
     Source/Engine/Engine.hpp
     Source/Engine/Renderer/Renderer.hpp
     Source/Engine/Renderer/VulkanUtils.hpp
+    Source/Engine/Renderer/Shader.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
     Source/Misc/ProgramOptions/ProgramOptions.hpp

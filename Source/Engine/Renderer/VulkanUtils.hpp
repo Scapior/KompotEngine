@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "Shader.hpp"
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <boost/algorithm/string.hpp>
@@ -14,6 +15,23 @@ namespace KompotEngine
 
 namespace Renderer
 {
+
+struct VulkanPipeline
+{
+    VkPipelineLayout pipelineLayout;
+    VkPipeline       pipeline;
+    void setDevice(VkDevice device)
+    {
+        m_device = device;
+    }
+    ~VulkanPipeline()
+    {
+        vkDestroyPipelineLayout(m_device, pipelineLayout, nullptr);
+        vkDestroyPipeline(m_device, pipeline, nullptr);
+    }
+private:
+    VkDevice m_device;
+};
 
 struct VulkanDevice
 {
@@ -37,6 +55,9 @@ struct VulkanSwapchain
 
     VkFormat   imageFormat;
     VkExtent2D imageExtent;
+
+    VkViewport viewport;
+    VkRect2D   scissorRect;
 
     void setDevice(VkDevice device)
     {
@@ -94,6 +115,8 @@ VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
 VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>&);
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR&, uint32_t, uint32_t);
 void createSwapchain(const VulkanDevice&, VkSurfaceKHR, uint32_t, uint32_t, VulkanSwapchain&);
+void createRenderPass(VkDevice, const VulkanSwapchain&, VkRenderPass&);
+void createGraphicsPipeline(VkDevice, VulkanSwapchain&, VkRenderPass, VulkanPipeline&);
 
 
 } // namespace Renderer
