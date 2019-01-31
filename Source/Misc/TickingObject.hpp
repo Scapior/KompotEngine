@@ -12,7 +12,7 @@ class TickingObject
 public:
     TickingObject(const std::chrono::milliseconds&);
     virtual ~TickingObject();
-    virtual void tick() = delete;
+    virtual void tick() = 0;
     void start();
     void stop();
 

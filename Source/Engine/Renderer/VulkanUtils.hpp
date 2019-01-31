@@ -59,13 +59,21 @@ struct VulkanSwapchain
     VkViewport viewport;
     VkRect2D   scissorRect;
 
+    std::vector<VkFramebuffer> framebuffers;
+
     void setDevice(VkDevice device)
     {
         m_device = device;
     }
     ~VulkanSwapchain()
     {
+        for (auto &framebuffer : framebuffers)
+        {
+            vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+        }
+
         vkDestroySwapchainKHR(m_device, swapchain, nullptr);
+
         for (auto &imageView : imagesViews)
         {
             vkDestroyImageView(m_device, imageView, nullptr);
@@ -116,6 +124,7 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>&);
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR&, uint32_t, uint32_t);
 void createSwapchain(const VulkanDevice&, VkSurfaceKHR, uint32_t, uint32_t, VulkanSwapchain&);
 void createRenderPass(VkDevice, const VulkanSwapchain&, VkRenderPass&);
+void createFramebuffers(VkDevice, VkRenderPass, VulkanSwapchain&);
 void createGraphicsPipeline(VkDevice, VulkanSwapchain&, VkRenderPass, VulkanPipeline&);
 
 

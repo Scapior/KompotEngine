@@ -8,6 +8,8 @@
 
 class Log
 {
+typedef std::ostream& (*OstreamManipulator)(std::ostream&);
+
 public:
     static Log& getInstance()
     {
@@ -31,10 +33,9 @@ public:
         return *this;
     }
 
-    typedef std::ostream& (*ostream_manipulator)(std::ostream&);
-    Log& operator<<(ostream_manipulator pf)
+    Log& operator<<(OstreamManipulator pf)
     {
-        return operator<< <ostream_manipulator>(pf);
+        return operator<< <OstreamManipulator>(pf);
     }
 
     ~Log()

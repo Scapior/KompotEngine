@@ -444,6 +444,32 @@ void KompotEngine::Renderer::createRenderPass(
     }
 }
 
+void KompotEngine::Renderer::createFramebuffers(VkDevice device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
+{
+    Log &log = Log::getInstance();
+    swapchain.framebuffers.resize(static_cast<uint32_t>(swapchain.imagesViews.size()));
+    for (auto i = 0_u64t; i < static_cast<uint64_t>(swapchain.imagesViews.size()); ++i)
+    {
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = 1_u32t;//static_cast<uint32_t>(swapchain.imagesViews.size());
+        framebufferInfo.pAttachments = &swapchain.imagesViews[i];
+        framebufferInfo.width = swapchain.imageExtent.width;
+        framebufferInfo.height = swapchain.imageExtent.height;
+        framebufferInfo.layers = 1_u32t;
+
+        const auto result = vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchain.framebuffers[i]);
+        if (result != VK_SUCCESS)
+        {
+            log << "vkCreateFramebuffer failed. Terminated." << std::endl;
+            std::terminate();
+        }
+    }
+
+
+}
+
 void KompotEngine::Renderer::createGraphicsPipeline(
         VkDevice device,
         VulkanSwapchain &vulkanSwapchain,

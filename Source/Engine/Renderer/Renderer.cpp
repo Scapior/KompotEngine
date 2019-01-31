@@ -12,6 +12,7 @@ Renderer::Renderer(GLFWwindow *window, uint32_t width, uint32_t height, const st
     createVulkanDevice(m_vkInstance, m_vkSurface, m_device);
     createSwapchain(m_device, m_vkSurface, width, height, m_swapchain);
     createRenderPass(m_device.device, m_swapchain, m_renderPass);
+    createFramebuffers(m_device.device, m_renderPass, m_swapchain);
     createGraphicsPipeline(m_device.device, m_swapchain, m_renderPass, m_pipeline);
 }
 
