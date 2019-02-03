@@ -428,6 +428,12 @@ void KompotEngine::Renderer::createRenderPass(
     subpassDescription.colorAttachmentCount = 1_u32t;
     subpassDescription.pColorAttachments = &colorAttachmentReference;
 
+    VkSubpassDependency subpassDependency = {};
+    subpassDependency.srcSubpass = 0_u32t;
+    subpassDependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -435,6 +441,7 @@ void KompotEngine::Renderer::createRenderPass(
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1_u32t;
     renderPassInfo.pSubpasses = &subpassDescription;
+    renderPassInfo.pDependencies = &subpassDependency;
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
@@ -586,4 +593,100 @@ void KompotEngine::Renderer::createGraphicsPipeline(
         log << "vkCreateGraphicsPipelines failed. Terminated." << std::endl;
         std::terminate();
     }
+}
+
+void KompotEngine::Renderer::createCommandPool(VulkanDevice vulkanDevice, VkSurfaceKHR surface, VkCommandPool &commandPool)
+{
+    VkCommandPoolCreateInfo commandPoolInfo = {};
+    const auto queueFamilies = findQueueFamilies(vulkanDevice.physicalDevice, surface);
+    commandPoolInfo.sType  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolInfo.queueFamilyIndex = queueFamilies.graphicFamilyIndex.value();
+
+    if (VK_SUCCESS != vkCreateCommandPool(vulkanDevice.device, &commandPoolInfo, nullptr, &commandPool))
+    {
+        Log &log = Log::getInstance();
+        log << "vkCreateCommandPool failed. Terminated." << std::endl;
+        std::terminate();
+    }
+}
+
+void KompotEngine::Renderer::createCommandBuffers(
+        VkDevice device,
+        VkCommandPool commandPool,
+        VkRenderPass renderPass,
+        const std::vector<VkFramebuffer> &frameBuffers,
+        VkExtent2D extent,
+        VkPipeline pipeline,
+        std::vector<VkCommandBuffer> &commandBuffers)
+{
+    commandBuffers.resize(frameBuffers.size());
+
+    VkCommandBufferAllocateInfo commandBuffersAllocateInfo = {};
+    commandBuffersAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBuffersAllocateInfo.commandPool = commandPool;
+    commandBuffersAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBuffersAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+
+    if (VK_SUCCESS != vkAllocateCommandBuffers(device, &commandBuffersAllocateInfo, commandBuffers.data()))
+    {
+        Log &log = Log::getInstance();
+        log << "vkAllocateCommandBuffers failed. Terminated." << std::endl;
+        std::terminate();
+    }
+
+    for (auto i = 0_u64t; i < frameBuffers.size(); ++i)
+    {
+        Log &log = Log::getInstance();
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+        if (VK_SUCCESS != vkBeginCommandBuffer(commandBuffers[i], &commandBufferBeginInfo))
+        {
+            log << "vkBeginCommandBuffer failed. Terminated." << std::endl;
+            std::terminate();
+        }
+
+        VkRenderPassBeginInfo renderPassBeginInfo = {};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = renderPass;
+        renderPassBeginInfo.framebuffer = frameBuffers[i];
+        renderPassBeginInfo.renderArea.offset = {0_u32t, 0_u32t};
+        renderPassBeginInfo.renderArea.extent = extent;
+        VkClearValue clearValue = {0.0f, 0.0f, 0.0f, 1.0f};
+        renderPassBeginInfo.clearValueCount = 1_u32t;
+        renderPassBeginInfo.pClearValues = &clearValue;
+
+        vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdDraw(commandBuffers[i], 3_u32t, 1_u32t, 0_u32t, 0_u32t);
+        vkCmdEndRenderPass(commandBuffers[i]);
+
+        if (VK_SUCCESS != vkEndCommandBuffer(commandBuffers[i]))
+        {
+            log << "vkEndCommandBuffer failed. Terminated." << std::endl;
+            std::terminate();
+        }
+    }
+
+}
+
+void KompotEngine::Renderer::createSemaphores(
+        VkDevice device,
+        VkSemaphore &imageSemaphore,
+        VkSemaphore &renderSemaphore)
+{
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (VK_SUCCESS != vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &imageSemaphore) ||
+        VK_SUCCESS != vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderSemaphore))
+    {
+        Log &log = Log::getInstance();
+        log << "vkCreateSemaphore failed. Terminated." << std::endl;
+        std::terminate();
+    }
+
 }

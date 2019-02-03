@@ -24,7 +24,7 @@ struct VulkanPipeline
     {
         m_device = device;
     }
-    ~VulkanPipeline()
+    void destroy()
     {
         vkDestroyPipelineLayout(m_device, pipelineLayout, nullptr);
         vkDestroyPipeline(m_device, pipeline, nullptr);
@@ -41,7 +41,7 @@ struct VulkanDevice
     VkQueue graphicQueue;
     VkQueue presentQueue;
 
-    ~VulkanDevice()
+    void destroy()
     {
         vkDestroyDevice(device, nullptr);
     }
@@ -65,7 +65,7 @@ struct VulkanSwapchain
     {
         m_device = device;
     }
-    ~VulkanSwapchain()
+    void destroy()
     {
         for (auto &framebuffer : framebuffers)
         {
@@ -126,7 +126,9 @@ void createSwapchain(const VulkanDevice&, VkSurfaceKHR, uint32_t, uint32_t, Vulk
 void createRenderPass(VkDevice, const VulkanSwapchain&, VkRenderPass&);
 void createFramebuffers(VkDevice, VkRenderPass, VulkanSwapchain&);
 void createGraphicsPipeline(VkDevice, VulkanSwapchain&, VkRenderPass, VulkanPipeline&);
-
+void createCommandPool(VulkanDevice, VkSurfaceKHR, VkCommandPool&);
+void createCommandBuffers(VkDevice, VkCommandPool, VkRenderPass, const std::vector<VkFramebuffer>&, VkExtent2D, VkPipeline, std::vector<VkCommandBuffer>&);
+void createSemaphores(VkDevice, VkSemaphore&, VkSemaphore&);
 
 } // namespace Renderer
 

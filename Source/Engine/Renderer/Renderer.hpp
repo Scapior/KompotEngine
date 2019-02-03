@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
+#include <limits>
 
 namespace KompotEngine
 {
@@ -32,6 +33,12 @@ private:
     VulkanSwapchain m_swapchain;
     VkRenderPass    m_renderPass;
     VulkanPipeline  m_pipeline;
+
+    VkCommandPool   m_commandPool;
+    std::vector<VkCommandBuffer> m_commandBuffers; // automatically freed when their command pool is destroyed
+
+    VkSemaphore m_imageAvailableSemaphore;
+    VkSemaphore m_renderFinishedSemaphore;
 
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 
