@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(_DEBUG) || !defined(NDEBUF)
+#define ENGINE_DEBUG
+#endif
+
 #include "Misc/Log.hpp"
 #include <cstdint> // for uint64_t, etc
 #include <thread>

@@ -13,7 +13,6 @@ set(SOURCES
     Source/main.cpp
     Source/Engine/Engine.cpp
     Source/Engine/Renderer/Renderer.cpp
-    Source/Engine/Renderer/VulkanUtils.cpp
     Source/Engine/Renderer/Shader.cpp
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
@@ -24,7 +23,6 @@ set(HEADERS
     Source/global.hpp
     Source/Engine/Engine.hpp
     Source/Engine/Renderer/Renderer.hpp
-    Source/Engine/Renderer/VulkanUtils.hpp
     Source/Engine/Renderer/Shader.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
