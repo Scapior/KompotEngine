@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <optional>
+#include <set>
 
 namespace KompotEngine
 {
@@ -107,7 +108,9 @@ static PFN_vkCreateDebugUtilsMessengerEXT  pfn_vkCreateDebugUtilsMessengerEXT  =
 static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
 
 static std::vector<const char*> validationLayers {
+#ifdef _DEBUG
     "VK_LAYER_LUNARG_standard_validation"
+#endif
 };
 
 void createVkInstance(VkInstance&, const std::string&);
@@ -128,7 +131,7 @@ void createFramebuffers(VkDevice, VkRenderPass, VulkanSwapchain&);
 void createGraphicsPipeline(VkDevice, VulkanSwapchain&, VkRenderPass, VulkanPipeline&);
 void createCommandPool(VulkanDevice, VkSurfaceKHR, VkCommandPool&);
 void createCommandBuffers(VkDevice, VkCommandPool, VkRenderPass, const std::vector<VkFramebuffer>&, VkExtent2D, VkPipeline, std::vector<VkCommandBuffer>&);
-void createSemaphores(VkDevice, VkSemaphore&, VkSemaphore&);
+void createSyncObjects(VkDevice, uint64_t, std::vector<VkSemaphore>&, std::vector<VkSemaphore>&, std::vector<VkFence>&);
 
 } // namespace Renderer
 

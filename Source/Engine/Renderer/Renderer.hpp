@@ -13,6 +13,7 @@ namespace KompotEngine
 namespace Renderer
 {
 
+static const uint64_t MAX_FRAMES_IN_FLIGHT = 2_u64t;
 class Renderer
 {
 public:
@@ -37,8 +38,9 @@ private:
     VkCommandPool   m_commandPool;
     std::vector<VkCommandBuffer> m_commandBuffers; // automatically freed when their command pool is destroyed
 
-    VkSemaphore m_imageAvailableSemaphore;
-    VkSemaphore m_renderFinishedSemaphore;
+    std::vector<VkSemaphore> m_imageAvailableSemaphores;
+    std::vector<VkSemaphore> m_renderFinishedSemaphores;
+    std::vector<VkFence>     m_inFlightFramesFence;
 
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 

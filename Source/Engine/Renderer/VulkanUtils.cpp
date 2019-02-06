@@ -61,6 +61,7 @@ void KompotEngine::Renderer::loadFuntions(VkInstance vkInstance)
 
 void KompotEngine::Renderer::setupDebugCallback(VkInstance vkInstance, VkDebugUtilsMessengerEXT &vkDebugMessenger)
 {
+#ifdef _DEBUG
     VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo = {};
     messengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     messengerCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -76,6 +77,7 @@ void KompotEngine::Renderer::setupDebugCallback(VkInstance vkInstance, VkDebugUt
         Log &log = Log::getInstance();
         log << "vkCreateDebugUtilsMessengerEXT failed wih code " << debugMessengerCreatingCode << std::endl;
     }
+#endif
 }
 
 void KompotEngine::Renderer::selectPhysicalDevice(VkInstance vkInstance, VkPhysicalDevice &vkPhysicalDevice)
@@ -402,7 +404,7 @@ void KompotEngine::Renderer::createSwapchain(
     vulkanSwapchain.viewport.minDepth = 0.0f;
     vulkanSwapchain.viewport.maxDepth = 1.0f;
 
-    vulkanSwapchain.scissorRect.offset = {0_u32t, 0_u32t};
+    vulkanSwapchain.scissorRect.offset = {0_32t, 0_32t};
     vulkanSwapchain.scissorRect.extent = vulkanSwapchain.imageExtent;
 }
 
@@ -652,7 +654,7 @@ void KompotEngine::Renderer::createCommandBuffers(
         renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassBeginInfo.renderPass = renderPass;
         renderPassBeginInfo.framebuffer = frameBuffers[i];
-        renderPassBeginInfo.renderArea.offset = {0_u32t, 0_u32t};
+        renderPassBeginInfo.renderArea.offset = {0_32t, 0_32t};
         renderPassBeginInfo.renderArea.extent = extent;
         VkClearValue clearValue = {0.0f, 0.0f, 0.0f, 1.0f};
         renderPassBeginInfo.clearValueCount = 1_u32t;
@@ -672,21 +674,34 @@ void KompotEngine::Renderer::createCommandBuffers(
 
 }
 
-void KompotEngine::Renderer::createSemaphores(
+void KompotEngine::Renderer::createSyncObjects(
         VkDevice device,
-        VkSemaphore &imageSemaphore,
-        VkSemaphore &renderSemaphore)
+        uint64_t syncObjectsCount,
+        std::vector<VkSemaphore> &imageSemaphores,
+        std::vector<VkSemaphore> &renderSemaphores,
+        std::vector<VkFence>     &concurentFramesFence)
 {
+    imageSemaphores.resize(syncObjectsCount);
+    renderSemaphores.resize(syncObjectsCount);
+    concurentFramesFence.resize(syncObjectsCount);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (VK_SUCCESS != vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &imageSemaphore) ||
-        VK_SUCCESS != vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderSemaphore))
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (auto i = 0_u64t; i < syncObjectsCount; ++i)
     {
-        Log &log = Log::getInstance();
-        log << "vkCreateSemaphore failed. Terminated." << std::endl;
-        std::terminate();
+        if (VK_SUCCESS != vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &imageSemaphores[i]) ||
+            VK_SUCCESS != vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &renderSemaphores[i]) ||
+            VK_SUCCESS != vkCreateFence(device, &fenceCreateInfo, nullptr, &concurentFramesFence[i]))
+        {
+            Log &log = Log::getInstance();
+            log << "Failed to create synchronization objects. Terminated." << std::endl;
+            std::terminate();
+        }
     }
 
 }

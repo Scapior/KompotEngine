@@ -48,5 +48,6 @@ void Engine::run()
     std::thread(&Renderer::Renderer::run, m_renderer).detach();
     while (!glfwWindowShouldClose(m_glfwWindowHandler)) // TODO: replace this
     {
+        glfwPollEvents();
     }
 }

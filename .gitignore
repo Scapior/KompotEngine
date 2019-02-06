@@ -3,6 +3,16 @@
 KompotEngine
 log.txt
 
+# MSVS / Win files
+
+*.exe
+*.dll
+*.ilk
+*.pdb
+*.manifest
+build-debug-win
+build-release-win
+
 # SPIR-V byte code
 
 *.spv

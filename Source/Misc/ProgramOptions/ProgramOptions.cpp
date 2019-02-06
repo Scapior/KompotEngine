@@ -183,11 +183,11 @@ void ProgramOptions::loadFromArguments(int argc, char **argv)
             {
                 const std::string nextArgument(argv[++i]);
 
-                if (boost::iequals(nextArgument, "1") or boost::iequals(nextArgument, "true"))
+                if (boost::iequals(nextArgument, "1") || boost::iequals(nextArgument, "true"))
                 {
                     argumentStream << argument << ' ' << true << ' ';
                 }
-                else if (boost::iequals(nextArgument, "0") or boost::iequals(nextArgument, "false"))
+                else if (boost::iequals(nextArgument, "0") || boost::iequals(nextArgument, "false"))
                 {
                     argumentStream << argument << ' ' << false << ' ';
                 }
@@ -227,11 +227,11 @@ void ProgramOptions::loadFromFile(std::ifstream& inputStream)
 
         if (m_options.keyIsBoolean(key))
         {
-            if (boost::iequals(value, "1") or boost::iequals(value, "true"))
+            if (boost::iequals(value, "1") || boost::iequals(value, "true"))
             {
                 optionsStream << key << ' ' << true << ' ';
             }
-            else if (boost::iequals(value, "0") or boost::iequals(value, "false"))
+            else if (boost::iequals(value, "0") || boost::iequals(value, "false"))
             {
                 optionsStream << key << ' ' << false << ' ';
             }
