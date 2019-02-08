@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include <boost/algorithm/string.hpp>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <string>
 #include <limits>
 #include <string>
@@ -12,12 +13,43 @@
 #include <algorithm>
 #include <optional>
 #include <set>
+#include <array>
 
 namespace KompotEngine
 {
 
 namespace Renderer
 {
+
+struct Vertex
+{
+    glm::vec2 position;
+    glm::vec3 color;
+    static VkVertexInputBindingDescription getBindingDescription()
+    {
+        VkVertexInputBindingDescription vertexInputBindingDescritpion = {};
+        vertexInputBindingDescritpion.binding = 0_u32t;
+        vertexInputBindingDescritpion.stride = sizeof(Vertex);
+        vertexInputBindingDescritpion.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        return vertexInputBindingDescritpion;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2_u64t> getAttributeDescritptions()
+    {
+        std::array<VkVertexInputAttributeDescription, 2_u64t> vertexInputAttributeDescription;
+        vertexInputAttributeDescription[0].binding = 0_u32t;
+        vertexInputAttributeDescription[0].location = 0_u32t;
+        vertexInputAttributeDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
+        vertexInputAttributeDescription[0].offset = offsetof(Vertex, position);
+
+        vertexInputAttributeDescription[1].binding = 0_u32t;
+        vertexInputAttributeDescription[1].location = 1_u32t;
+        vertexInputAttributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        vertexInputAttributeDescription[1].offset = offsetof(Vertex, color);
+
+        return vertexInputAttributeDescription;
+    }
+};
 
 struct SwapchainSupportDetails
 {
@@ -102,6 +134,9 @@ private:
     static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
 #endif
 
+    VkBuffer m_vkVertexBuffer;
+    VkDeviceMemory m_vkVertexBufferMemory;
+
     void createVkInstance();
     void setupDebugCallback();
     void createSurface();
@@ -123,6 +158,8 @@ private:
     void cleanupSwapchain();
     void recreateSwapchain();
 
+    void createVertexBuffer();
+    uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
 };
 
 
