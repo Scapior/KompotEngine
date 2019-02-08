@@ -34,8 +34,9 @@ private:
 
     // GLFW callbacks
 
-    void keyCallback(GLFWwindow*, int, int, int, int);
-    void characterCallback(GLFWwindow*, unsigned int, int);
+    static void keyCallback(GLFWwindow*, int, int, int, int);
+    static void characterCallback(GLFWwindow*, unsigned int, int);
+    static void resizeCallback(GLFWwindow*, int, int);
 };
 
 } // KompotEngine namespace

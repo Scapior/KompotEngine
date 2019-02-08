@@ -7,8 +7,8 @@ PFN_vkCreateDebugUtilsMessengerEXT  Renderer::pfn_vkCreateDebugUtilsMessengerEXT
 PFN_vkDestroyDebugUtilsMessengerEXT Renderer::pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
 #endif
 
-Renderer::Renderer(GLFWwindow *window, uint32_t width, uint32_t height, const std::string &windowName)
-    : m_glfwWindowHandler(window), m_windowsName(windowName), m_width(width), m_height(height)
+Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
+    : m_glfwWindowHandler(window), m_windowsName(windowName), m_isResized(false)
 {
     createVkInstance();
     setupDebugCallback();
@@ -24,29 +24,33 @@ Renderer::Renderer(GLFWwindow *window, uint32_t width, uint32_t height, const st
     createSyncObjects();
 }
 
-Renderer::~Renderer()
+void Renderer::cleanupSwapchain()
 {
-//    for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
-//    {
-//        vkDestroySemaphore(m_device.device, m_imageAvailableSemaphores[i], nullptr);
-//        vkDestroySemaphore(m_device.device, m_renderFinishedSemaphores[i], nullptr);
-//        vkDestroyFence(m_device.device, m_inFlightFramesFence[i], nullptr);
-//    }
-//    vkDestroyCommandPool(m_device.device, m_commandPool, nullptr);
-//    m_pipeline.destroy();
-    vkDestroyPipelineLayout(m_vkDevice, m_vkPipelineLayout, nullptr);
-    vkDestroyPipeline(m_vkDevice, m_vkPipeline, nullptr);
-
-    vkDestroyRenderPass(m_vkDevice, m_vkRenderPass, nullptr);
-    for (auto &framebuffer : m_vkFramebuffers)
+    for (auto framebuffer : m_vkFramebuffers)
     {
         vkDestroyFramebuffer(m_vkDevice, framebuffer, nullptr);
     }
-    vkDestroySwapchainKHR(m_vkDevice, m_vkSwapchain, nullptr);
-    for (auto &imageView : m_vkImageViews)
+    vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, static_cast<uint32_t>(m_vkCommandBuffers.size()), m_vkCommandBuffers.data());
+    vkDestroyPipeline(m_vkDevice, m_vkPipeline, nullptr);
+    vkDestroyPipelineLayout(m_vkDevice, m_vkPipelineLayout, nullptr);
+    vkDestroyRenderPass(m_vkDevice, m_vkRenderPass, nullptr);
+    for (auto imageView : m_vkImageViews)
     {
         vkDestroyImageView(m_vkDevice, imageView, nullptr);
     }
+    vkDestroySwapchainKHR(m_vkDevice, m_vkSwapchain, nullptr);
+}
+
+Renderer::~Renderer()
+{
+    cleanupSwapchain();
+    for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
+    {
+        vkDestroySemaphore(m_vkDevice, m_vkImageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(m_vkDevice, m_vkRenderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(m_vkDevice, m_vkInFlightFramesFence[i], nullptr);
+    }
+    vkDestroyCommandPool(m_vkDevice, m_vkCommandPool, nullptr);
     vkDestroyDevice(m_vkDevice, nullptr);
     vkDestroySurfaceKHR(m_vkInstance, m_vkSurface, nullptr);
 #ifdef ENGINE_DEBUG
@@ -66,10 +70,16 @@ void Renderer::run()
         auto &renderFinishedSemaphore = m_vkRenderFinishedSemaphores[currentFrameIndex];
 
         vkWaitForFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
-        vkResetFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
 
         auto imageIndex = 0_u32t;
-        vkAcquireNextImageKHR(m_vkDevice, m_vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr, &imageIndex);
+        auto resultCode = vkAcquireNextImageKHR(m_vkDevice, m_vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr, &imageIndex);
+
+        if (resultCode == VK_ERROR_OUT_OF_DATE_KHR || m_isResized)
+        {
+            m_isResized = false;
+            recreateSwapchain();
+            continue;
+        }
 
         VkPipelineStageFlags pipelineStagesFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo = {};
@@ -82,9 +92,11 @@ void Renderer::run()
         submitInfo.signalSemaphoreCount = 1_u32t;
         submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-        if (VK_SUCCESS != vkQueueSubmit(m_vkGraphicQueue, 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]))
+        vkResetFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
+        resultCode = vkQueueSubmit(m_vkGraphicQueue, 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]);
+        if (resultCode != VK_SUCCESS)
         {
-            log << "vkQueueSubmit failed. Terminated." << std::endl;
+            log << "Renderer::run(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
 
@@ -96,11 +108,28 @@ void Renderer::run()
         presentInfo.pSwapchains = &m_vkSwapchain;
         presentInfo.pImageIndices = &imageIndex;
 
-        vkQueuePresentKHR(m_vkGraphicQueue, &presentInfo);
+        resultCode = vkQueuePresentKHR(m_vkGraphicQueue, &presentInfo);
+        if (resultCode == VK_ERROR_OUT_OF_DATE_KHR ||
+            resultCode == VK_SUBOPTIMAL_KHR ||
+            m_isResized)
+        {
+            m_isResized = false;
+            recreateSwapchain();
+        }
+        else if(resultCode != VK_SUCCESS)
+        {
+            log << "Renderer::run(): vkQueuePresentKHR failed with code " << resultCode << ". Terminated." << std::endl;
+            std::terminate();
+        }
         vkQueueWaitIdle(m_vkGraphicQueue);
     }
 
     vkDeviceWaitIdle(m_vkDevice);
+}
+
+void Renderer::resize()
+{
+    m_isResized = true;
 }
 
 void Renderer::createVkInstance()
@@ -383,17 +412,11 @@ VkSurfaceFormatKHR Renderer::chooseSurfaceFormat(const std::vector<VkSurfaceForm
 
 VkExtent2D Renderer::chooseExtent(const VkSurfaceCapabilitiesKHR &vkSurfaceCapabilities)
 {
-    if (vkSurfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-    {
-        return vkSurfaceCapabilities.currentExtent;
-    }
-    else
-    {
-        VkExtent2D extent = {m_width, m_height};
-        extent.width = std::clamp(extent.width, vkSurfaceCapabilities.minImageExtent.width, vkSurfaceCapabilities.maxImageExtent.width);
-        extent.height = std::clamp(extent.height, vkSurfaceCapabilities.minImageExtent.height, vkSurfaceCapabilities.maxImageExtent.height);
-        return extent;
-    }
+    glfwGetFramebufferSize(m_glfwWindowHandler, reinterpret_cast<int*>(&m_width), reinterpret_cast<int*>(&m_height));
+    VkExtent2D extent = {m_width, m_height};
+    extent.width = std::clamp(extent.width, vkSurfaceCapabilities.minImageExtent.width, vkSurfaceCapabilities.maxImageExtent.width);
+    extent.height = std::clamp(extent.height, vkSurfaceCapabilities.minImageExtent.height, vkSurfaceCapabilities.maxImageExtent.height);
+    return extent;
 }
 
 VkPresentModeKHR Renderer::choosePresentMode(const std::vector<VkPresentModeKHR> &presentModes)
@@ -772,4 +795,15 @@ void Renderer::createSyncObjects()
             std::terminate();
         }
     }
+}
+
+void Renderer::recreateSwapchain()
+{
+    vkDeviceWaitIdle(m_vkDevice);
+    cleanupSwapchain();
+    createSwapchain();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFramebuffers();
+    createCommandBuffers();
 }

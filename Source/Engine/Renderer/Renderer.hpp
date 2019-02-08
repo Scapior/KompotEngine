@@ -50,13 +50,17 @@ static std::vector<const char*> validationLayers {
 class Renderer
 {
 public:
-    Renderer(GLFWwindow*, uint32_t, uint32_t, const std::string&);
+    Renderer(GLFWwindow*, const std::string&);
     void run();
+    void resize();
     ~Renderer();
 private:
     // window
     GLFWwindow *m_glfwWindowHandler;
     std::string m_windowsName;
+    bool m_isResized;
+
+    // width and height will be setted in createSwapchain -> chooseExtent
     uint32_t    m_width;
     uint32_t    m_height;
 
@@ -78,7 +82,6 @@ private:
     std::vector<VkImageView> m_vkImageViews;
     VkViewport m_vkViewport;
     VkRect2D   m_vkRect;
-    VkExtent2D m_vkExtent;
 
     std::vector<VkFramebuffer> m_vkFramebuffers;
     VkRenderPass    m_vkRenderPass;
@@ -117,6 +120,7 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
+    void cleanupSwapchain();
     void recreateSwapchain();
 
 };

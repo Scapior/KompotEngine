@@ -9,7 +9,7 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     log << "GLFW init code: " <<  glfwInit() << std::endl;
     glfwSetErrorCallback(Log::callbackForGlfw);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); //no GL context
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     const int width = static_cast<int>(m_engineSettings.windowWidth);
     const int height = static_cast<int>(m_engineSettings.windowHeight);
     m_glfwWindowHandler = glfwCreateWindow(width, height, m_instanceName.c_str(), nullptr, nullptr);
@@ -22,7 +22,8 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     {
         log << "Created GLFW window \"" <<  m_instanceName << "\"." << std::endl;
     }
-    glfwSetInputMode(m_glfwWindowHandler, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetWindowUserPointer(m_glfwWindowHandler, this);
+    //glfwSetInputMode(m_glfwWindowHandler, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     if (m_engineSettings.isMaximized)
     {
         glfwMaximizeWindow(m_glfwWindowHandler); // not work
@@ -33,8 +34,11 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
         std::terminate();
     }
 
-    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_engineSettings.windowWidth, m_engineSettings.windowHeight, m_instanceName);
+    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_instanceName);
     log << "Renderer successfully initialized." << std::endl;
+
+
+    glfwSetFramebufferSizeCallback(m_glfwWindowHandler, resizeCallback);
 }
 
 Engine::~Engine()
@@ -50,4 +54,10 @@ void Engine::run()
     {
         glfwPollEvents();
     }
+}
+
+void Engine::resizeCallback(GLFWwindow *glfwWindowHandler, int, int)
+{
+    Engine &engine = *reinterpret_cast<Engine*>(glfwGetWindowUserPointer(glfwWindowHandler));
+    engine.m_renderer->resize();
 }
