@@ -158,6 +158,8 @@ private:
     void cleanupSwapchain();
     void recreateSwapchain();
 
+    void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
+    void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
     void createVertexBuffer();
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
 };

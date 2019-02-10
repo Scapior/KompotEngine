@@ -824,47 +824,111 @@ void Renderer::recreateSwapchain()
     createCommandBuffers();
 }
 
-void Renderer::createVertexBuffer()
+void Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperies, VkBuffer &buffer, VkDeviceMemory &bufferMemory)
 {
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.size = sizeof(Vertex) * vertices.size();
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferCreateInfo.size = size;
+    bufferCreateInfo.usage = usage;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    auto resultCode = vkCreateBuffer(m_vkDevice, &bufferCreateInfo, nullptr, &m_vkVertexBuffer);
+    auto resultCode = vkCreateBuffer(m_vkDevice, &bufferCreateInfo, nullptr, &buffer);
     if (resultCode != VK_SUCCESS)
     {
         Log &log = Log::getInstance();
-        log << "Renderer::createVertexBuffer(): Function vkCreateBuffer call failed with code" << resultCode << ". Terminated."<< std::endl;
+        log << "Renderer::createBuffer(): Function vkCreateBuffer call failed with code" << resultCode << ". Terminated."<< std::endl;
         std::terminate();
     }
 
     VkMemoryRequirements memoryRequirements = {};
-    vkGetBufferMemoryRequirements(m_vkDevice, m_vkVertexBuffer, &memoryRequirements);
+    vkGetBufferMemoryRequirements(m_vkDevice, buffer, &memoryRequirements);
 
     VkMemoryAllocateInfo momoryAllocateInfo = {};
     momoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     momoryAllocateInfo.allocationSize = memoryRequirements.size;
-    momoryAllocateInfo.memoryTypeIndex = findMemoryType(
-                                             memoryRequirements.memoryTypeBits,
-                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    momoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, memoryProperies);
 
-
-    resultCode = vkAllocateMemory(m_vkDevice, &momoryAllocateInfo, nullptr, &m_vkVertexBufferMemory);
+    resultCode = vkAllocateMemory(m_vkDevice, &momoryAllocateInfo, nullptr, &bufferMemory);
     if (resultCode != VK_SUCCESS)
     {
         Log &log = Log::getInstance();
-        log << "Renderer::createVertexBuffer(): Function vkAllocateMemory call failed with code" << resultCode << ". Terminated."<< std::endl;
+        log << "Renderer::createBuffer(): Function vkAllocateMemory call failed with code" << resultCode << ". Terminated."<< std::endl;
         std::terminate();
     }
 
-    vkBindBufferMemory(m_vkDevice, m_vkVertexBuffer, m_vkVertexBufferMemory, 0_u32t);
-    void* bufferMemory;
-    vkMapMemory(m_vkDevice, m_vkVertexBufferMemory, 0_u32t, bufferCreateInfo.size, 0, &bufferMemory);
-    memcpy(bufferMemory, vertices.data(), static_cast<std::size_t>(bufferCreateInfo.size));
-    vkUnmapMemory(m_vkDevice, m_vkVertexBufferMemory);
+    vkBindBufferMemory(m_vkDevice, buffer, bufferMemory, 0_u32t);
+}
 
+void Renderer::copyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkDeviceSize size)
+{
+    Log &log = Log::getInstance();
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandPool = m_vkCommandPool;
+    commandBufferAllocateInfo.commandBufferCount = 1_u32t;
+
+    VkCommandBuffer commandBuffer;
+    auto resultCode = vkAllocateCommandBuffers(m_vkDevice, &commandBufferAllocateInfo, &commandBuffer);
+    if (resultCode != VK_SUCCESS)
+    {
+        log << "Renderer::copyBuffer(): Function vkAllocateCommandBuffers failed to call with code " << resultCode << ". Terminated" << std::endl;
+        std::terminate();
+    }
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+    VkBufferCopy bufferCopyRegion = {};
+    bufferCopyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, sourceBuffer, destinationBuffer, 1_u32t, &bufferCopyRegion);
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1_u32t;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    resultCode = vkQueueSubmit(m_vkGraphicQueue, 1_u32t, &submitInfo, nullptr);
+
+    if (resultCode != VK_SUCCESS)
+    {
+        log << "Renderer::copyBuffer(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
+        std::terminate();
+    }
+    vkQueueWaitIdle(m_vkGraphicQueue);
+    vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, 1_u32t, &commandBuffer);
+}
+
+void Renderer::createVertexBuffer()
+{
+    VkDeviceSize size = sizeof(Vertex) * vertices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(size,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer,
+                 stagingBufferMemory);
+
+    void* bufferMemory;
+    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u32t, size, 0, &bufferMemory);
+    memcpy(bufferMemory, vertices.data(), size);
+    vkUnmapMemory(m_vkDevice, stagingBufferMemory);
+
+    createBuffer(size,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 m_vkVertexBuffer,
+                 m_vkVertexBufferMemory);
+
+    copyBuffer(stagingBuffer, m_vkVertexBuffer, size);
+
+
+    vkDestroyBuffer(m_vkDevice, stagingBuffer, nullptr);
+    vkFreeMemory(m_vkDevice, stagingBufferMemory, nullptr);
 }
 
 uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties)
