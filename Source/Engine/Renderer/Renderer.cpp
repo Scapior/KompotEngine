@@ -8,11 +8,39 @@ PFN_vkDestroyDebugUtilsMessengerEXT Renderer::pfn_vkDestroyDebugUtilsMessengerEX
 #endif
 
 const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    {{-0.2f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.2f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.25f, -0.55f}, {1.0f, 0.0f, 0.0f}},
+    {{0.25f, -0.55f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.25f, -0.6f}, {1.0f, 0.0f, 0.0f}},
+    {{0.25f, -0.6f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.15f, -0.8f}, {1.0f, 0.0f, 0.0f}},
+    {{0.15f, -0.8f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.09f, -0.87f}, {1.0f, 0.0f, 0.0f}},
+    {{0.09f, -0.87f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.04f, -0.9f}, {1.0f, 0.0f, 0.0f}},
+    {{0.04f, -0.9f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.2f, 0.2f}, {1.0f, 0.0f, 0.0f}},
+    {{0.2f, 0.2f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.4f, 0.3f}, {1.0f, 0.0f, 0.0f}},
+    {{0.4f, 0.3f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.47f, 0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.47f, 0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.47f, 0.65f}, {1.0f, 0.0f, 0.0f}},
+    {{0.47f, 0.65f}, {1.0f, 0.0f, 0.0f}},
+    {{-0.4f, 0.85f}, {1.0f, 0.0f, 0.0f}},
+    {{0.4f, 0.85f}, {1.0f, 0.0f, 0.0f}}
 };
 
+const std::vector<uint16_t> verticesIndices = {
+    0, 2, 3, 3, 1, 0, 2, 4, 5, 5, 3, 2, 4, 6, 7, 4, 7, 5, 6, 8, 9, 9, 7, 6, 8, 10, 11, 11, 9, 8,
+    12, 0, 1, 1, 13, 12,
+    14, 12, 13, 13, 15, 14,
+    16, 14, 15, 15, 17, 16,
+    18, 16, 17, 17, 19, 18,
+    20, 18, 19, 19, 21, 20
+
+};
 
 Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     : m_glfwWindowHandler(window), m_windowsName(windowName), m_isResized(false)
@@ -28,6 +56,7 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createGraphicsPipeline();
     createCommandPool();
     createVertexBuffer();
+    createIndexBuffer();
     createCommandBuffers();
     createSyncObjects();
 }
@@ -52,6 +81,8 @@ void Renderer::cleanupSwapchain()
 Renderer::~Renderer()
 {
     cleanupSwapchain();
+    vkDestroyBuffer(m_vkDevice, m_vkIndexBuffer, nullptr);
+    vkFreeMemory(m_vkDevice, m_vkIndexBufferMemory, nullptr);
     vkDestroyBuffer(m_vkDevice, m_vkVertexBuffer, nullptr);
     vkFreeMemory(m_vkDevice, m_vkVertexBufferMemory, nullptr);
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
@@ -728,6 +759,7 @@ void Renderer::createCommandPool()
         std::terminate();
     }
 }
+
 void Renderer::createCommandBuffers()
 {
     Log &log = Log::getInstance();
@@ -771,12 +803,12 @@ void Renderer::createCommandBuffers()
         renderPassBeginInfo.clearValueCount = 1_u32t;
         renderPassBeginInfo.pClearValues = &clearValue;
 
-        vkCmdBeginRenderPass(m_vkCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
         VkDeviceSize offsets[] = {0_u32t};
-        vkCmdBindPipeline(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-        vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_vkVertexBuffer, offsets);
-        vkCmdDraw(m_vkCommandBuffers[i], static_cast<uint32_t>(vertices.size()), 1_u32t, 0_u32t, 0_u32t);
+        vkCmdBeginRenderPass(m_vkCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindPipeline(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
+            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_vkVertexBuffer, offsets);
+            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_vkIndexBuffer, 0_u32t, VK_INDEX_TYPE_UINT16);
+            vkCmdDrawIndexed(m_vkCommandBuffers[i], static_cast<uint32_t>(verticesIndices.size()), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         vkCmdEndRenderPass(m_vkCommandBuffers[i]);
 
         resultCode = vkEndCommandBuffer(m_vkCommandBuffers[i]);
@@ -903,7 +935,7 @@ void Renderer::copyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkD
 
 void Renderer::createVertexBuffer()
 {
-    VkDeviceSize size = sizeof(Vertex) * vertices.size();
+    VkDeviceSize size = sizeof(vertices[0]) * vertices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -926,6 +958,35 @@ void Renderer::createVertexBuffer()
 
     copyBuffer(stagingBuffer, m_vkVertexBuffer, size);
 
+
+    vkDestroyBuffer(m_vkDevice, stagingBuffer, nullptr);
+    vkFreeMemory(m_vkDevice, stagingBufferMemory, nullptr);
+}
+
+void Renderer::createIndexBuffer()
+{
+    VkDeviceSize size = sizeof(verticesIndices[0]) * verticesIndices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    createBuffer(size,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer,
+                 stagingBufferMemory);
+
+    void *bufferMemory;
+    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u32t, size, 0_u32t, &bufferMemory);
+    memcpy(bufferMemory, verticesIndices.data(), size);
+    vkUnmapMemory(m_vkDevice, stagingBufferMemory);
+
+    createBuffer(size,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 m_vkIndexBuffer,
+                 m_vkIndexBufferMemory);
+    copyBuffer(stagingBuffer, m_vkIndexBuffer, size);
 
     vkDestroyBuffer(m_vkDevice, stagingBuffer, nullptr);
     vkFreeMemory(m_vkDevice, stagingBufferMemory, nullptr);

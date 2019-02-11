@@ -136,6 +136,9 @@ private:
 
     VkBuffer m_vkVertexBuffer;
     VkDeviceMemory m_vkVertexBufferMemory;
+    VkBuffer m_vkIndexBuffer;
+    VkDeviceMemory m_vkIndexBufferMemory;
+
 
     void createVkInstance();
     void setupDebugCallback();
@@ -161,6 +164,7 @@ private:
     void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
     void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
     void createVertexBuffer();
+    void createIndexBuffer();
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
 };
 
