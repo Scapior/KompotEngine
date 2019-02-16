@@ -5,7 +5,9 @@
 #include <vulkan/vulkan.hpp>
 #include <boost/algorithm/string.hpp>
 #include <GLFW/glfw3.h>
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include <limits>
 #include <string>
@@ -14,12 +16,20 @@
 #include <optional>
 #include <set>
 #include <array>
+#include <chrono>
 
 namespace KompotEngine
 {
 
 namespace Renderer
 {
+
+struct UnifromBufferObject
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+};
 
 struct Vertex
 {
@@ -118,6 +128,9 @@ private:
     std::vector<VkFramebuffer> m_vkFramebuffers;
     VkRenderPass    m_vkRenderPass;
 
+    VkDescriptorSetLayout m_vkDescriptorSetLayout;
+    VkDescriptorPool m_vkDescriptorPool;
+    std::vector<VkDescriptorSet> m_vkDescriptorSets;
     VkPipelineLayout m_vkPipelineLayout;
     VkPipeline       m_vkPipeline;
 
@@ -139,6 +152,9 @@ private:
     VkBuffer m_vkIndexBuffer;
     VkDeviceMemory m_vkIndexBufferMemory;
 
+    std::vector<VkBuffer>       m_vkUniformMatricesBuffers;
+    std::vector<VkDeviceMemory> m_vkUniformMatricesBuffersMemory;
+
 
     void createVkInstance();
     void setupDebugCallback();
@@ -153,6 +169,10 @@ private:
     void createSwapchain();
     void createRenderPass();
     void createFramebuffers();
+    void createDescriptorSetLayout();
+    void createUniformBuffer();
+    void createDescriptorPool();
+    void createDescriptorSets();
     void createGraphicsPipeline();
     void createCommandPool();
     void createCommandBuffers();
@@ -166,6 +186,7 @@ private:
     void createVertexBuffer();
     void createIndexBuffer();
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
+    void updateUniformBuffer(uint32_t);
 };
 
 
