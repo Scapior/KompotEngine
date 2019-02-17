@@ -1,5 +1,9 @@
 #include "Renderer.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_WINDOWS_UTF8
+#include <stb_image.h>
+
 using namespace KompotEngine::Renderer;
 
 #ifdef ENGINE_DEBUG
@@ -30,6 +34,9 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createDescriptorSetLayout();
     createGraphicsPipeline();
     createCommandPool();
+    createTextureImage();
+    createTextureImageView();
+    createTextureSampler();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffer();
@@ -66,6 +73,10 @@ Renderer::~Renderer()
         vkFreeMemory(m_vkDevice, m_vkUniformMatricesBuffersMemory[i], nullptr);
     }
     vkDestroyDescriptorPool(m_vkDevice, m_vkDescriptorPool, nullptr);
+    vkDestroySampler(m_vkDevice, m_vkTextureSampler, nullptr);
+    vkDestroyImageView(m_vkDevice, m_vkTextureImageView, nullptr);
+    vkDestroyImage(m_vkDevice, m_vkTextureImage, nullptr);
+    vkFreeMemory(m_vkDevice, m_vkTextureImageMemory, nullptr);
     vkDestroyBuffer(m_vkDevice, m_vkIndexBuffer, nullptr);
     vkFreeMemory(m_vkDevice, m_vkIndexBufferMemory, nullptr);
     vkDestroyBuffer(m_vkDevice, m_vkVertexBuffer, nullptr);
@@ -121,7 +132,7 @@ void Renderer::run()
         submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
         vkResetFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
-        resultCode = vkQueueSubmit(m_vkGraphicQueue, 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]);
+        resultCode = vkQueueSubmit(m_vkGraphicsQueue, 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]);
         if (resultCode != VK_SUCCESS)
         {
             log << "Renderer::run(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
@@ -136,7 +147,7 @@ void Renderer::run()
         presentInfo.pSwapchains = &m_vkSwapchain;
         presentInfo.pImageIndices = &imageIndex;
 
-        resultCode = vkQueuePresentKHR(m_vkGraphicQueue, &presentInfo);
+        resultCode = vkQueuePresentKHR(m_vkGraphicsQueue, &presentInfo);
         if (resultCode == VK_ERROR_OUT_OF_DATE_KHR ||
             resultCode == VK_SUBOPTIMAL_KHR ||
             m_isResized)
@@ -149,7 +160,7 @@ void Renderer::run()
             log << "Renderer::run(): vkQueuePresentKHR failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
-        vkQueueWaitIdle(m_vkGraphicQueue);
+        vkQueueWaitIdle(m_vkGraphicsQueue);
     }
 
     vkDeviceWaitIdle(m_vkDevice);
@@ -394,6 +405,7 @@ void Renderer::createDevice()
     }
 
     VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
+    physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
     std::vector<const char*> extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
@@ -416,7 +428,7 @@ void Renderer::createDevice()
         std::terminate();
     }
 
-    vkGetDeviceQueue(m_vkDevice, familiesIndecies.graphicFamilyIndex.value(), 0_u32t, &m_vkGraphicQueue);
+    vkGetDeviceQueue(m_vkDevice, familiesIndecies.graphicFamilyIndex.value(), 0_u32t, &m_vkGraphicsQueue);
     vkGetDeviceQueue(m_vkDevice, familiesIndecies.presentFamilyIndex.value(), 0_u32t, &m_vkPresentQueue);
 }
 
@@ -512,27 +524,7 @@ void Renderer::createSwapchain()
     m_vkImageViews.resize(swapchainImagesCount);
     for (auto i = 0_u32t; i < swapchainImagesCount; ++i)
     {
-        VkImageViewCreateInfo imageViewInfo = {};
-        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewInfo.image = m_vkImages[i];
-        imageViewInfo.format = m_vkImageFormat;
-        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageViewInfo.subresourceRange.layerCount     = 1_u32t;
-        imageViewInfo.subresourceRange.levelCount     = 1_u32t;
-        imageViewInfo.subresourceRange.baseMipLevel   = 0_u32t;
-        imageViewInfo.subresourceRange.baseArrayLayer = 0_u32t;
-
-        const auto resultCode = vkCreateImageView(m_vkDevice, &imageViewInfo, nullptr, &m_vkImageViews[i]);
-        if (resultCode != VK_SUCCESS)
-        {
-            log << "Renderer::createSwapchain(): Function vkCreateImageView call failed with code " << resultCode << " (i = " << i  << "). Terminated." << std::endl;
-            std::terminate();
-        }
+        createImageView(m_vkImages[i], m_vkImageFormat, m_vkImageViews[i]);
     }
     m_vkViewport.x = 0.0f;
     m_vkViewport.y = 0.0f;
@@ -980,44 +972,11 @@ void Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemor
 
 void Renderer::copyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkDeviceSize size)
 {
-    Log &log = Log::getInstance();
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandPool = m_vkCommandPool;
-    commandBufferAllocateInfo.commandBufferCount = 1_u32t;
-
-    VkCommandBuffer commandBuffer;
-    auto resultCode = vkAllocateCommandBuffers(m_vkDevice, &commandBufferAllocateInfo, &commandBuffer);
-    if (resultCode != VK_SUCCESS)
-    {
-        log << "Renderer::copyBuffer(): Function vkAllocateCommandBuffers failed to call with code " << resultCode << ". Terminated" << std::endl;
-        std::terminate();
-    }
-    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+    auto commandBuffer = beginSingleTimeCommands();
     VkBufferCopy bufferCopyRegion = {};
     bufferCopyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, sourceBuffer, destinationBuffer, 1_u32t, &bufferCopyRegion);
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1_u32t;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    resultCode = vkQueueSubmit(m_vkGraphicQueue, 1_u32t, &submitInfo, nullptr);
-
-    if (resultCode != VK_SUCCESS)
-    {
-        log << "Renderer::copyBuffer(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
-        std::terminate();
-    }
-    vkQueueWaitIdle(m_vkGraphicQueue);
-    vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, 1_u32t, &commandBuffer);
+    endSingleTimeCommands(commandBuffer);
 }
 
 void Renderer::createVertexBuffer()
@@ -1033,7 +992,7 @@ void Renderer::createVertexBuffer()
                  stagingBufferMemory);
 
     void* bufferMemory;
-    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u32t, size, 0, &bufferMemory);
+    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u64t, size, 0_u32t, &bufferMemory);
     memcpy(bufferMemory, vertices.data(), size);
     vkUnmapMemory(m_vkDevice, stagingBufferMemory);
 
@@ -1064,7 +1023,7 @@ void Renderer::createIndexBuffer()
                  stagingBufferMemory);
 
     void *bufferMemory;
-    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u32t, size, 0_u32t, &bufferMemory);
+    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u64t, size, 0_u32t, &bufferMemory);
     memcpy(bufferMemory, verticesIndices.data(), size);
     vkUnmapMemory(m_vkDevice, stagingBufferMemory);
 
@@ -1113,4 +1072,263 @@ void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex)
     vkMapMemory(m_vkDevice, m_vkUniformMatricesBuffersMemory[swapchainImageIndex], 0_u64t, sizeof(UnifromBufferObject), 0_u64t, &uniformData);
     memcpy(uniformData, &mvpMatrix, sizeof(UnifromBufferObject));
     vkUnmapMemory(m_vkDevice, m_vkUniformMatricesBuffersMemory[swapchainImageIndex]);
+}
+
+
+void Renderer::createImage(uint32_t width,
+                 uint32_t height,
+                 VkFormat format,
+                 VkImageTiling tiling,
+                 VkImageUsageFlags usage,
+                 VkMemoryPropertyFlags properties,
+                 VkImage &image,
+                 VkDeviceMemory &imageMemory)
+{
+    VkImageCreateInfo imageCreateInfo = {};
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format = format;
+    imageCreateInfo.extent.width = width;
+    imageCreateInfo.extent.height = height;
+    imageCreateInfo.extent.depth = 1_u32t;
+    imageCreateInfo.mipLevels = 1_u32t;
+    imageCreateInfo.arrayLayers = 1_u32t;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling = tiling;
+    imageCreateInfo.usage = usage;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    auto resultCode = vkCreateImage(m_vkDevice, &imageCreateInfo, nullptr, &image);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log &log = Log::getInstance();
+        log << "Renderer::createImage(): Function vkCreateImage call failed with code " << resultCode << ". Terminated." << std::endl;
+        std::terminate();
+    }
+
+    VkMemoryRequirements memoryRequirements;
+    vkGetImageMemoryRequirements(m_vkDevice, image, &memoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocateInfo = {};
+    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocateInfo.allocationSize = memoryRequirements.size;
+    memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
+
+    resultCode = vkAllocateMemory(m_vkDevice, &memoryAllocateInfo, nullptr, &imageMemory);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log &log = Log::getInstance();
+        log << "Renderer::createImage(): Function vkAllocateMemory call failed with code " << resultCode << ". Terminated." << std::endl;
+        std::terminate();
+    }
+
+    vkBindImageMemory(m_vkDevice, image, imageMemory, 0_u64t);
+}
+
+void Renderer::createTextureImage()
+{
+    int textureWidth, textureHeight, textureChannels;
+    stbi_uc *pixelsData = stbi_load("texture.jpg", &textureWidth, &textureHeight, &textureChannels, STBI_rgb_alpha);
+    VkDeviceSize imageSize = static_cast<uint64_t>(textureWidth) * static_cast<uint64_t>(textureHeight) * 4_u64t;
+
+    if (!pixelsData)
+    {
+        Log &log = Log::getInstance();
+        log << "Renderer::createTextureImage(): Failed to load texture image." << std::endl;
+        std::terminate();
+    }
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    createBuffer(imageSize,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer,
+                 stagingBufferMemory);
+    void *stagingBufferData;
+    vkMapMemory(m_vkDevice, stagingBufferMemory, 0_u64t, imageSize, 0_u64t, &stagingBufferData);
+    memcpy(stagingBufferData, pixelsData, imageSize);
+    vkUnmapMemory(m_vkDevice, stagingBufferMemory);
+    stbi_image_free(pixelsData);
+
+
+    createImage(static_cast<uint32_t>(textureWidth),
+                static_cast<uint32_t>(textureHeight),
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                m_vkTextureImage,
+                m_vkTextureImageMemory);
+
+    transitionImageLayout(m_vkTextureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    copyBufferToImage(stagingBuffer, m_vkTextureImage, static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
+    transitionImageLayout(m_vkTextureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    vkDestroyBuffer(m_vkDevice, stagingBuffer, nullptr);
+    vkFreeMemory(m_vkDevice, stagingBufferMemory, nullptr);
+}
+
+VkCommandBuffer Renderer::beginSingleTimeCommands()
+{
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandPool = m_vkCommandPool;
+    commandBufferAllocateInfo.commandBufferCount = 1_u32t;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(m_vkDevice, &commandBufferAllocateInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+    return commandBuffer;
+}
+
+void Renderer::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(m_vkGraphicsQueue, 1, &submitInfo, nullptr);
+    vkQueueWaitIdle(m_vkGraphicsQueue);
+
+    vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, 1, &commandBuffer);
+}
+
+void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+{
+    auto commandBuffer = beginSingleTimeCommands();
+
+    VkBufferImageCopy region = {};
+    region.bufferOffset = 0_u32t;
+    region.bufferRowLength = 0_u32t;
+    region.bufferImageHeight = 0_u32t;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0_u32t;
+    region.imageSubresource.baseArrayLayer = 0_u32t;
+    region.imageSubresource.layerCount = 1_u32t;
+    region.imageOffset = {0_32t, 0_32t, 0_32t};
+    region.imageExtent.width = width;
+    region.imageExtent.height = height;
+    region.imageExtent.depth = 1_u32t;
+
+    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1_u32t, &region);
+
+    endSingleTimeCommands(commandBuffer);
+}
+
+void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+    VkImageMemoryBarrier imageMemoryBarrier = {};
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imageMemoryBarrier.oldLayout = oldLayout;
+    imageMemoryBarrier.newLayout = newLayout;
+    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.image = image;
+    imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageMemoryBarrier.subresourceRange.baseMipLevel = 0_u32t;
+    imageMemoryBarrier.subresourceRange.levelCount = 1_u32t;
+    imageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
+    imageMemoryBarrier.subresourceRange.layerCount = 1_u32t;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+        imageMemoryBarrier.srcAccessMask = 0_u32t;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else
+    {
+        Log &log = Log::getInstance();
+        log << "Renderer::transitionImageLayout(): Failed to load texture image." << std::endl;
+        std::terminate();
+    }
+
+    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0_u32t, 0_u32t, nullptr, 0_u32t, nullptr, 1_u32t, &imageMemoryBarrier);
+    endSingleTimeCommands(commandBuffer);
+}
+
+void Renderer::createImageView(VkImage image, VkFormat format, VkImageView &imageView)
+{
+    VkImageViewCreateInfo imageViewCreateInfo = {};
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewCreateInfo.image = image;
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format = format;
+    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0_u32t;
+    imageViewCreateInfo.subresourceRange.levelCount = 1_u32t;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0_u32t;
+    imageViewCreateInfo.subresourceRange.layerCount = 1_u32t;
+
+
+    const auto resultCode = vkCreateImageView(m_vkDevice, &imageViewCreateInfo, nullptr, &imageView);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log &log = Log::getInstance();
+        log << "Renderer::createImageView(): Failed to load texture image view." << std::endl;
+        std::terminate();
+    }
+}
+
+void Renderer::createTextureImageView()
+{
+    createImageView(m_vkTextureImage, VK_FORMAT_R8G8B8A8_UNORM, m_vkTextureImageView);
+}
+
+void Renderer::createTextureSampler()
+{
+    VkSamplerCreateInfo samplerCreateInfo = {};
+    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.mipLodBias = 0.0f;
+    samplerCreateInfo.anisotropyEnable = VK_TRUE;
+    samplerCreateInfo.maxAnisotropy = 16_u32t;
+    samplerCreateInfo.compareEnable = VK_FALSE;
+    samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+    const auto resultCode = vkCreateSampler(m_vkDevice, &samplerCreateInfo, nullptr, &m_vkTextureSampler);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log &log = Log::getInstance();
+        log << "Renderer::createTextureSampler(): Function vkCreateImageView call failed with code " << resultCode << ". Terminated." << std::endl;
+        std::terminate();
+    }
 }

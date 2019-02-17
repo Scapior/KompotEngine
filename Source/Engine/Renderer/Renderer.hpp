@@ -113,7 +113,7 @@ private:
     VkPhysicalDevice m_vkPhysicalDevice; // will be implicitly destroyed with VkInstance
     VkDevice         m_vkDevice;
 
-    VkQueue          m_vkGraphicQueue;
+    VkQueue          m_vkGraphicsQueue;
     VkQueue          m_vkPresentQueue;
 
     VkFormat         m_vkImageFormat;
@@ -155,6 +155,10 @@ private:
     std::vector<VkBuffer>       m_vkUniformMatricesBuffers;
     std::vector<VkDeviceMemory> m_vkUniformMatricesBuffersMemory;
 
+    VkImage m_vkTextureImage;
+    VkImageView m_vkTextureImageView;
+    VkDeviceMemory m_vkTextureImageMemory;
+    VkSampler m_vkTextureSampler;
 
     void createVkInstance();
     void setupDebugCallback();
@@ -187,6 +191,15 @@ private:
     void createIndexBuffer();
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
     void updateUniformBuffer(uint32_t);
+    void createTextureImage();
+    void createTextureImageView();
+    void createImage(uint32_t, uint32_t, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer);
+    void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
+    void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout);
+    void createImageView(VkImage, VkFormat, VkImageView&);
+    void createTextureSampler();
 };
 
 
