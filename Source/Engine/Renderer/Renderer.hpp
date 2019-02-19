@@ -6,6 +6,7 @@
 #include <boost/algorithm/string.hpp>
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
@@ -33,7 +34,7 @@ struct UnifromBufferObject
 
 struct Vertex
 {
-    glm::vec2 position;
+    glm::vec3 position;
     glm::vec3 color;
     glm::vec2 textureCoordinates;
 
@@ -51,7 +52,7 @@ struct Vertex
         std::array<VkVertexInputAttributeDescription, 3_u64t> vertexInputAttributeDescription;
         vertexInputAttributeDescription[0].binding = 0_u32t;
         vertexInputAttributeDescription[0].location = 0_u32t;
-        vertexInputAttributeDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
+        vertexInputAttributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         vertexInputAttributeDescription[0].offset = offsetof(Vertex, position);
 
         vertexInputAttributeDescription[1].binding = 0_u32t;
@@ -167,6 +168,10 @@ private:
     VkDeviceMemory m_vkTextureImageMemory;
     VkSampler m_vkTextureSampler;
 
+    VkImage m_vkDepthImage;
+    VkDeviceMemory m_vkDepthImageMemory;
+    VkImageView m_vkDepthImageView;
+
     void createVkInstance();
     void setupDebugCallback();
     void createSurface();
@@ -205,8 +210,10 @@ private:
     void endSingleTimeCommands(VkCommandBuffer);
     void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
     void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout);
-    void createImageView(VkImage, VkFormat, VkImageView&);
+    void createImageView(VkImage, VkFormat, VkImageAspectFlags, VkImageView&);
     void createTextureSampler();
+
+    void createDepthResources();
 };
 
 
