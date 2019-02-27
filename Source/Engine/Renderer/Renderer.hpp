@@ -163,6 +163,7 @@ private:
     std::vector<VkBuffer>       m_vkUniformMatricesBuffers;
     std::vector<VkDeviceMemory> m_vkUniformMatricesBuffersMemory;
 
+    uint32_t m_vkTextureImageMipLevels;
     VkImage m_vkTextureImage;
     VkImageView m_vkTextureImageView;
     VkDeviceMemory m_vkTextureImageMemory;
@@ -205,15 +206,17 @@ private:
     void updateUniformBuffer(uint32_t);
     void createTextureImage();
     void createTextureImageView();
-    void createImage(uint32_t, uint32_t, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
+    void createImage(uint32_t, uint32_t, uint32_t, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer);
     void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
-    void transitionImageLayout(VkImage, VkFormat, VkImageLayout, VkImageLayout);
-    void createImageView(VkImage, VkFormat, VkImageAspectFlags, VkImageView&);
+    void transitionImageLayout(VkImage, uint32_t, VkFormat, VkImageLayout, VkImageLayout);
+    void createImageView(VkImage, uint32_t, VkFormat, VkImageAspectFlags, VkImageView&);
     void createTextureSampler();
 
     void createDepthResources();
+
+    void generateMipmaps(VkImage, int32_t, int32_t, uint32_t);
 };
 
 
