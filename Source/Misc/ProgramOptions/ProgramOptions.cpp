@@ -123,7 +123,7 @@ bool ProgramOptions::Options::contains(const std::string &key) const
 {
     for (const auto& option : m_options)
     {
-        if (boost::iequals(option.key, key))
+        if (caseInsensitiveStringEquals(option.key, key))
         {
             return true;
         }
@@ -135,7 +135,7 @@ void  ProgramOptions::Options::setByKeyFromStream(const std::string &key, std::s
 {
     for (auto& option : m_options)
     {
-        if (boost::iequals(option.key, key))
+        if (caseInsensitiveStringEquals(option.key, key))
         {
             option.set(optionsStream);
             return;
@@ -147,7 +147,7 @@ bool ProgramOptions::Options::keyIsBoolean(const std::string &key) const
 {
     for (const auto& option : m_options)
     {
-        if (boost::iequals(option.key, key))
+        if (caseInsensitiveStringEquals(option.key, key))
         {
             return std::holds_alternative<bool>(option.value);
         }
@@ -183,11 +183,11 @@ void ProgramOptions::loadFromArguments(int argc, char **argv)
             {
                 const std::string nextArgument(argv[++i]);
 
-                if (boost::iequals(nextArgument, "1") || boost::iequals(nextArgument, "true"))
+                if (caseInsensitiveStringEquals(nextArgument, "1") || caseInsensitiveStringEquals(nextArgument, "true"))
                 {
                     argumentStream << argument << ' ' << true << ' ';
                 }
-                else if (boost::iequals(nextArgument, "0") || boost::iequals(nextArgument, "false"))
+                else if (caseInsensitiveStringEquals(nextArgument, "0") || caseInsensitiveStringEquals(nextArgument, "false"))
                 {
                     argumentStream << argument << ' ' << false << ' ';
                 }
@@ -216,22 +216,20 @@ void ProgramOptions::loadFromFile(std::ifstream& inputStream)
         {
             continue;
         }
-        std::string key = buffer.substr(0u, equalsSignPosition);
-        std::string value = buffer.substr(equalsSignPosition + 1u);
-        boost::trim(key);
-        boost::trim(value);
+        const std::string key = trim(buffer.substr(0u, equalsSignPosition));
+        const std::string value = trim(buffer.substr(equalsSignPosition + 1u));
+
         if (!m_options.contains(key))
         {
             continue;
         }
-
         if (m_options.keyIsBoolean(key))
         {
-            if (boost::iequals(value, "1") || boost::iequals(value, "true"))
+            if (caseInsensitiveStringEquals(value, "1") || caseInsensitiveStringEquals(value, "true"))
             {
                 optionsStream << key << ' ' << true << ' ';
             }
-            else if (boost::iequals(value, "0") || boost::iequals(value, "false"))
+            else if (caseInsensitiveStringEquals(value, "0") || caseInsensitiveStringEquals(value, "false"))
             {
                 optionsStream << key << ' ' << false << ' ';
             }
@@ -261,4 +259,28 @@ void ProgramOptions::SetOptionsFromStringstream(std::stringstream &optionsStream
 void ProgramOptions::notify() const
 {
     m_options.notify();
+}
+
+
+bool ProgramOptions::compareChar(char c1, char c2)
+{
+    if (c1 == c2)
+        return true;
+    else if (std::toupper(c1) == std::toupper(c2))
+        return true;
+    return false;
+}
+
+bool ProgramOptions::caseInsensitiveStringEquals(const std::string & stringLeft, const std::string &stringRight)
+{
+    return ( (stringLeft.size() == stringRight.size() ) &&
+             std::equal(stringLeft.begin(), stringLeft.end(), stringRight.begin(), &compareChar) );
+}
+
+std::string ProgramOptions::trim(const std::string &text)
+{
+    const auto leftSpacePosition = text.find_first_not_of(' ');
+    const auto rightSpacePosition = text.find_last_not_of(' ');
+    auto result = text.substr(leftSpacePosition, text.size() - rightSpacePosition - 1_u64t);
+    return result;
 }

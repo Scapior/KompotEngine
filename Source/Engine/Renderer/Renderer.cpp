@@ -1400,7 +1400,7 @@ void Renderer::createTextureSampler()
     samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerCreateInfo.mipLodBias = 0.0f;
-    samplerCreateInfo.minLod = static_cast<float>(m_vkTextureImageMipLevels / 2u);
+    samplerCreateInfo.minLod = 0.0f;
     samplerCreateInfo.maxLod = static_cast<float>(m_vkTextureImageMipLevels);
     samplerCreateInfo.anisotropyEnable = VK_TRUE;
     samplerCreateInfo.maxAnisotropy = 16_u32t;

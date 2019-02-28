@@ -1,11 +1,11 @@
 #pragma once
 
 #include "global.hpp"
-#include <boost/algorithm/string.hpp>
 #include <string>
 #include <variant>
 #include <fstream>
 #include <sstream>
+#include <cctype>
 
 namespace KompotEngine
 {
@@ -67,6 +67,11 @@ public:
     void loadFromFile(std::ifstream&);
 
     void notify() const;
+
+    static bool compareChar(char, char);
+    static bool caseInsensitiveStringEquals(const std::string&, const std::string&);
+    static std::string trim(const std::string&);
+
 };
 
 } // namespace KompotEngine

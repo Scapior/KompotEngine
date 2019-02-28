@@ -3,7 +3,6 @@
 #include "global.hpp"
 #include "Shader.hpp"
 #include <vulkan/vulkan.hpp>
-#include <boost/algorithm/string.hpp>
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
