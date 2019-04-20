@@ -21,9 +21,11 @@ set(SOURCES
 
 set(HEADERS
     Source/global.hpp
+    Source/BuildVersion.hpp
     Source/Engine/Engine.hpp
     Source/Engine/Renderer/Renderer.hpp
     Source/Engine/Renderer/Shader.hpp
+    Source/Engine/Renderer/Texture.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
     Source/Misc/ProgramOptions/ProgramOptions.hpp
@@ -88,6 +90,14 @@ add_executable(
     ${HEADERS}
     ${GLSL_SOURCE_FILES} # for visibility in qt creator project
 )
+
+add_custom_command(
+    TARGET KompotEngine
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND}
+        -P "${PROJECT_SOURCE_DIR}/build_version.cmake"
+)
+
 add_dependencies(KompotEngine Shaders)
 
 target_compile_definitions(

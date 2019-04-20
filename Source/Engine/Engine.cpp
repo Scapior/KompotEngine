@@ -34,6 +34,14 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
         std::terminate();
     }
 
+#ifdef ENGINE_DEBUG
+    std::stringstream newWindowTitile;
+    newWindowTitile << m_instanceName
+                    << " - build " << std::to_string(BUILD_VERSION)
+                    << std::hex << " [" << GIT_HASH_SHORT << "]" << std::dec;
+    glfwSetWindowTitle(m_glfwWindowHandler, newWindowTitile.str().c_str());
+#endif
+
     m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_instanceName);
     log << "Renderer successfully initialized." << std::endl;
 
