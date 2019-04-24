@@ -7,6 +7,8 @@
 #include <sstream>
 #include <cctype>
 
+#include <typeinfo>
+
 namespace KompotEngine
 {
 
@@ -28,15 +30,48 @@ private:
              std::string   description;
              Variant       value;
              mutable PointerVariant pointer;
+
              void notify() const;
              void set(std::stringstream&);
 
         private:
              template<typename T>
-             void setByPointer(const Variant&, PointerVariant&) const;
+             static void setByPointer(const Variant&, PointerVariant&);
 
              template<typename T>
-             void setFromStream(std::stringstream&);
+             static void setFromStream(Variant&, const T&);
+
+             struct visitorPointer
+             {
+                 template< typename T >
+                 void operator() ( const T &value, PointerVariant pointer) const
+                 {
+                     setByPointer<T>(value, pointer);
+                 }
+             };
+
+             struct visitorStream
+             {
+                 visitorStream(std::stringstream &stream, Variant &var)
+                     : optionsStream(stream), variant(var) { }
+
+                 template<typename T>
+                 void operator() (const T&) const
+                 {
+                     T value;
+                     optionsStream >> value;
+                     if (optionsStream.fail())
+                     {
+                         optionsStream.clear();
+                         return;
+                     }
+                     setFromStream<T>(variant, value);
+                 }
+             private:
+                 std::stringstream &optionsStream;
+                 Variant &variant;
+             };
+
         };
         std::vector<Option> m_options;
     public:

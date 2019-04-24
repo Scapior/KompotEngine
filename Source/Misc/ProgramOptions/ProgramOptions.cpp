@@ -3,118 +3,33 @@
 using namespace KompotEngine;
 
 template<typename T>
-void ProgramOptions::Options::Option::setByPointer(const Variant &variant, PointerVariant &pointerVariant) const
+void ProgramOptions::Options::Option::setByPointer(const Variant &variant, PointerVariant &pointerVariant)
 {
     T &reference = *std::get<T*>(pointerVariant);
     reference = std::get<T>(variant);
-    Log::getInstance() << "Program options loaded: " << key << " = " << reference << std::endl;
-}
-
-template<typename T>
-void ProgramOptions::Options::Option::setFromStream(std::stringstream &optionsStream)
-{
-    T valueBuffer;
-    optionsStream >> valueBuffer;
-    if (optionsStream.fail())
-    {
-        optionsStream.clear();
-        return;
-    }
-    value = valueBuffer;
 }
 
 void ProgramOptions::Options::Option::notify() const
-{   
-    if (std::holds_alternative<std::string>(value))
-    {
-        setByPointer<std::string>(value, pointer);
-    }
-    else if(std::holds_alternative<bool>(value))
-    {
-        setByPointer<bool>(value, pointer);
-    }
-    else if(std::holds_alternative<int8_t>(value))
-    {
-        setByPointer<int8_t>(value, pointer);
-    }
-    else if(std::holds_alternative<int16_t>(value))
-    {
-        setByPointer<int16_t>(value, pointer);
-    }
-    else if(std::holds_alternative<int32_t>(value))
-    {
-        setByPointer<int32_t>(value, pointer);
-    }
-    else if(std::holds_alternative<int64_t>(value))
-    {
-        setByPointer<int64_t>(value, pointer);
-    }
-    else if(std::holds_alternative<uint8_t>(value))
-    {
-        setByPointer<uint8_t>(value, pointer);
-    }
-    else if(std::holds_alternative<uint16_t>(value))
-    {
-        setByPointer<uint16_t>(value, pointer);
-    }
-    else if(std::holds_alternative<uint32_t>(value))
-    {
-        setByPointer<uint32_t>(value, pointer);
-    }
-    else if(std::holds_alternative<uint64_t>(value))
-    {
-        setByPointer<uint64_t>(value, pointer);
-    }
+{
+    std::visit(visitorPointer{}, value, pointer);
+}
+
+template<typename T>
+void ProgramOptions::Options::Option::setFromStream(Variant &variant, const T &value)
+{
+    variant = value;
 }
 
 void ProgramOptions::Options::Option::set(std::stringstream &optionsStream)
 {
-    if (std::holds_alternative<std::string>(value))
-    {
-        setFromStream<std::string>(optionsStream);
-    }
-    else if(std::holds_alternative<bool>(value))
-    {
-        setFromStream<bool>(optionsStream);
-    }
-    else if(std::holds_alternative<int8_t>(value))
-    {
-        setFromStream<int8_t>(optionsStream);
-    }
-    else if(std::holds_alternative<int16_t>(value))
-    {
-        setFromStream<int16_t>(optionsStream);
-    }
-    else if(std::holds_alternative<int32_t>(value))
-    {
-        setFromStream<int32_t>(optionsStream);
-    }
-    else if(std::holds_alternative<int64_t>(value))
-    {
-        setFromStream<int64_t>(optionsStream);
-    }
-    else if(std::holds_alternative<uint8_t>(value))
-    {
-        setFromStream<uint8_t>(optionsStream);
-    }
-    else if(std::holds_alternative<uint16_t>(value))
-    {
-        setFromStream<uint16_t>(optionsStream);
-    }
-    else if(std::holds_alternative<uint32_t>(value))
-    {
-        setFromStream<uint32_t>(optionsStream);
-    }
-    else if(std::holds_alternative<uint64_t>(value))
-    {
-        setFromStream<uint64_t>(optionsStream);
-    }
+    std::visit(visitorStream{optionsStream, value}, value);
 }
 
 void ProgramOptions::Options::notify() const
 {
     for (const auto& option : m_options)
     {
+
         option.notify();
     }
 }

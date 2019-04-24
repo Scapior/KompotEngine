@@ -88,7 +88,8 @@ add_executable(
     KompotEngine
     ${SOURCES}
     ${HEADERS}
-    ${GLSL_SOURCE_FILES} # for visibility in qt creator project
+    ${GLSL_SOURCE_FILES}
+    build_version.cmake # for visibility in qt creator project
 )
 
 add_custom_command(

@@ -16,8 +16,7 @@ bool KompotEngine::Renderer::Shader::load()
     std::ifstream file("Shaders/"s + m_filename, std::ios::ate | std::ios::binary);
     if (!file.is_open())
     {
-        Log &log = Log::getInstance();
-        log << "Couldn't open shader file " << m_filename << std::endl;
+        Log::getInstance() << "Couldn't open shader file " << m_filename << std::endl;
         return false;
     }
     const auto fileSize = file.tellg();
@@ -26,13 +25,13 @@ bool KompotEngine::Renderer::Shader::load()
     file.read(buffer.data(), fileSize);
     file.close();
 
-    VkShaderModuleCreateInfo shaderInfo = {};
-    shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shaderInfo.codeSize = static_cast<unsigned long>(fileSize);
-    shaderInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
+    VkShaderModuleCreateInfo vkShaderModuleCreateInfo = {};
+    vkShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    vkShaderModuleCreateInfo.codeSize = static_cast<unsigned long>(fileSize);
+    vkShaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
 
-    const auto resultCode = vkCreateShaderModule(m_device, &shaderInfo, nullptr, &m_shaderModule);
-    return resultCode == VK_SUCCESS;
+    return VK_SUCCESS == vkCreateShaderModule(m_device, &vkShaderModuleCreateInfo, nullptr, &m_shaderModule);
+
 }
 
 VkShaderModule KompotEngine::Renderer::Shader::get() const

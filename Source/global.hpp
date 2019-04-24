@@ -14,8 +14,8 @@ using namespace std::chrono_literals; // 2s, 5 ms
 
 static const int8_t ENGINE_VESRION_MAJOR = 0;
 static const int8_t ENGINE_VESRION_MINOR = 0;
-static const int8_t ENGINE_VESRION_PATCH = 0;
-static const std::string ENGINE_NAME = "KompotEngine"s;
+static const int8_t ENGINE_VESRION_PATCH = 1;
+static const char * ENGINE_NAME = "KompotEngine";
 
 
 constexpr int8_t operator "" _8t(unsigned long long value)
