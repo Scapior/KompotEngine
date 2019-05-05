@@ -1,7 +1,5 @@
 #include "ProgramOptions.hpp"
 
-using namespace KompotEngine;
-
 template<typename T>
 void ProgramOptions::Options::Option::setByPointer(const Variant &variant, PointerVariant &pointerVariant)
 {

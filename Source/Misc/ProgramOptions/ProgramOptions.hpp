@@ -9,9 +9,6 @@
 
 #include <typeinfo>
 
-namespace KompotEngine
-{
-
 class ProgramOptions
 {
 private:
@@ -108,5 +105,3 @@ public:
     static std::string trim(const std::string&);
 
 };
-
-} // namespace KompotEngine

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 if (WIN32)
     list(APPEND CMAKE_CXX_FLAGS "/EHr /std:c++17")
 else()
-    list(APPEND CMAKE_CXX_FLAGS "-pthread -std=c++17 ${CMAKE_CXX_FLAGS} -fno-exceptions")
+    list(APPEND CMAKE_CXX_FLAGS "-pthread -fno-exceptions -std=c++17 ${CMAKE_CXX_FLAGS}")
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../)
@@ -14,6 +14,8 @@ set(SOURCES
     Source/Engine/Engine.cpp
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/Shader.cpp
+    Source/Engine/Renderer/Model.cpp
+    Source/Engine/IO/ModelsLoader.cpp
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
     Source/Misc/ProgramOptions/ProgramOptions.cpp
@@ -26,6 +28,9 @@ set(HEADERS
     Source/Engine/Renderer/Renderer.hpp
     Source/Engine/Renderer/Shader.hpp
     Source/Engine/Renderer/Texture.hpp
+    Source/Engine/Renderer/Model.hpp
+    Source/Engine/IO/ModelsLoader.hpp
+    Source/Engine/IO/IOErrors.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
     Source/Misc/ProgramOptions/ProgramOptions.hpp
@@ -123,5 +128,6 @@ else()
             ${GLFW_LIBRARIES}
             ${PYTHON_LIBRARIES}
             vulkan
+            stdc++fs
     )
 endif()

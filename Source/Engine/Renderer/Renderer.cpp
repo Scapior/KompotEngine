@@ -11,17 +11,6 @@ PFN_vkCreateDebugUtilsMessengerEXT  Renderer::pfn_vkCreateDebugUtilsMessengerEXT
 PFN_vkDestroyDebugUtilsMessengerEXT Renderer::pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
 #endif
 
-const std::vector<Vertex> vertices = {
-    {{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-};
-
-const std::vector<uint32_t> verticesIndices = {
-    0, 1, 2, 1, 3, 2
-};
-
 Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     : m_glfwWindowHandler(window), m_windowsName(windowName), m_isResized(false)
 {
@@ -38,6 +27,11 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
+
+    IO::ModelsLoader modelsLoader;
+    modelsLoader.loadFile("cube.kem");
+    m_model = modelsLoader.generateModel();
+
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffer();
@@ -934,7 +928,7 @@ void Renderer::createCommandBuffers()
             vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_vkVertexBuffer, vkOffsetsSizes);
             vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_vkIndexBuffer, 0_u32t, VK_INDEX_TYPE_UINT32);
             vkCmdBindDescriptorSets(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, &m_vkDescriptorSets[i],  0_u32t, nullptr);
-            vkCmdDrawIndexed(m_vkCommandBuffers[i], static_cast<uint32_t>(verticesIndices.size()), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
+            vkCmdDrawIndexed(m_vkCommandBuffers[i], m_model->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         vkCmdEndRenderPass(m_vkCommandBuffers[i]);
 
         resultCode = vkEndCommandBuffer(m_vkCommandBuffers[i]);
@@ -1028,7 +1022,7 @@ void Renderer::copyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkD
 
 void Renderer::createVertexBuffer()
 {
-    VkDeviceSize vkBufferSize = sizeof(vertices[0]) * vertices.size();
+    VkDeviceSize vkBufferSize = m_model->getVerticiesSizeForBuffer();
 
     VkBuffer vkStagingBuffer;
     VkDeviceMemory vkStagingBufferDeviceMemory;
@@ -1040,7 +1034,7 @@ void Renderer::createVertexBuffer()
 
     void* bufferMemory;
     vkMapMemory(m_vkDevice, vkStagingBufferDeviceMemory, 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
-    memcpy(bufferMemory, vertices.data(), vkBufferSize);
+    memcpy(bufferMemory, m_model->getVerticesData(), vkBufferSize);
     vkUnmapMemory(m_vkDevice, vkStagingBufferDeviceMemory);
 
     createBuffer(vkBufferSize,
@@ -1058,7 +1052,7 @@ void Renderer::createVertexBuffer()
 
 void Renderer::createIndexBuffer()
 {
-    VkDeviceSize vkBufferSize = sizeof(verticesIndices[0]) * verticesIndices.size();
+    VkDeviceSize vkBufferSize = m_model->getVerticiesIndexesSizeForBuffer();
 
     VkBuffer vkStagingBuffer;
     VkDeviceMemory vkStagingBufferDeviceMemory;
@@ -1071,7 +1065,7 @@ void Renderer::createIndexBuffer()
 
     void *bufferMemory;
     vkMapMemory(m_vkDevice, vkStagingBufferDeviceMemory, 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
-    memcpy(bufferMemory, verticesIndices.data(), vkBufferSize);
+    memcpy(bufferMemory, m_model->getVerticiesIndicesData(), vkBufferSize);
     vkUnmapMemory(m_vkDevice, vkStagingBufferDeviceMemory);
 
     createBuffer(vkBufferSize,
@@ -1173,7 +1167,7 @@ void Renderer::createImage(uint32_t width,
 void Renderer::createTextureImage()
 {
     int textureWidth, textureHeight, textureChannels;
-    stbi_uc *pixelsData = stbi_load("texture.jpg", &textureWidth, &textureHeight, &textureChannels, STBI_rgb_alpha);
+    stbi_uc *pixelsData = stbi_load("texture.png", &textureWidth, &textureHeight, &textureChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = static_cast<uint64_t>(textureWidth) * static_cast<uint64_t>(textureHeight) * 4_u64t;
     m_vkTextureImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1_u32t;
     Log::getInstance() << m_vkTextureImageMipLevels << " mip levels" << std::endl;

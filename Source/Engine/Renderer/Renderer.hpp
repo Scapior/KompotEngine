@@ -2,6 +2,8 @@
 
 #include "global.hpp"
 #include "Shader.hpp"
+#include "Model.hpp"
+#include "../IO/ModelsLoader.hpp"
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
@@ -29,43 +31,6 @@ struct UnifromBufferObject
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
-};
-
-struct Vertex
-{
-    glm::vec3 position;
-    glm::vec3 color;
-    glm::vec2 textureCoordinates;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription vertexInputBindingDescritpion = {};
-        vertexInputBindingDescritpion.binding = 0_u32t;
-        vertexInputBindingDescritpion.stride = sizeof(Vertex);
-        vertexInputBindingDescritpion.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        return vertexInputBindingDescritpion;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 3_u64t> getAttributeDescritptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 3_u64t> vertexInputAttributeDescription;
-        vertexInputAttributeDescription[0].binding = 0_u32t;
-        vertexInputAttributeDescription[0].location = 0_u32t;
-        vertexInputAttributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        vertexInputAttributeDescription[0].offset = offsetof(Vertex, position);
-
-        vertexInputAttributeDescription[1].binding = 0_u32t;
-        vertexInputAttributeDescription[1].location = 1_u32t;
-        vertexInputAttributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        vertexInputAttributeDescription[1].offset = offsetof(Vertex, color);
-
-        vertexInputAttributeDescription[2].binding = 0_u32t;
-        vertexInputAttributeDescription[2].location = 2_u32t;
-        vertexInputAttributeDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
-        vertexInputAttributeDescription[2].offset = offsetof(Vertex, textureCoordinates);
-
-        return vertexInputAttributeDescription;
-    }
 };
 
 struct SwapchainSupportDetails
@@ -104,6 +69,9 @@ public:
     void resize();
     ~Renderer();
 private:
+
+    std::shared_ptr<Model> m_model;
+
     // window
     GLFWwindow *m_glfwWindowHandler;
     std::string m_windowsName;
