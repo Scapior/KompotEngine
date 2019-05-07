@@ -1,9 +1,5 @@
 #include "Renderer.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_WINDOWS_UTF8
-#include <stb/stb_image.h>
-
 using namespace KompotEngine::Renderer;
 
 #ifdef ENGINE_DEBUG
@@ -1166,16 +1162,24 @@ void Renderer::createImage(uint32_t width,
 
 void Renderer::createTextureImage()
 {
-    int textureWidth, textureHeight, textureChannels;
-    stbi_uc *pixelsData = stbi_load("texture.png", &textureWidth, &textureHeight, &textureChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = static_cast<uint64_t>(textureWidth) * static_cast<uint64_t>(textureHeight) * 4_u64t;
-    m_vkTextureImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1_u32t;
+    IO::TgaLoader texturesLoader;
+    texturesLoader.loadFile("texture.tga");
+    auto texture = texturesLoader.generateTexture();
+
     Log::getInstance() << m_vkTextureImageMipLevels << " mip levels" << std::endl;
-    if (!pixelsData)
+    if (!texture)
     {
         Log::getInstance() << "Renderer::createTextureImage(): Failed to load texture image." << std::endl;
         std::terminate();
     }
+
+    const auto textureWidth = texture->getWidth();
+    const auto imageSize = texture->getImageSize();
+    const auto textureHeight = texture->getHeight();
+    void *pixelsData = texture->getImageData();
+
+
+    m_vkTextureImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1_u32t;
 
     VkBuffer vkStagingBuffer;
     VkDeviceMemory vkStagingBufferDeviceMemory;
@@ -1189,8 +1193,6 @@ void Renderer::createTextureImage()
     vkMapMemory(m_vkDevice, vkStagingBufferDeviceMemory, 0_u64t, imageSize, 0_u64t, &stagingBufferData);
     memcpy(stagingBufferData, pixelsData, imageSize);
     vkUnmapMemory(m_vkDevice, vkStagingBufferDeviceMemory);
-    stbi_image_free(pixelsData);
-
 
     createImage(static_cast<uint32_t>(textureWidth),
                 static_cast<uint32_t>(textureHeight),

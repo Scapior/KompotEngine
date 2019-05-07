@@ -14,8 +14,11 @@ set(SOURCES
     Source/Engine/Engine.cpp
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/Shader.cpp
+    Source/Engine/Renderer/Texture.cpp
     Source/Engine/Renderer/Model.cpp
+    Source/Engine/IO/ResourcesLoader.cpp
     Source/Engine/IO/ModelsLoader.cpp
+    Source/Engine/IO/TgaLoader.cpp
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
     Source/Misc/ProgramOptions/ProgramOptions.cpp
@@ -29,8 +32,9 @@ set(HEADERS
     Source/Engine/Renderer/Shader.hpp
     Source/Engine/Renderer/Texture.hpp
     Source/Engine/Renderer/Model.hpp
+    Source/Engine/IO/ResourcesLoader.hpp
     Source/Engine/IO/ModelsLoader.hpp
-    Source/Engine/IO/IOErrors.hpp
+    Source/Engine/IO/TgaLoader.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
     Source/Misc/ProgramOptions/ProgramOptions.hpp

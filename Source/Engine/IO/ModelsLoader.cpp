@@ -3,47 +3,12 @@
 using namespace KompotEngine::IO;
 using namespace KompotEngine::Renderer;
 
-bool ModelsLoader::loadFile(const fs::path &filePath)
-{
-    std::ifstream fileStream(filePath, std::ios::binary);
-    if (!fileStream.is_open())
-    {
-        Log::getInstance() << " ModelsLoader::loadFile: couldn't open file '" << filePath << "'." << std::endl;
-        return false;
-    }
-
-    fileStream.unsetf(std::ios_base::skipws);
-    m_lastFileBytes.clear();
-
-    while (true)
-    {
-        uint8_t byte;
-        fileStream >> byte;
-        if (fileStream.eof())
-        {
-            break;
-        }
-        m_lastFileBytes.push_back(byte);
-    }
-
-    if (m_lastFileBytes.size() < 16)
-    {
-        Log::getInstance() << " ModelsLoader::loadFile: file '" << filePath << "' too short for specifid format." << std::endl;
-        m_lastFileBytes.clear();
-        return false;
-    }
-
-    m_lastFilePath = filePath;
-
-    return true;
-}
-
 
 std::shared_ptr<Model> ModelsLoader::generateModel()
 {
-    if (m_lastFileBytes.size() == 0)
+    if (m_lastFileBytes.size() < 16)
     {
-        Log::getInstance() << " ModelsLoader::loadFile: Trying to generate model before loading data from file." << std::endl;
+        Log::getInstance() << " ModelsLoader::loadFile: Trying to generate model before loading data from file or file is incorrect." << std::endl;
         m_lastFileBytes.clear();
         return {};
     }
@@ -112,7 +77,7 @@ std::shared_ptr<Model> ModelsLoader::generateModel()
             {
                 glm::vec3 dataVector;
                 void *bytesData = &m_lastFileBytes[i];
-                memcpy(&dataVector.data, bytesData, sizeof(dataVector));
+                memcpy(&dataVector.x, bytesData, sizeof(dataVector));
                 i += sizeof(dataVector);
                 if (blockType == KEM_BLOCK_TYPES::KEM_BLOCK_TYPE_VERTEX)
                 {
@@ -130,7 +95,7 @@ std::shared_ptr<Model> ModelsLoader::generateModel()
             {
                 glm::vec2 dataVector;
                 void *bytesData = &m_lastFileBytes[i];
-                memcpy(&dataVector.data, bytesData, sizeof(dataVector));
+                memcpy(&dataVector.x, bytesData, sizeof(dataVector));
                 i += sizeof(dataVector);
                 verticesUv.push_back(dataVector);
             }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "ResourcesLoader.hpp"
 #include "../Renderer/Model.hpp"
 #include <glm/glm.hpp>
 #include <fstream>
@@ -11,14 +12,15 @@
 
 namespace fs = std::filesystem;
 
-namespace KompotEngine {
+namespace KompotEngine
+{
 
-namespace IO {
+namespace IO
+{
 
-class ModelsLoader
+class ModelsLoader : public ResourcesLoader
 {
 public:
-
     static constexpr std::array<uint8_t, 3> KEM_HEADER   = {0x4b,0x45,0x4d};
     static constexpr std::array<uint8_t, 7> KEM_CONSTANT = {0x49,0x4c,0x55,0x18,0x11,0x20,0x15};
     static constexpr uint8_t KEM_VERSION = 1;
@@ -37,11 +39,7 @@ public:
     static constexpr uint32_t KEM_BLOCK_MAX_VEC3_SIZE = std::numeric_limits<uint32_t>::max() - std::numeric_limits<uint32_t>::max() %  (3 * 4);
     static constexpr uint32_t KEM_BLOCK_MAX_VEC2_SIZE = std::numeric_limits<uint32_t>::max() - std::numeric_limits<uint32_t>::max() %  (2 * 4);
 
-    bool loadFile(const fs::path&);
     std::shared_ptr<Renderer::Model> generateModel();
-private:
-    std::vector<uint8_t> m_lastFileBytes;
-    std::string          m_lastFilePath;
 };
 
 } // namespace IO
