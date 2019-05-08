@@ -74,7 +74,7 @@ private:
     std::shared_ptr<Model> m_model;
 
     // window
-    GLFWwindow *m_glfwWindowHandler;
+    GLFWwindow *m_glfwWindowHandler = nullptr;
     std::string m_windowsName;
     bool m_isResized;
 
@@ -83,11 +83,11 @@ private:
     uint32_t    m_height;
 
     // vulkan members
-    VkInstance       m_vkInstance;
-    VkSurfaceKHR     m_vkSurface;
+    VkInstance       m_vkInstance = nullptr;
+    VkSurfaceKHR     m_vkSurface = nullptr;
 
-    VkPhysicalDevice m_vkPhysicalDevice; // will be implicitly destroyed with VkInstance
-    VkDevice         m_vkDevice;
+    VkPhysicalDevice m_vkPhysicalDevice  = nullptr; // will be implicitly destroyed with VkInstance
+    VkDevice         m_vkDevice  = nullptr;
 
     VkQueue          m_vkGraphicsQueue;
     VkQueue          m_vkPresentQueue;
