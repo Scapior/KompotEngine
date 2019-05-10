@@ -27,6 +27,50 @@ uint32_t ResourcesMaker::findMemoryType(uint32_t requiredTypes, VkMemoryProperty
     std::terminate();
 }
 
+std::shared_ptr<Model> ResourcesMaker::createModelFromFile(const fs::path &path)
+{
+    m_modelsLoader.loadFile(path);
+    auto model = m_modelsLoader.generateModel();
+    if (model == nullptr)
+    {
+        return {};
+    }
+
+    VkDeviceSize vkVerticesBufferSize = model->getVerticiesSizeForBuffer();
+    auto verticesStagingBuffer = createBuffer(
+                             vkVerticesBufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VkResult resultCode = verticesStagingBuffer->copyFromRawPointer(model->getVerticesData(), vkVerticesBufferSize);
+    if (resultCode != VK_SUCCESS)
+    {
+        return {};
+    }
+
+    auto vkVerticesBuffer = createBufferCopy(verticesStagingBuffer,
+                                      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkDeviceSize vkIndecesBufferSize = model->getVerticiesIndecesSizeForBuffer();
+    auto indecesStagingBuffer = createBuffer(
+                             vkIndecesBufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    resultCode = indecesStagingBuffer->copyFromRawPointer(model->getVerticiesIndicesData(), vkIndecesBufferSize);
+    if (resultCode != VK_SUCCESS)
+    {
+        return {};
+    }
+
+    auto vkIndecesBuffer = createBufferCopy(
+                             indecesStagingBuffer,
+                             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    model->setBuffer(vkVerticesBuffer, vkIndecesBuffer);
+    return model;
+}
+
 std::shared_ptr<Buffer> ResourcesMaker::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperies) const
 {
     auto vkBuffer = createVkBuffer(size, usage);

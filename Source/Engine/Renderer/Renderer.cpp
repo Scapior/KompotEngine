@@ -22,17 +22,12 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createCommandPool();
 
     m_resourcesMaker = new ResourcesMaker(m_vkPhysicalDevice, m_vkDevice, m_vkCommandPool, m_vkGraphicsQueue);
+    m_model = m_resourcesMaker->createModelFromFile("cube.kem");
 
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
 
-    IO::ModelsLoader modelsLoader;
-    modelsLoader.loadFile("cube.kem");
-    m_model = modelsLoader.generateModel();
-
-    createVertexBuffer();
-    createIndexBuffer();
     createUniformBuffer();
     createDescriptorPool();
     createDescriptorSets();
@@ -76,8 +71,7 @@ Renderer::~Renderer()
     vkDestroyImageView(m_vkDevice, m_vkTextureImageView, nullptr);
     vkDestroyImage(m_vkDevice, m_vkTextureImage, nullptr);
     vkFreeMemory(m_vkDevice, m_vkTextureImageMemory, nullptr);
-    m_vkVertexBuffer.reset();
-    m_vkIndexBuffer.reset();
+    m_model.reset();
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
     {
         vkDestroySemaphore(m_vkDevice, m_vkImageAvailableSemaphores[i], nullptr);
@@ -921,8 +915,8 @@ void Renderer::createCommandBuffers()
         VkDeviceSize vkOffsetsSizes[] = {0_u32t};
         vkCmdBeginRenderPass(m_vkCommandBuffers[i], &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_vkVertexBuffer->getBuffer(), vkOffsetsSizes);
-            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_vkIndexBuffer->getBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_model->getVertexBuffer(), vkOffsetsSizes);
+            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_model->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
             vkCmdBindDescriptorSets(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, &m_vkDescriptorSets[i],  0_u32t, nullptr);
             vkCmdDrawIndexed(m_vkCommandBuffers[i], m_model->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         vkCmdEndRenderPass(m_vkCommandBuffers[i]);
@@ -972,39 +966,6 @@ void Renderer::recreateSwapchain()
     createDepthResources();
     createFramebuffers();
     createCommandBuffers();
-}
-
-void Renderer::createVertexBuffer()
-{
-    VkDeviceSize vkBufferSize = m_model->getVerticiesSizeForBuffer();
-
-    auto stagingBuffer = m_resourcesMaker->createBuffer(
-                             vkBufferSize,
-                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    stagingBuffer->copyFromRawPointer(m_model->getVerticesData(), m_model->getVerticiesSizeForBuffer());
-
-    m_vkVertexBuffer = m_resourcesMaker->createBufferCopy(stagingBuffer,
-                                       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-}
-
-void Renderer::createIndexBuffer()
-{
-    VkDeviceSize vkBufferSize = m_model->getVerticiesIndexesSizeForBuffer();
-
-    auto stagingBuffer = m_resourcesMaker->createBuffer(
-                             vkBufferSize,
-                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    stagingBuffer->copyFromRawPointer(m_model->getVerticiesIndicesData(), m_model->getVerticiesIndexesSizeForBuffer());
-
-    m_vkIndexBuffer = m_resourcesMaker->createBufferCopy(
-                          stagingBuffer,
-                          VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 }
 
 uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties)

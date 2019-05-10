@@ -124,9 +124,6 @@ private:
     static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
 #endif
 
-    std::shared_ptr<Buffer> m_vkVertexBuffer;
-    std::shared_ptr<Buffer> m_vkIndexBuffer;
-
     std::vector<std::shared_ptr<Buffer>>       m_vkUniformMatricesBuffers;
 
     uint32_t m_vkTextureImageMipLevels;
@@ -164,8 +161,6 @@ private:
     void cleanupSwapchain();
     void recreateSwapchain();
 
-    void createVertexBuffer();
-    void createIndexBuffer();
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
     void updateUniformBuffer(uint32_t);
     void createTextureImage();

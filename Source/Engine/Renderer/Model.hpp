@@ -1,9 +1,13 @@
 #pragma once
 
 #include "global.hpp"
+#include "Buffer.hpp"
 #include <vector>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
+#include <memory>
+#include <array>
+#include <vector>
 
 namespace KompotEngine
 {
@@ -48,17 +52,6 @@ struct Vertex
     }
 };
 
-//const std::vector<Vertex> vertices = {
-//    {{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-//    {{1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-//    {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-//    {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-//};
-
-//const std::vector<uint32_t> verticesIndices = {
-//    0, 1, 2, 1, 3, 2
-//};
-
 class Model
 {
 public:
@@ -66,16 +59,23 @@ public:
                  const std::vector<glm::vec3>&, const std::vector<glm::vec2>&);
 
     VkDeviceSize getVerticiesSizeForBuffer() const;
-    VkDeviceSize getVerticiesIndexesSizeForBuffer() const;
+    VkDeviceSize getVerticiesIndecesSizeForBuffer() const;
 
     Vertex   *getVerticesData();
     uint32_t *getVerticiesIndicesData();
     uint32_t  getIndicesCount() const;
 
-private:
+    const VkBuffer &getVertexBuffer() const;
+    const VkBuffer &getIndecesBuffer() const;
 
+    void setBuffer(const std::shared_ptr<Buffer>&, const std::shared_ptr<Buffer>&);
+
+private:
     std::vector<Vertex>   m_vertices;
     std::vector<uint32_t> m_verticesIndices;
+
+    std::shared_ptr<Buffer> m_verticesBuffer;
+    std::shared_ptr<Buffer> m_indecesBuffer;
 };
 
 } // namespace Renderer
