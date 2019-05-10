@@ -2,6 +2,7 @@
 
 #include "global.hpp"
 #include <vulkan/vulkan.hpp>
+#include <vector>
 
 namespace KompotEngine
 {
@@ -15,12 +16,13 @@ public:
     Buffer(VkDevice, VkBuffer, VkDeviceMemory, VkDeviceSize);
     VkDeviceSize getSize() const;
     VkBuffer &getBuffer();
+    VkResult copyFromRawPointer(const void*, VkDeviceSize);
     VkDeviceMemory getBufferMemory() const;
     ~Buffer();
 private:
     VkDevice       m_vkDevice;
-    mutable VkBuffer       m_vkBuffer;
-    mutable VkDeviceMemory m_vkBufferMemory;
+    VkBuffer       m_vkBuffer;
+    VkDeviceMemory m_vkBufferMemory;
     VkDeviceSize   m_vkBufferMemorySize;
 
 };

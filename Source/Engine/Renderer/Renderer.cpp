@@ -983,10 +983,7 @@ void Renderer::createVertexBuffer()
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    void* bufferMemory;
-    vkMapMemory(m_vkDevice, stagingBuffer->getBufferMemory(), 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
-    memcpy(bufferMemory, m_model->getVerticesData(), vkBufferSize);
-    vkUnmapMemory(m_vkDevice, stagingBuffer->getBufferMemory());
+    stagingBuffer->copyFromRawPointer(m_model->getVerticesData(), m_model->getVerticiesSizeForBuffer());
 
     m_vkVertexBuffer = m_resourcesMaker->createBufferCopy(stagingBuffer,
                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -1002,10 +999,7 @@ void Renderer::createIndexBuffer()
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    void *bufferMemory;
-    vkMapMemory(m_vkDevice, stagingBuffer->getBufferMemory(), 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
-    memcpy(bufferMemory, m_model->getVerticiesIndicesData(), vkBufferSize);
-    vkUnmapMemory(m_vkDevice, stagingBuffer->getBufferMemory());
+    stagingBuffer->copyFromRawPointer(m_model->getVerticiesIndicesData(), m_model->getVerticiesIndexesSizeForBuffer());
 
     m_vkIndexBuffer = m_resourcesMaker->createBufferCopy(
                           stagingBuffer,
@@ -1042,10 +1036,7 @@ void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex)
     mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_width) / static_cast<float>(m_height), 0.01f, 10.0f);
     mvpMatrix.projection[1][1] *= -1; // flip Y (OGL coordinate system to VK)
 
-    void *uniformData;
-    vkMapMemory(m_vkDevice, m_vkUniformMatricesBuffers[swapchainImageIndex]->getBufferMemory(), 0_u64t, sizeof(UnifromBufferObject), 0_u64t, &uniformData);
-    memcpy(uniformData, &mvpMatrix, sizeof(UnifromBufferObject));
-    vkUnmapMemory(m_vkDevice, m_vkUniformMatricesBuffers[swapchainImageIndex]->getBufferMemory());
+    m_vkUniformMatricesBuffers[swapchainImageIndex]->copyFromRawPointer(&mvpMatrix, sizeof(UnifromBufferObject));
 }
 
 void Renderer::createImage(uint32_t width,
@@ -1114,7 +1105,6 @@ void Renderer::createTextureImage()
     const auto textureWidth = texture->getWidth();
     const auto imageSize = texture->getImageSize();
     const auto textureHeight = texture->getHeight();
-    void *pixelsData = texture->getImageData();
 
     m_vkTextureImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1_u32t;
 
@@ -1122,10 +1112,8 @@ void Renderer::createTextureImage()
                              imageSize,
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    void *stagingBufferData = nullptr;
-    vkMapMemory(m_vkDevice, stagingBuffer->getBufferMemory(), 0_u64t, imageSize, 0_u64t, &stagingBufferData);
-    memcpy(stagingBufferData, pixelsData, imageSize);
-    vkUnmapMemory(m_vkDevice, stagingBuffer->getBufferMemory());
+
+    stagingBuffer->copyFromRawPointer(texture->getImageData(), texture->getImageSize());
 
     createImage(static_cast<uint32_t>(textureWidth),
                 static_cast<uint32_t>(textureHeight),

@@ -15,6 +15,24 @@ VkBuffer &Buffer::getBuffer()
     return m_vkBuffer;
 }
 
+VkResult Buffer::copyFromRawPointer(const void *data, VkDeviceSize dataSize)
+{
+    if (m_vkBufferMemorySize < dataSize)
+    {
+        return VK_RESULT_RANGE_SIZE;
+    }
+    void* bufferMemoryMapPointer;
+    auto resultCode = vkMapMemory(m_vkDevice, m_vkBufferMemory, 0_u64t, m_vkBufferMemorySize, 0_u32t, &bufferMemoryMapPointer);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log::getInstance() << "Buffer::copyFromRawPointer(): Function vkMapMemory call failed with a code " << resultCode << "."<< std::endl;
+        return resultCode;
+    }
+    memcpy(bufferMemoryMapPointer, data, m_vkBufferMemorySize);
+    vkUnmapMemory(m_vkDevice, m_vkBufferMemory);
+    return VK_SUCCESS;
+}
+
 
 VkDeviceMemory Buffer::getBufferMemory() const
 {
