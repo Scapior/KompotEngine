@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "ResourcesMaker.hpp"
 #include "Shader.hpp"
 #include "Model.hpp"
 #include "../IO/ModelsLoader.hpp"
@@ -70,7 +71,7 @@ public:
     void resize();
     ~Renderer();
 private:
-
+    ResourcesMaker *m_resourcesMaker = nullptr;
     std::shared_ptr<Model> m_model;
 
     // window
@@ -123,13 +124,10 @@ private:
     static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
 #endif
 
-    VkBuffer m_vkVertexBuffer;
-    VkDeviceMemory m_vkVertexBufferMemory;
-    VkBuffer m_vkIndexBuffer;
-    VkDeviceMemory m_vkIndexBufferMemory;
+    std::shared_ptr<Buffer> m_vkVertexBuffer;
+    std::shared_ptr<Buffer> m_vkIndexBuffer;
 
-    std::vector<VkBuffer>       m_vkUniformMatricesBuffers;
-    std::vector<VkDeviceMemory> m_vkUniformMatricesBuffersMemory;
+    std::vector<std::shared_ptr<Buffer>>       m_vkUniformMatricesBuffers;
 
     uint32_t m_vkTextureImageMipLevels;
     VkImage m_vkTextureImage;
@@ -166,8 +164,6 @@ private:
     void cleanupSwapchain();
     void recreateSwapchain();
 
-    void createBuffer(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
-    void copyBuffer(VkBuffer, VkBuffer, VkDeviceSize);
     void createVertexBuffer();
     void createIndexBuffer();
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
@@ -175,8 +171,6 @@ private:
     void createTextureImage();
     void createTextureImageView();
     void createImage(uint32_t, uint32_t, uint32_t, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer);
     void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
     void transitionImageLayout(VkImage, uint32_t, VkFormat, VkImageLayout, VkImageLayout);
     void createImageView(VkImage, uint32_t, VkFormat, VkImageAspectFlags, VkImageView&);

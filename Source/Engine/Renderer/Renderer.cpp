@@ -20,6 +20,9 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createDescriptorSetLayout();
     createGraphicsPipeline();
     createCommandPool();
+
+    m_resourcesMaker = new ResourcesMaker(m_vkPhysicalDevice, m_vkDevice, m_vkCommandPool, m_vkGraphicsQueue);
+
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
@@ -41,6 +44,7 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
 
 void Renderer::cleanupSwapchain()
 {
+    delete m_resourcesMaker;
     vkDestroyImageView(m_vkDevice, m_vkDepthImageView, nullptr);
     vkDestroyImage(m_vkDevice, m_vkDepthImage, nullptr);
     vkFreeMemory(m_vkDevice, m_vkDepthImageMemory, nullptr);
@@ -65,18 +69,15 @@ Renderer::~Renderer()
     vkDestroyDescriptorSetLayout(m_vkDevice, m_vkDescriptorSetLayout, nullptr);
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        vkDestroyBuffer(m_vkDevice, m_vkUniformMatricesBuffers[i], nullptr);
-        vkFreeMemory(m_vkDevice, m_vkUniformMatricesBuffersMemory[i], nullptr);
+        m_vkUniformMatricesBuffers[i].reset();
     }
     vkDestroyDescriptorPool(m_vkDevice, m_vkDescriptorPool, nullptr);
     vkDestroySampler(m_vkDevice, m_vkTextureSampler, nullptr);
     vkDestroyImageView(m_vkDevice, m_vkTextureImageView, nullptr);
     vkDestroyImage(m_vkDevice, m_vkTextureImage, nullptr);
     vkFreeMemory(m_vkDevice, m_vkTextureImageMemory, nullptr);
-    vkDestroyBuffer(m_vkDevice, m_vkIndexBuffer, nullptr);
-    vkFreeMemory(m_vkDevice, m_vkIndexBufferMemory, nullptr);
-    vkDestroyBuffer(m_vkDevice, m_vkVertexBuffer, nullptr);
-    vkFreeMemory(m_vkDevice, m_vkVertexBufferMemory, nullptr);
+    m_vkVertexBuffer.reset();
+    m_vkIndexBuffer.reset();
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
     {
         vkDestroySemaphore(m_vkDevice, m_vkImageAvailableSemaphores[i], nullptr);
@@ -640,15 +641,14 @@ void Renderer::createUniformBuffer()
     VkDeviceSize vkUniformSize = sizeof(UnifromBufferObject);
 
     m_vkUniformMatricesBuffers.resize(m_vkImages.size());
-    m_vkUniformMatricesBuffersMemory.resize(m_vkImages.size());
 
     for (auto i = 0_u64t; i < m_vkImages.size(); ++i)
     {
-        createBuffer(vkUniformSize,
+        m_vkUniformMatricesBuffers[i] = m_resourcesMaker->createBuffer(
+                     vkUniformSize,
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     m_vkUniformMatricesBuffers[i],
-                     m_vkUniformMatricesBuffersMemory[i]);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
     }
 };
 
@@ -700,7 +700,7 @@ void Renderer::createDescriptorSets()
     for (auto i = 0_u64t; i < m_vkImages.size(); ++i)
     {
         VkDescriptorBufferInfo vkDescriptorBufferInfo = {};
-        vkDescriptorBufferInfo.buffer = m_vkUniformMatricesBuffers[i];
+        vkDescriptorBufferInfo.buffer = m_vkUniformMatricesBuffers[i]->getBuffer();
         vkDescriptorBufferInfo.offset = 0_64t;
         vkDescriptorBufferInfo.range = sizeof(UnifromBufferObject);
 
@@ -921,8 +921,8 @@ void Renderer::createCommandBuffers()
         VkDeviceSize vkOffsetsSizes[] = {0_u32t};
         vkCmdBeginRenderPass(m_vkCommandBuffers[i], &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_vkVertexBuffer, vkOffsetsSizes);
-            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_vkIndexBuffer, 0_u32t, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_vkVertexBuffer->getBuffer(), vkOffsetsSizes);
+            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_vkIndexBuffer->getBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
             vkCmdBindDescriptorSets(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, &m_vkDescriptorSets[i],  0_u32t, nullptr);
             vkCmdDrawIndexed(m_vkCommandBuffers[i], m_model->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         vkCmdEndRenderPass(m_vkCommandBuffers[i]);
@@ -974,105 +974,43 @@ void Renderer::recreateSwapchain()
     createCommandBuffers();
 }
 
-void Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperies, VkBuffer &buffer, VkDeviceMemory &bufferMemory)
-{
-    VkBufferCreateInfo vkBufferCreateInfo = {};
-    vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vkBufferCreateInfo.size = size;
-    vkBufferCreateInfo.usage = usage;
-    vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    auto resultCode = vkCreateBuffer(m_vkDevice, &vkBufferCreateInfo, nullptr, &buffer);
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createBuffer(): Function vkCreateBuffer call failed with a code" << resultCode << ". Terminated."<< std::endl;
-        std::terminate();
-    }
-
-    VkMemoryRequirements vkMemoryRequirements = {};
-    vkGetBufferMemoryRequirements(m_vkDevice, buffer, &vkMemoryRequirements);
-
-    VkMemoryAllocateInfo vkMomoryAllocateInfo = {};
-    vkMomoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    vkMomoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
-    vkMomoryAllocateInfo.memoryTypeIndex = findMemoryType(vkMemoryRequirements.memoryTypeBits, memoryProperies);
-
-    resultCode = vkAllocateMemory(m_vkDevice, &vkMomoryAllocateInfo, nullptr, &bufferMemory);
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createBuffer(): Function vkAllocateMemory call failed with a code" << resultCode << ". Terminated."<< std::endl;
-        std::terminate();
-    }
-
-    vkBindBufferMemory(m_vkDevice, buffer, bufferMemory, 0_u32t);
-}
-
-void Renderer::copyBuffer(VkBuffer sourceBuffer, VkBuffer destinationBuffer, VkDeviceSize size)
-{
-    auto commandBuffer = beginSingleTimeCommands();
-    VkBufferCopy vkBufferCopyRegion = {};
-    vkBufferCopyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, sourceBuffer, destinationBuffer, 1_u32t, &vkBufferCopyRegion);
-    endSingleTimeCommands(commandBuffer);
-}
-
 void Renderer::createVertexBuffer()
 {
     VkDeviceSize vkBufferSize = m_model->getVerticiesSizeForBuffer();
 
-    VkBuffer vkStagingBuffer;
-    VkDeviceMemory vkStagingBufferDeviceMemory;
-    createBuffer(vkBufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 vkStagingBuffer,
-                 vkStagingBufferDeviceMemory);
+    auto stagingBuffer = m_resourcesMaker->createBuffer(
+                             vkBufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* bufferMemory;
-    vkMapMemory(m_vkDevice, vkStagingBufferDeviceMemory, 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
+    vkMapMemory(m_vkDevice, stagingBuffer->getBufferMemory(), 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
     memcpy(bufferMemory, m_model->getVerticesData(), vkBufferSize);
-    vkUnmapMemory(m_vkDevice, vkStagingBufferDeviceMemory);
+    vkUnmapMemory(m_vkDevice, stagingBuffer->getBufferMemory());
 
-    createBuffer(vkBufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                 m_vkVertexBuffer,
-                 m_vkVertexBufferMemory);
-
-    copyBuffer(vkStagingBuffer, m_vkVertexBuffer, vkBufferSize);
-
-
-    vkDestroyBuffer(m_vkDevice, vkStagingBuffer, nullptr);
-    vkFreeMemory(m_vkDevice, vkStagingBufferDeviceMemory, nullptr);
+    m_vkVertexBuffer = m_resourcesMaker->createBufferCopy(stagingBuffer,
+                                       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 }
 
 void Renderer::createIndexBuffer()
 {
     VkDeviceSize vkBufferSize = m_model->getVerticiesIndexesSizeForBuffer();
 
-    VkBuffer vkStagingBuffer;
-    VkDeviceMemory vkStagingBufferDeviceMemory;
-
-    createBuffer(vkBufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 vkStagingBuffer,
-                 vkStagingBufferDeviceMemory);
+    auto stagingBuffer = m_resourcesMaker->createBuffer(
+                             vkBufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void *bufferMemory;
-    vkMapMemory(m_vkDevice, vkStagingBufferDeviceMemory, 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
+    vkMapMemory(m_vkDevice, stagingBuffer->getBufferMemory(), 0_u64t, vkBufferSize, 0_u32t, &bufferMemory);
     memcpy(bufferMemory, m_model->getVerticiesIndicesData(), vkBufferSize);
-    vkUnmapMemory(m_vkDevice, vkStagingBufferDeviceMemory);
+    vkUnmapMemory(m_vkDevice, stagingBuffer->getBufferMemory());
 
-    createBuffer(vkBufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                 m_vkIndexBuffer,
-                 m_vkIndexBufferMemory);
-    copyBuffer(vkStagingBuffer, m_vkIndexBuffer, vkBufferSize);
-
-    vkDestroyBuffer(m_vkDevice, vkStagingBuffer, nullptr);
-    vkFreeMemory(m_vkDevice, vkStagingBufferDeviceMemory, nullptr);
+    m_vkIndexBuffer = m_resourcesMaker->createBufferCopy(
+                          stagingBuffer,
+                          VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 }
 
 uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties)
@@ -1105,9 +1043,9 @@ void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex)
     mvpMatrix.projection[1][1] *= -1; // flip Y (OGL coordinate system to VK)
 
     void *uniformData;
-    vkMapMemory(m_vkDevice, m_vkUniformMatricesBuffersMemory[swapchainImageIndex], 0_u64t, sizeof(UnifromBufferObject), 0_u64t, &uniformData);
+    vkMapMemory(m_vkDevice, m_vkUniformMatricesBuffers[swapchainImageIndex]->getBufferMemory(), 0_u64t, sizeof(UnifromBufferObject), 0_u64t, &uniformData);
     memcpy(uniformData, &mvpMatrix, sizeof(UnifromBufferObject));
-    vkUnmapMemory(m_vkDevice, m_vkUniformMatricesBuffersMemory[swapchainImageIndex]);
+    vkUnmapMemory(m_vkDevice, m_vkUniformMatricesBuffers[swapchainImageIndex]->getBufferMemory());
 }
 
 void Renderer::createImage(uint32_t width,
@@ -1178,21 +1116,16 @@ void Renderer::createTextureImage()
     const auto textureHeight = texture->getHeight();
     void *pixelsData = texture->getImageData();
 
-
     m_vkTextureImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1_u32t;
 
-    VkBuffer vkStagingBuffer;
-    VkDeviceMemory vkStagingBufferDeviceMemory;
-
-    createBuffer(imageSize,
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 vkStagingBuffer,
-                 vkStagingBufferDeviceMemory);
-    void *stagingBufferData;
-    vkMapMemory(m_vkDevice, vkStagingBufferDeviceMemory, 0_u64t, imageSize, 0_u64t, &stagingBufferData);
+    auto stagingBuffer = m_resourcesMaker->createBuffer(
+                             imageSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    void *stagingBufferData = nullptr;
+    vkMapMemory(m_vkDevice, stagingBuffer->getBufferMemory(), 0_u64t, imageSize, 0_u64t, &stagingBufferData);
     memcpy(stagingBufferData, pixelsData, imageSize);
-    vkUnmapMemory(m_vkDevice, vkStagingBufferDeviceMemory);
+    vkUnmapMemory(m_vkDevice, stagingBuffer->getBufferMemory());
 
     createImage(static_cast<uint32_t>(textureWidth),
                 static_cast<uint32_t>(textureHeight),
@@ -1205,50 +1138,14 @@ void Renderer::createTextureImage()
                 m_vkTextureImageMemory);
 
     transitionImageLayout(m_vkTextureImage, 1_u32t, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(vkStagingBuffer, m_vkTextureImage, static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
+    copyBufferToImage(stagingBuffer->getBuffer(), m_vkTextureImage, static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
     //transitionImageLayout(m_vkTextureImage, 1_u32t, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkDestroyBuffer(m_vkDevice, vkStagingBuffer, nullptr);
-    vkFreeMemory(m_vkDevice, vkStagingBufferDeviceMemory, nullptr);
     generateMipmaps(m_vkTextureImage, textureWidth, textureHeight, m_vkTextureImageMipLevels);
-}
-
-VkCommandBuffer Renderer::beginSingleTimeCommands()
-{
-    VkCommandBufferAllocateInfo vkCommandBufferAllocateInfo = {};
-    vkCommandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    vkCommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    vkCommandBufferAllocateInfo.commandPool = m_vkCommandPool;
-    vkCommandBufferAllocateInfo.commandBufferCount = 1_u32t;
-
-    VkCommandBuffer vkCommandBuffer;
-    vkAllocateCommandBuffers(m_vkDevice, &vkCommandBufferAllocateInfo, &vkCommandBuffer);
-
-    VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
-    vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(vkCommandBuffer, &vkCommandBufferBeginInfo);
-    return vkCommandBuffer;
-}
-
-void Renderer::endSingleTimeCommands(VkCommandBuffer commandBuffer)
-{
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo vkSubmitInfo = {};
-    vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    vkSubmitInfo.commandBufferCount = 1;
-    vkSubmitInfo.pCommandBuffers = &commandBuffer;
-
-    vkQueueSubmit(m_vkGraphicsQueue, 1, &vkSubmitInfo, nullptr);
-    vkQueueWaitIdle(m_vkGraphicsQueue);
-
-    vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, 1, &commandBuffer);
 }
 
 void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-    auto commandBuffer = beginSingleTimeCommands();
+    auto commandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
 
     VkBufferImageCopy vkBufferImageCopyRegion = {};
     vkBufferImageCopyRegion.bufferOffset = 0_u32t;
@@ -1264,13 +1161,12 @@ void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
     vkBufferImageCopyRegion.imageExtent.depth = 1_u32t;
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1_u32t, &vkBufferImageCopyRegion);
-
-    endSingleTimeCommands(commandBuffer);
+    commandBuffer.submit();
 }
 
 void Renderer::transitionImageLayout(VkImage image, uint32_t mipLevels, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-    VkCommandBuffer vkCommandBuffer = beginSingleTimeCommands();
+    auto vkCommandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
 
     VkImageMemoryBarrier vkImageMemoryBarrier = {};
     vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1319,7 +1215,7 @@ void Renderer::transitionImageLayout(VkImage image, uint32_t mipLevels, VkFormat
     }
 
     vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineSourceStage, vkPipelineDestinationStage, 0_u32t, 0_u32t, nullptr, 0_u32t, nullptr, 1_u32t, &vkImageMemoryBarrier);
-    endSingleTimeCommands(vkCommandBuffer);
+    vkCommandBuffer.submit();
 }
 
 void Renderer::createImageView(VkImage image, uint32_t mipLevels, VkFormat format, VkImageAspectFlags imageAspectFlags, VkImageView &imageView)
@@ -1400,7 +1296,7 @@ void Renderer::createDepthResources()
 
 void Renderer::generateMipmaps(VkImage image, int32_t imageWidth, int32_t imageHeight, uint32_t mipLevelsCount)
 {
-    auto commandBuffer = beginSingleTimeCommands();
+    auto commandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
 
     VkImageMemoryBarrier vkImageMemoryBarrier = {};
     vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1476,6 +1372,5 @@ void Renderer::generateMipmaps(VkImage image, int32_t imageWidth, int32_t imageH
         0_u32t, nullptr,
         0_u32t, nullptr,
         1_u32t, &vkImageMemoryBarrier);
-
-    endSingleTimeCommands(commandBuffer);
+    commandBuffer.submit();
 }
