@@ -15,7 +15,7 @@ set(SOURCES
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/Shader.cpp
     Source/Engine/Renderer/ResourcesMaker.cpp
-    Source/Engine/Renderer/Texture.cpp
+    Source/Engine/Renderer/Image.cpp
     Source/Engine/Renderer/Model.cpp
     Source/Engine/Renderer/Buffer.cpp
     Source/Engine/Renderer/SingleTimeCommandBuffer.cpp
@@ -34,7 +34,7 @@ set(HEADERS
     Source/Engine/Renderer/Renderer.hpp
     Source/Engine/Renderer/Shader.hpp
     Source/Engine/Renderer/ResourcesMaker.hpp
-    Source/Engine/Renderer/Texture.hpp
+    Source/Engine/Renderer/Image.hpp
     Source/Engine/Renderer/Model.hpp
     Source/Engine/Renderer/Buffer.hpp
     Source/Engine/Renderer/SingleTimeCommandBuffer.hpp

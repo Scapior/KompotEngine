@@ -71,6 +71,197 @@ std::shared_ptr<Model> ResourcesMaker::createModelFromFile(const fs::path &path)
     return model;
 }
 
+std::shared_ptr<Image> ResourcesMaker::createTextureFromFile(const fs::path &filePath) const
+{
+    m_texturesLoader.loadFile(filePath);
+    auto textureBytes = m_texturesLoader.getLastLoadedTextureBytes();
+    if (textureBytes.empty())
+    {
+        return {};
+    }
+    const auto textureExtent = m_texturesLoader.getLastLoadedTextureExtent();
+
+    auto textureImageMipLevelsCount = 1_u32t + static_cast<uint32_t>
+                    (std::floor(std::log2(std::max(textureExtent.width, textureExtent.height))));
+
+    auto stagingBuffer = createBuffer(
+                             textureBytes.size(),
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    stagingBuffer->copyFromRawPointer(textureBytes.data(), textureBytes.size());
+
+    auto image = createImage(
+                     textureExtent,
+                     textureImageMipLevelsCount,
+                     VK_FORMAT_R8G8B8A8_UNORM,
+                     VK_IMAGE_LAYOUT_UNDEFINED,
+                     VK_IMAGE_TILING_OPTIMAL,
+                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT);
+
+    {
+    auto commandBuffer = createSingleTimeCommandBuffer();
+    image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer);
+    }
+    copyBufferToImage(*stagingBuffer.get(), *image.get());
+    {
+    auto commandBuffer = createSingleTimeCommandBuffer();
+    image->transitImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer);
+    }
+
+    return image;
+}
+
+std::shared_ptr<Image> ResourcesMaker::createSwapchainImage(VkImage vkImage, VkFormat vkFormat) const
+{
+    VkImageViewCreateInfo vkImageViewCreateInfo = {};
+    vkImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    vkImageViewCreateInfo.image = vkImage;
+    vkImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    vkImageViewCreateInfo.format = vkFormat;
+    vkImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkImageViewCreateInfo.subresourceRange.baseMipLevel = 0_u32t;
+    vkImageViewCreateInfo.subresourceRange.levelCount = 1_u32t;
+    vkImageViewCreateInfo.subresourceRange.baseArrayLayer = 0_u32t;
+    vkImageViewCreateInfo.subresourceRange.layerCount = 1_u32t;
+
+    VkImageView vkImageView{};
+    auto resultCode = vkCreateImageView(m_vkDevice, &vkImageViewCreateInfo, nullptr, &vkImageView);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log::getInstance() << "ResourcesMaker::createSwapchainImage(): Function vkCreateImageView call failed with a code " << resultCode << "." << std::endl;
+        std::terminate();
+    }
+    return std::make_shared<Image>(m_vkDevice, vkImage, vkImageView);
+}
+
+std::shared_ptr<Image> ResourcesMaker::createImage(
+        VkExtent2D extent,
+        uint32_t mipLevelsCount,
+        VkFormat format,
+        VkImageLayout initialLayout,
+        VkImageTiling tiling,
+        VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkImageAspectFlags imageAspectFlags) const
+{
+    VkImage vkImage{};
+
+    VkImageCreateInfo vkImageCreateInfo = {};
+    vkImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    vkImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    vkImageCreateInfo.format = format;
+    vkImageCreateInfo.extent.width = extent.width;
+    vkImageCreateInfo.extent.height = extent.height;
+    vkImageCreateInfo.extent.depth = 1_u32t;
+    vkImageCreateInfo.mipLevels = mipLevelsCount;
+    vkImageCreateInfo.arrayLayers = 1_u32t;
+    vkImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    vkImageCreateInfo.tiling = tiling;
+    vkImageCreateInfo.usage = usage;
+    vkImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkImageCreateInfo.initialLayout = initialLayout;
+
+    auto resultCode = vkCreateImage(m_vkDevice, &vkImageCreateInfo, nullptr, &vkImage);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log::getInstance() << "ResourcesMaker::createImage(): Function vkCreateImage call failed with a code " << resultCode << "." << std::endl;
+        return {};
+    }
+
+    VkMemoryRequirements vkMemoryRequirements;
+    vkGetImageMemoryRequirements(m_vkDevice, vkImage, &vkMemoryRequirements);
+
+    VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex = findMemoryType(vkMemoryRequirements.memoryTypeBits, properties);
+
+    VkDeviceMemory vkImageMemory;
+    resultCode = vkAllocateMemory(m_vkDevice, &vkMemoryAllocateInfo, nullptr, &vkImageMemory);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log::getInstance() << "ResourcesMaker::createImage(): Function vkAllocateMemory call failed with a code " << resultCode << "." << std::endl;
+        vkDestroyImage(m_vkDevice, vkImage, nullptr);
+        return {};
+    }
+
+    resultCode = vkBindImageMemory(m_vkDevice, vkImage, vkImageMemory, 0_u64t);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log::getInstance() << "ResourcesMaker::createImage(): Function vkBindImageMemory call failed with a code " << resultCode << "." << std::endl;
+        vkDestroyImage(m_vkDevice, vkImage, nullptr);
+        vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
+        return {};
+    }
+
+    VkImageViewCreateInfo vkImageViewCreateInfo = {};
+    vkImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    vkImageViewCreateInfo.image = vkImage;
+    vkImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    vkImageViewCreateInfo.format = format;
+    vkImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    vkImageViewCreateInfo.subresourceRange.aspectMask = imageAspectFlags;
+    vkImageViewCreateInfo.subresourceRange.baseMipLevel = 0_u32t;
+    vkImageViewCreateInfo.subresourceRange.levelCount = mipLevelsCount;
+    vkImageViewCreateInfo.subresourceRange.baseArrayLayer = 0_u32t;
+    vkImageViewCreateInfo.subresourceRange.layerCount = 1_u32t;
+
+    VkImageView vkImageView{};
+    resultCode = vkCreateImageView(m_vkDevice, &vkImageViewCreateInfo, nullptr, &vkImageView);
+    if (resultCode != VK_SUCCESS)
+    {
+        Log::getInstance() << "ResourcesMaker::createImage(): Function vkCreateImageView call failed with a code " << resultCode << "." << std::endl;
+        vkDestroyImage(m_vkDevice, vkImage, nullptr);
+        vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
+        return {};
+    }
+
+    VkSampler vkImageSampler{};
+    if (mipLevelsCount > 1)
+    {
+        VkSamplerCreateInfo vkSamplerCreateInfo = {};
+        vkSamplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        vkSamplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+        vkSamplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+        vkSamplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        vkSamplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        vkSamplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        vkSamplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        vkSamplerCreateInfo.mipLodBias = 0.0f;
+        vkSamplerCreateInfo.minLod = 0.0f;
+        vkSamplerCreateInfo.maxLod = static_cast<float>(mipLevelsCount);
+        vkSamplerCreateInfo.anisotropyEnable = VK_TRUE;
+        vkSamplerCreateInfo.maxAnisotropy = 16_u32t;
+        vkSamplerCreateInfo.compareEnable = VK_FALSE;
+        vkSamplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+        vkSamplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        vkSamplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+        resultCode = vkCreateSampler(m_vkDevice, &vkSamplerCreateInfo, nullptr, &vkImageSampler);
+        if (resultCode != VK_SUCCESS)
+        {
+            Log::getInstance() << "ResourcesMaker::createImage(): Function vkCreateSampler call failed with a code " << resultCode << "." << std::endl;
+            vkDestroyImage(m_vkDevice, vkImage, nullptr);
+            vkDestroyImageView(m_vkDevice, vkImageView, nullptr);
+            vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
+            return {};
+        }
+        generateMipmaps(vkImage, extent, mipLevelsCount);
+    }
+
+    return std::make_shared<Image>(m_vkDevice, extent, vkImage, vkImageView, vkImageSampler, format, VK_IMAGE_LAYOUT_UNDEFINED, vkImageMemory, mipLevelsCount);
+}
+
 std::shared_ptr<Buffer> ResourcesMaker::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperies) const
 {
     auto vkBuffer = createVkBuffer(size, usage);
@@ -159,4 +350,110 @@ VkDeviceMemory ResourcesMaker::allocateAndBindVkBufferMemory(VkBuffer vkBuffer, 
         vkBufferMemory = nullptr;
     }
     return vkBufferMemory;
+}
+
+VkResult ResourcesMaker::copyBufferToImage(Buffer &buffer, Image &image) const
+{
+    auto commandBuffer = createSingleTimeCommandBuffer();
+    const auto imageExtent = image.getExtent();
+
+    VkBufferImageCopy vkBufferImageCopyRegion = {};
+    vkBufferImageCopyRegion.bufferOffset = 0_u32t;
+    vkBufferImageCopyRegion.bufferRowLength = 0_u32t;
+    vkBufferImageCopyRegion.bufferImageHeight = 0_u32t;
+    vkBufferImageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkBufferImageCopyRegion.imageSubresource.mipLevel = 0_u32t;
+    vkBufferImageCopyRegion.imageSubresource.baseArrayLayer = 0_u32t;
+    vkBufferImageCopyRegion.imageSubresource.layerCount = 1_u32t;
+    vkBufferImageCopyRegion.imageOffset = {0_32t, 0_32t, 0_32t};
+    vkBufferImageCopyRegion.imageExtent.width = imageExtent.width;
+    vkBufferImageCopyRegion.imageExtent.height = imageExtent.height;
+    vkBufferImageCopyRegion.imageExtent.depth = 1_u32t;
+
+    vkCmdCopyBufferToImage(commandBuffer, buffer.getBuffer(), image.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1_u32t, &vkBufferImageCopyRegion);
+    commandBuffer.submit();
+    return VK_SUCCESS;
+}
+
+void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, uint32_t mipLevelsCount) const
+{
+    auto commandBuffer = createSingleTimeCommandBuffer();
+
+    VkImageMemoryBarrier vkImageMemoryBarrier = {};
+    vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    vkImageMemoryBarrier.image = image;
+    vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    vkImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    vkImageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkImageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
+    vkImageMemoryBarrier.subresourceRange.layerCount = 1_u32t;
+    vkImageMemoryBarrier.subresourceRange.levelCount = 1_u32t;
+
+    int32_t mipWidth = static_cast<int>(extent.width);
+    int32_t mipHeight = static_cast<int>(extent.height);
+
+    for (auto i = 1_u32t; i < mipLevelsCount; ++i)
+    {
+        vkImageMemoryBarrier.subresourceRange.baseMipLevel = i - 1_u32t;
+        vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        vkCmdPipelineBarrier(commandBuffer,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0_u32t,
+                             0_u32t, nullptr, 0_u32t, nullptr, 1_u32t, &vkImageMemoryBarrier);
+
+        VkImageBlit vkImageBlit = {};
+        vkImageBlit.srcOffsets[0] = { 0_32t, 0_32t, 0_32t };
+        vkImageBlit.srcOffsets[1] = { mipWidth, mipHeight, 1_32t };
+        vkImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkImageBlit.srcSubresource.mipLevel = i - 1_u32t;
+        vkImageBlit.srcSubresource.baseArrayLayer = 0_u32t;
+        vkImageBlit.srcSubresource.layerCount = 1_u32t;
+        vkImageBlit.dstOffsets[0] = { 0_32t, 0_32t, 0_32t };
+        vkImageBlit.dstOffsets[1] = { mipWidth > 1_32t ? mipWidth / 2_32t : 1_32t, mipHeight > 1_32t ? mipHeight / 2_32t : 1_32t, 1_32t };
+        vkImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkImageBlit.dstSubresource.mipLevel = i;
+        vkImageBlit.dstSubresource.baseArrayLayer = 0_u32t;
+        vkImageBlit.dstSubresource.layerCount = 1_u32t;
+
+        vkCmdBlitImage(commandBuffer,
+                       image,
+                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       image,
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                       1_u32t,
+                       &vkImageBlit,
+                       VK_FILTER_LINEAR);
+
+        vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0_u32t,
+                    0_u32t, nullptr,
+                    0_u32t, nullptr,
+                    1_u32t, &vkImageMemoryBarrier);
+
+        if (mipWidth > 1) mipWidth /= 2;
+        if (mipHeight > 1) mipHeight /= 2;
+    }
+
+    vkImageMemoryBarrier.subresourceRange.baseMipLevel = mipLevelsCount - 1;
+    vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0_u32t,
+        0_u32t, nullptr,
+        0_u32t, nullptr,
+        1_u32t, &vkImageMemoryBarrier);
+    commandBuffer.submit();
 }

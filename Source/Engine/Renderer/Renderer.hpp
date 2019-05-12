@@ -73,6 +73,7 @@ public:
 private:
     ResourcesMaker *m_resourcesMaker = nullptr;
     std::shared_ptr<Model> m_model;
+    std::shared_ptr<Image> m_texture;
 
     // window
     GLFWwindow *m_glfwWindowHandler = nullptr;
@@ -80,8 +81,7 @@ private:
     bool m_isResized;
 
     // width and height will be setted in createSwapchain -> chooseExtent
-    uint32_t    m_width;
-    uint32_t    m_height;
+    VkExtent2D m_vkExtent;
 
     // vulkan members
     VkInstance       m_vkInstance = nullptr;
@@ -97,8 +97,9 @@ private:
 
     VkSwapchainKHR   m_vkSwapchain;
 
-    std::vector<VkImage>     m_vkImages;
-    std::vector<VkImageView> m_vkImageViews;
+    std::vector<std::shared_ptr<Image>> m_vkSwapchainImages;
+//    std::vector<VkImage>     m_vkImages;
+//    std::vector<VkImageView> m_vkImageViews;
     VkViewport m_vkViewport;
     VkRect2D   m_vkRect;
 
@@ -126,15 +127,11 @@ private:
 
     std::vector<std::shared_ptr<Buffer>>       m_vkUniformMatricesBuffers;
 
-    uint32_t m_vkTextureImageMipLevels;
-    VkImage m_vkTextureImage;
-    VkImageView m_vkTextureImageView;
-    VkDeviceMemory m_vkTextureImageMemory;
-    VkSampler m_vkTextureSampler;
+    std::shared_ptr<Image> m_vkDepthImage;
 
-    VkImage m_vkDepthImage;
-    VkDeviceMemory m_vkDepthImageMemory;
-    VkImageView m_vkDepthImageView;
+//    VkImage m_vkDepthImage;
+//    VkDeviceMemory m_vkDepthImageMemory;
+//    VkImageView m_vkDepthImageView;
 
     void createVkInstance();
     void setupDebugCallback();
@@ -163,17 +160,10 @@ private:
 
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
     void updateUniformBuffer(uint32_t);
-    void createTextureImage();
-    void createTextureImageView();
-    void createImage(uint32_t, uint32_t, uint32_t, VkFormat, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImage&, VkDeviceMemory&);
-    void copyBufferToImage(VkBuffer, VkImage, uint32_t, uint32_t);
-    void transitionImageLayout(VkImage, uint32_t, VkFormat, VkImageLayout, VkImageLayout);
-    void createImageView(VkImage, uint32_t, VkFormat, VkImageAspectFlags, VkImageView&);
-    void createTextureSampler();
 
     void createDepthResources();
 
-    void generateMipmaps(VkImage, int32_t, int32_t, uint32_t);
+    //void generateMipmaps(VkImage, int32_t, int32_t, uint32_t);
 };
 
 

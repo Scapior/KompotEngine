@@ -2,8 +2,9 @@
 
 #include "global.hpp"
 #include "ResourcesLoader.hpp"
-#include "../Renderer/Texture.hpp"
+#include "../Renderer/Image.hpp"
 #include <glm/glm.hpp>
+#include <vulkan/vulkan.hpp>
 #include <fstream>
 #include <filesystem>
 #include <memory>
@@ -22,7 +23,11 @@ public:
     static const uint8_t NO_COLOR_MAP_TYPE = 0;
     static const uint8_t UNCOMPRESSED_TRUE_COLOR = 2;
 
-    std::shared_ptr<Renderer::Texture> generateTexture();
+    std::vector<uint8_t> getLastLoadedTextureBytes();
+    VkExtent2D getLastLoadedTextureExtent() const;
+private:
+    VkExtent2D m_lastImageExtent;
+
 };
 
 } // namespace IO

@@ -3,14 +3,13 @@
 using namespace KompotEngine::IO;
 using namespace KompotEngine::Renderer;
 
-std::shared_ptr<Texture> TgaLoader::generateTexture()
+std::vector<uint8_t> TgaLoader::getLastLoadedTextureBytes()
 {
     static const std::string imageFileIsIncorrectOrNotSupportedString = "TexturesLoader::loadFile: image file is incorrect or not supported.";
 
     if (m_lastFileBytes.size() < 18)
     {
         Log::getInstance() << "TexturesLoader::loadFile: Trying to load image before loading data from file or file is incorrect." << std::endl;
-        m_lastFileBytes.clear();
         return {};
     }
 
@@ -29,7 +28,6 @@ std::shared_ptr<Texture> TgaLoader::generateTexture()
         offsetToImageEnd > m_lastFileBytes.size())
     {
         Log::getInstance() << imageFileIsIncorrectOrNotSupportedString << std::endl;
-        m_lastFileBytes.clear();
         return {};
     }
 
@@ -53,7 +51,13 @@ std::shared_ptr<Texture> TgaLoader::generateTexture()
             pixelsBytes[i++] = m_lastFileBytes[j++];;
         }
     }
+    m_lastImageExtent.width = width;
+    m_lastImageExtent.height = height;
+    return pixelsBytes;
+}
 
-    return std::make_shared<Texture>(Texture(width, height, pixelsBytes));
+VkExtent2D TgaLoader::getLastLoadedTextureExtent() const
+{
+    return m_lastImageExtent;
 }
 

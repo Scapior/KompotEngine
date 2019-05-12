@@ -37,6 +37,11 @@ KompotEngine::Renderer::SingleTimeCommandBuffer::operator VkCommandBuffer() cons
 
 VkResult SingleTimeCommandBuffer::submit()
 {
+    if (!m_vkCommandBuffer)
+    {
+        return VK_INCOMPLETE;
+    }
+
     VkResult resultCode = vkEndCommandBuffer(m_vkCommandBuffer);
     if (resultCode != VK_SUCCESS)
     {
