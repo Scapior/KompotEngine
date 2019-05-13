@@ -95,21 +95,16 @@ std::shared_ptr<Image> ResourcesMaker::createTextureFromFile(const fs::path &fil
                      textureExtent,
                      textureImageMipLevelsCount,
                      VK_FORMAT_R8G8B8A8_UNORM,
-                     VK_IMAGE_LAYOUT_UNDEFINED,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                      VK_IMAGE_TILING_OPTIMAL,
                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                      VK_IMAGE_ASPECT_COLOR_BIT);
 
-    {
-    auto commandBuffer = createSingleTimeCommandBuffer();
-    image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer);
-    }
+
+    image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, createSingleTimeCommandBuffer());
     copyBufferToImage(*stagingBuffer.get(), *image.get());
-    {
-    auto commandBuffer = createSingleTimeCommandBuffer();
-    image->transitImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer);
-    }
+    image->transitImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, createSingleTimeCommandBuffer());
 
     return image;
 }
@@ -227,7 +222,7 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
     }
 
     VkSampler vkImageSampler{};
-    if (mipLevelsCount > 1)
+    if (mipLevelsCount > 1 && imageAspectFlags & VK_IMAGE_ASPECT_COLOR_BIT)
     {
         VkSamplerCreateInfo vkSamplerCreateInfo = {};
         vkSamplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -256,10 +251,15 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
             vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
             return {};
         }
-        generateMipmaps(vkImage, extent, mipLevelsCount);
     }
-
-    return std::make_shared<Image>(m_vkDevice, extent, vkImage, vkImageView, vkImageSampler, format, VK_IMAGE_LAYOUT_UNDEFINED, vkImageMemory, mipLevelsCount);
+    auto image = std::make_shared<Image>(m_vkDevice, extent, vkImage, vkImageView, vkImageSampler, format,
+                                   VK_IMAGE_LAYOUT_UNDEFINED, vkImageMemory, imageAspectFlags, mipLevelsCount);
+    if (vkImageSampler)
+    {
+        //image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, createSingleTimeCommandBuffer());
+        generateMipmaps(vkImage, extent, imageAspectFlags, mipLevelsCount);
+    }
+    return image;
 }
 
 std::shared_ptr<Buffer> ResourcesMaker::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperies) const
@@ -375,7 +375,7 @@ VkResult ResourcesMaker::copyBufferToImage(Buffer &buffer, Image &image) const
     return VK_SUCCESS;
 }
 
-void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, uint32_t mipLevelsCount) const
+void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, VkImageAspectFlags aspectFlags, uint32_t mipLevelsCount) const
 {
     auto commandBuffer = createSingleTimeCommandBuffer();
 
@@ -384,7 +384,7 @@ void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, uint32_t 
     vkImageMemoryBarrier.image = image;
     vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     vkImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    vkImageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkImageMemoryBarrier.subresourceRange.aspectMask = aspectFlags;
     vkImageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
     vkImageMemoryBarrier.subresourceRange.layerCount = 1_u32t;
     vkImageMemoryBarrier.subresourceRange.levelCount = 1_u32t;

@@ -6,10 +6,11 @@ Image::Image(VkDevice vkDevice, VkImage vkImage, VkImageView vkImageView)
     : m_vkDevice(vkDevice), m_vkImage(vkImage), m_vkImageView(vkImageView) { }
 
 Image::Image(VkDevice vkDevice, VkExtent2D vkExtent, VkImage vkImage, VkImageView vkImageView, VkSampler vkImageSampler,
-             VkFormat vkFormat, VkImageLayout vkImageLayout, VkDeviceMemory vkImageMemory, uint32_t mipLevelsCount)
+             VkFormat vkFormat, VkImageLayout vkImageLayout, VkDeviceMemory vkImageMemory,
+             VkImageAspectFlags vkImageAspectFlags, uint32_t mipLevelsCount)
     : m_vkDevice(vkDevice), m_vkExtent(vkExtent), m_vkImage(vkImage), m_vkImageView(vkImageView),
       m_vkImageSampler(vkImageSampler), m_vkImageFormat(vkFormat), m_vkCurrentImageLayout(vkImageLayout),
-      m_vkImageMemory(vkImageMemory), m_mipLevelsCount(mipLevelsCount) { }
+      m_vkImageMemory(vkImageMemory), m_vkImageAspectFlags(vkImageAspectFlags), m_mipLevelsCount(mipLevelsCount) { }
 
 Image::~Image()
 {
@@ -25,7 +26,7 @@ Image::~Image()
     }
 }
 
-void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBuffer &commandBuffer)
+void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBuffer commandBuffer)
 {
     VkImageMemoryBarrier vkImageMemoryBarrier = {};
     vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -34,7 +35,7 @@ void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBu
     vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     vkImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     vkImageMemoryBarrier.image = m_vkImage;
-    vkImageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkImageMemoryBarrier.subresourceRange.aspectMask = m_vkImageAspectFlags;
     vkImageMemoryBarrier.subresourceRange.baseMipLevel = 0_u32t;
     vkImageMemoryBarrier.subresourceRange.levelCount = m_mipLevelsCount;
     vkImageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
@@ -69,7 +70,7 @@ void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBu
     }
     else
     {
-        Log::getInstance() << "Renderer::transitionImageLayout(): Failed to load texture image." << std::endl;
+        Log::getInstance() << "Renderer::transitionImageLayout(): Failed to transit image layout." << std::endl;
         std::terminate();
     }
 

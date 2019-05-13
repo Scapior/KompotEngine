@@ -1012,6 +1012,5 @@ void Renderer::createDepthResources()
                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                           VK_IMAGE_ASPECT_DEPTH_BIT);
-    auto commandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
-    m_vkDepthImage->transitImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, commandBuffer);
+    m_vkDepthImage->transitImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, m_resourcesMaker->createSingleTimeCommandBuffer());
 }
