@@ -19,6 +19,7 @@ Model::Model(const std::vector<glm::vec3> &vertices,
         i++;
         m_vertices.push_back(vertex);
     }
+    m_modelMatrix = glm::mat4(1.0f);
 }
 
 VkDeviceSize Model::getVerticiesSizeForBuffer() const
@@ -60,4 +61,24 @@ void Model::setBuffer(const std::shared_ptr<Buffer> &verticesBuffer, const std::
 {
     m_verticesBuffer = verticesBuffer;
     m_indecesBuffer  = indecesBuffer;
+}
+
+void Model::setPosition(const glm::vec3 &position)
+{
+    m_modelMatrix = glm::translate(m_modelMatrix, position);
+}
+
+void Model::setRotation(float angle, const glm::vec3 &axes)
+{
+    m_modelMatrix = glm::rotate(m_modelMatrix, angle, axes);
+}
+
+void Model::setScale(const glm::vec3 &scale)
+{
+    m_modelMatrix = glm::scale(m_modelMatrix, scale);
+}
+
+glm::mat4 Model::getModelMatrix() const
+{
+    return m_modelMatrix;
 }

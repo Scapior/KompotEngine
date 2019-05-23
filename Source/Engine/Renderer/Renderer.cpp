@@ -23,13 +23,12 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createDescriptorSetLayout();
     createGraphicsPipeline();
 
-    m_model = m_resourcesMaker->createModelFromFile("cube.kem");
+    m_model = m_resourcesMaker->createModelFromFile("cube.kem");    
     m_texture = m_resourcesMaker->createTextureFromFile("texture.tga");
 
 //    createTextureImage();
 //    createTextureImageView();
 //    createTextureSampler();
-
     createUniformBuffer();
     createDescriptorPool();
     createDescriptorSets();
@@ -106,7 +105,7 @@ void Renderer::run()
             continue;
         }
 
-        updateUniformBuffer(imageIndex);
+        updateUniformBuffer(imageIndex, m_model);
 
         VkPipelineStageFlags pipelineStagesFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo = {};
@@ -985,14 +984,15 @@ uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags 
     std::terminate();
 }
 
-void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex)
+void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex,  const std::shared_ptr<Model> &model)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
+    static auto lastTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
-    float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
+    float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+    lastTime = currentTime;
     UnifromBufferObject mvpMatrix = {};
-    mvpMatrix.model = glm::rotate(glm::mat4(1.0f), deltaTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    model->setRotation(deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
+    mvpMatrix.model = model->getModelMatrix();
     mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
     mvpMatrix.projection[1][1] *= -1; // flip Y (OGL coordinate system to VK)

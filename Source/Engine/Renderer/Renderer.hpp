@@ -159,7 +159,7 @@ private:
     void recreateSwapchain();
 
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
-    void updateUniformBuffer(uint32_t);
+    void updateUniformBuffer(uint32_t, const std::shared_ptr<Model>&);
 
     void createDepthResources();
 

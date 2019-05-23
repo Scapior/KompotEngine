@@ -23,6 +23,8 @@ public:
     VkSampler   getSampler() const;
     VkExtent2D  getExtent() const;
     uint32_t    getMipLevelsCount() const;
+    VkImageAspectFlags getImageAspectFlags() const;
+    void        setCurrentLayout(VkImageLayout);
 
 private:
     VkDevice       m_vkDevice;

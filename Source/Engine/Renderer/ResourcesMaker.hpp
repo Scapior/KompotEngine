@@ -46,7 +46,7 @@ private:
     VkBuffer createVkBuffer(VkDeviceSize, VkBufferUsageFlags) const;
     VkDeviceMemory allocateAndBindVkBufferMemory(VkBuffer, VkMemoryPropertyFlags) const;
     VkResult copyBufferToImage(Buffer&, Image&) const;
-    void generateMipmaps(VkImage, VkExtent2D, VkImageAspectFlags, uint32_t) const;
+    void generateMipmaps(Image&) const;
 };
 
 

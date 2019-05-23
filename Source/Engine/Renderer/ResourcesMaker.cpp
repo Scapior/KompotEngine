@@ -88,14 +88,13 @@ std::shared_ptr<Image> ResourcesMaker::createTextureFromFile(const fs::path &fil
                              textureBytes.size(),
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
     stagingBuffer->copyFromRawPointer(textureBytes.data(), textureBytes.size());
 
     auto image = createImage(
                      textureExtent,
                      textureImageMipLevelsCount,
                      VK_FORMAT_R8G8B8A8_UNORM,
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     VK_IMAGE_LAYOUT_UNDEFINED,
                      VK_IMAGE_TILING_OPTIMAL,
                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -253,11 +252,11 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
         }
     }
     auto image = std::make_shared<Image>(m_vkDevice, extent, vkImage, vkImageView, vkImageSampler, format,
-                                   VK_IMAGE_LAYOUT_UNDEFINED, vkImageMemory, imageAspectFlags, mipLevelsCount);
+                                         initialLayout, vkImageMemory, imageAspectFlags, mipLevelsCount);
     if (vkImageSampler)
     {
-        //image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, createSingleTimeCommandBuffer());
-        generateMipmaps(vkImage, extent, imageAspectFlags, mipLevelsCount);
+        image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, createSingleTimeCommandBuffer());
+        generateMipmaps(*image);
     }
     return image;
 }
@@ -375,24 +374,24 @@ VkResult ResourcesMaker::copyBufferToImage(Buffer &buffer, Image &image) const
     return VK_SUCCESS;
 }
 
-void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, VkImageAspectFlags aspectFlags, uint32_t mipLevelsCount) const
+void ResourcesMaker::generateMipmaps(Image &image) const
 {
     auto commandBuffer = createSingleTimeCommandBuffer();
 
     VkImageMemoryBarrier vkImageMemoryBarrier = {};
     vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    vkImageMemoryBarrier.image = image;
+    vkImageMemoryBarrier.image = image.getImage();
     vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     vkImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    vkImageMemoryBarrier.subresourceRange.aspectMask = aspectFlags;
+    vkImageMemoryBarrier.subresourceRange.aspectMask = image.getImageAspectFlags();
     vkImageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
     vkImageMemoryBarrier.subresourceRange.layerCount = 1_u32t;
     vkImageMemoryBarrier.subresourceRange.levelCount = 1_u32t;
 
-    int32_t mipWidth = static_cast<int>(extent.width);
-    int32_t mipHeight = static_cast<int>(extent.height);
+    int32_t mipWidth = static_cast<int>(image.getExtent().width);
+    int32_t mipHeight = static_cast<int>(image.getExtent().height);
 
-    for (auto i = 1_u32t; i < mipLevelsCount; ++i)
+    for (auto i = 1_u32t; i < image.getMipLevelsCount(); ++i)
     {
         vkImageMemoryBarrier.subresourceRange.baseMipLevel = i - 1_u32t;
         vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -418,9 +417,9 @@ void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, VkImageAs
         vkImageBlit.dstSubresource.layerCount = 1_u32t;
 
         vkCmdBlitImage(commandBuffer,
-                       image,
+                       image.getImage(),
                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                       image,
+                       image.getImage(),
                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                        1_u32t,
                        &vkImageBlit,
@@ -443,11 +442,13 @@ void ResourcesMaker::generateMipmaps(VkImage image, VkExtent2D extent, VkImageAs
         if (mipHeight > 1) mipHeight /= 2;
     }
 
-    vkImageMemoryBarrier.subresourceRange.baseMipLevel = mipLevelsCount - 1;
+    vkImageMemoryBarrier.subresourceRange.baseMipLevel = image.getMipLevelsCount() - 1;
     vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    image.setCurrentLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkCmdPipelineBarrier(commandBuffer,
         VK_PIPELINE_STAGE_TRANSFER_BIT,

@@ -3,7 +3,9 @@
 #include "global.hpp"
 #include "Buffer.hpp"
 #include <vector>
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
 #include <memory>
 #include <array>
@@ -70,12 +72,22 @@ public:
 
     void setBuffer(const std::shared_ptr<Buffer>&, const std::shared_ptr<Buffer>&);
 
+    void setPosition(const glm::vec3&);
+    void setRotation(float, const glm::vec3&);
+    void setScale(const glm::vec3&);
+
+    glm::mat4 getModelMatrix() const;
+
 private:
     std::vector<Vertex>   m_vertices;
     std::vector<uint32_t> m_verticesIndices;
 
     std::shared_ptr<Buffer> m_verticesBuffer;
     std::shared_ptr<Buffer> m_indecesBuffer;
+
+    glm::mat4 m_modelMatrix;
+
+    void updateMvpMatrix();
 };
 
 } // namespace Renderer

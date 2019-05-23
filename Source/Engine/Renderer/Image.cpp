@@ -28,6 +28,11 @@ Image::~Image()
 
 void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBuffer commandBuffer)
 {
+    if (m_vkCurrentImageLayout == newImageLayout)
+    {
+        return;
+    }
+
     VkImageMemoryBarrier vkImageMemoryBarrier = {};
     vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     vkImageMemoryBarrier.oldLayout = m_vkCurrentImageLayout;
@@ -68,6 +73,14 @@ void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBu
         vkPipelineSourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         vkPipelineDestinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     }
+    else if (m_vkCurrentImageLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newImageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        vkPipelineSourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        vkPipelineDestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
     else
     {
         Log::getInstance() << "Renderer::transitionImageLayout(): Failed to transit image layout." << std::endl;
@@ -102,4 +115,14 @@ VkExtent2D Image::getExtent() const
 uint32_t Image::getMipLevelsCount() const
 {
     return m_mipLevelsCount;
+}
+
+VkImageAspectFlags Image::getImageAspectFlags() const
+{
+    return m_vkImageAspectFlags;
+}
+
+void Image::setCurrentLayout(VkImageLayout imageLayout)
+{
+    m_vkCurrentImageLayout = imageLayout;
 }
