@@ -54,10 +54,10 @@ struct Vertex
     }
 };
 
-class Model
+class Mesh
 {
 public:
-    Model(const std::vector<glm::vec3>&, const std::vector<uint32_t>&,
+    Mesh(const std::vector<glm::vec3>&, const std::vector<uint32_t>&,
                  const std::vector<glm::vec3>&, const std::vector<glm::vec2>&);
 
     VkDeviceSize getVerticiesSizeForBuffer() const;
@@ -85,9 +85,7 @@ private:
     std::shared_ptr<Buffer> m_verticesBuffer;
     std::shared_ptr<Buffer> m_indecesBuffer;
 
-    glm::mat4 m_modelMatrix;
-
-    void updateMvpMatrix();
+    glm::mat4 m_ModelMatrix;
 };
 
 } // namespace Renderer

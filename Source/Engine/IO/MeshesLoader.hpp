@@ -2,7 +2,7 @@
 
 #include "global.hpp"
 #include "ResourcesLoader.hpp"
-#include "../Renderer/Model.hpp"
+#include "../Renderer/Mesh.hpp"
 #include <glm/glm.hpp>
 #include <fstream>
 #include <filesystem>
@@ -39,7 +39,7 @@ public:
     static constexpr uint32_t KEM_BLOCK_MAX_VEC3_SIZE = std::numeric_limits<uint32_t>::max() - std::numeric_limits<uint32_t>::max() %  (3 * 4);
     static constexpr uint32_t KEM_BLOCK_MAX_VEC2_SIZE = std::numeric_limits<uint32_t>::max() - std::numeric_limits<uint32_t>::max() %  (2 * 4);
 
-    std::shared_ptr<Renderer::Model> generateModel();
+    std::shared_ptr<Renderer::Mesh> generateModel();
 };
 
 } // namespace IO

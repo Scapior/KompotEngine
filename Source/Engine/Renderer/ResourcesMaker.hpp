@@ -4,7 +4,7 @@
 #include "Buffer.hpp"
 #include "Image.hpp"
 #include "SingleTimeCommandBuffer.hpp"
-#include "../IO/ModelsLoader.hpp"
+#include "../IO/MeshesLoader.hpp"
 #include "../IO/TgaLoader.hpp"
 #include <vulkan/vulkan.hpp>
 #include <memory>
@@ -25,7 +25,7 @@ public:
 
     SingleTimeCommandBuffer createSingleTimeCommandBuffer() const;
 
-    std::shared_ptr<Model> createModelFromFile(const fs::path&);
+    std::shared_ptr<Mesh> createMeshFromFile(const fs::path&);
     std::shared_ptr<Image> createTextureFromFile(const fs::path&) const;
     std::shared_ptr<Image> createSwapchainImage(VkImage, VkFormat) const;
     std::shared_ptr<Image> createImage(VkExtent2D, uint32_t, VkFormat, VkImageLayout, VkImageTiling, VkImageUsageFlags, VkMemoryPropertyFlags, VkImageAspectFlags) const;
@@ -39,7 +39,7 @@ private:
     VkCommandPool    m_vkCommandPool;
     VkQueue          m_vkGraphicsQueue;
 
-    IO::ModelsLoader m_modelsLoader;
+    IO::ModelsLoader m_ModelsLoader;
     mutable IO::TgaLoader    m_texturesLoader;
 
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags) const;

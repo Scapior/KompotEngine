@@ -1,14 +1,14 @@
-#include "ModelsLoader.hpp"
+#include "MeshesLoader.hpp"
 
 using namespace KompotEngine::IO;
 using namespace KompotEngine::Renderer;
 
 
-std::shared_ptr<Model> ModelsLoader::generateModel()
+std::shared_ptr<Mesh> ModelsLoader::generateModel()
 {
     if (m_lastFileBytes.size() < 16)
     {
-        Log::getInstance() << " ModelsLoader::loadFile: Trying to generate model before loading data from file or file is incorrect." << std::endl;
+        Log::getInstance() << " ModelsLoader::loadFile: Trying to generate Model before loading data from file or file is incorrect." << std::endl;
         m_lastFileBytes.clear();
         return {};
     }
@@ -113,5 +113,5 @@ std::shared_ptr<Model> ModelsLoader::generateModel()
         }
     }
 
-    return std::make_shared<Model>(Model(vertices, verticesIndices, verticesNormals, verticesUv));
+    return std::make_shared<Mesh>(Mesh(vertices, verticesIndices, verticesNormals, verticesUv));
 }

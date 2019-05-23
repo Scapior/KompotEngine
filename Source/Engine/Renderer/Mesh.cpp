@@ -1,8 +1,8 @@
-#include "Model.hpp"
+#include "Mesh.hpp"
 
 using namespace KompotEngine::Renderer;
 
-Model::Model(const std::vector<glm::vec3> &vertices,
+Mesh::Mesh(const std::vector<glm::vec3> &vertices,
              const std::vector<uint32_t>  &verticesIndicies,
              const std::vector<glm::vec3> &verticesNormals,
              const std::vector<glm::vec2> &uv)
@@ -19,66 +19,66 @@ Model::Model(const std::vector<glm::vec3> &vertices,
         i++;
         m_vertices.push_back(vertex);
     }
-    m_modelMatrix = glm::mat4(1.0f);
+    m_ModelMatrix = glm::mat4(1.0f);
 }
 
-VkDeviceSize Model::getVerticiesSizeForBuffer() const
+VkDeviceSize Mesh::getVerticiesSizeForBuffer() const
 {
     return sizeof(m_vertices[0]) * m_vertices.size();
 }
 
-VkDeviceSize Model::getVerticiesIndecesSizeForBuffer() const
+VkDeviceSize Mesh::getVerticiesIndecesSizeForBuffer() const
 {
     return sizeof(m_verticesIndices[0]) * m_verticesIndices.size();
 }
 
-Vertex *Model::getVerticesData()
+Vertex *Mesh::getVerticesData()
 {
     return m_vertices.data();
 }
 
-uint32_t *Model::getVerticiesIndicesData()
+uint32_t *Mesh::getVerticiesIndicesData()
 {
     return m_verticesIndices.data();
 }
 
-uint32_t Model::getIndicesCount() const
+uint32_t Mesh::getIndicesCount() const
 {
     return  static_cast<uint32_t>(m_verticesIndices.size());
 }
 
-const VkBuffer &Model::getVertexBuffer() const
+const VkBuffer &Mesh::getVertexBuffer() const
 {
     return m_verticesBuffer->getBuffer();
 }
 
-const VkBuffer &Model::getIndecesBuffer() const
+const VkBuffer &Mesh::getIndecesBuffer() const
 {
     return m_indecesBuffer->getBuffer();
 }
 
-void Model::setBuffer(const std::shared_ptr<Buffer> &verticesBuffer, const std::shared_ptr<Buffer> &indecesBuffer)
+void Mesh::setBuffer(const std::shared_ptr<Buffer> &verticesBuffer, const std::shared_ptr<Buffer> &indecesBuffer)
 {
     m_verticesBuffer = verticesBuffer;
     m_indecesBuffer  = indecesBuffer;
 }
 
-void Model::setPosition(const glm::vec3 &position)
+void Mesh::setPosition(const glm::vec3 &position)
 {
-    m_modelMatrix = glm::translate(m_modelMatrix, position);
+    m_ModelMatrix = glm::translate(m_ModelMatrix, position);
 }
 
-void Model::setRotation(float angle, const glm::vec3 &axes)
+void Mesh::setRotation(float angle, const glm::vec3 &axes)
 {
-    m_modelMatrix = glm::rotate(m_modelMatrix, angle, axes);
+    m_ModelMatrix = glm::rotate(m_ModelMatrix, angle, axes);
 }
 
-void Model::setScale(const glm::vec3 &scale)
+void Mesh::setScale(const glm::vec3 &scale)
 {
-    m_modelMatrix = glm::scale(m_modelMatrix, scale);
+    m_ModelMatrix = glm::scale(m_ModelMatrix, scale);
 }
 
-glm::mat4 Model::getModelMatrix() const
+glm::mat4 Mesh::getModelMatrix() const
 {
-    return m_modelMatrix;
+    return m_ModelMatrix;
 }

@@ -23,7 +23,7 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     createDescriptorSetLayout();
     createGraphicsPipeline();
 
-    m_model = m_resourcesMaker->createModelFromFile("cube.kem");    
+    m_Model = m_resourcesMaker->createMeshFromFile("cube.kem");    
     m_texture = m_resourcesMaker->createTextureFromFile("texture.tga");
 
 //    createTextureImage();
@@ -68,7 +68,7 @@ Renderer::~Renderer()
 //    vkDestroyImage(m_vkDevice, m_vkTextureImage, nullptr);
 //    vkFreeMemory(m_vkDevice, m_vkTextureImageMemory, nullptr);
     m_texture.reset();
-    m_model.reset();
+    m_Model.reset();
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
     {
         vkDestroySemaphore(m_vkDevice, m_vkImageAvailableSemaphores[i], nullptr);
@@ -105,7 +105,7 @@ void Renderer::run()
             continue;
         }
 
-        updateUniformBuffer(imageIndex, m_model);
+        updateUniformBuffer(imageIndex, m_Model);
 
         VkPipelineStageFlags pipelineStagesFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo = {};
@@ -914,10 +914,10 @@ void Renderer::createCommandBuffers()
         VkDeviceSize vkOffsetsSizes[] = {0_u32t};
         vkCmdBeginRenderPass(m_vkCommandBuffers[i], &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_model->getVertexBuffer(), vkOffsetsSizes);
-            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_model->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_Model->getVertexBuffer(), vkOffsetsSizes);
+            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_Model->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
             vkCmdBindDescriptorSets(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, &m_vkDescriptorSets[i],  0_u32t, nullptr);
-            vkCmdDrawIndexed(m_vkCommandBuffers[i], m_model->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
+            vkCmdDrawIndexed(m_vkCommandBuffers[i], m_Model->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         vkCmdEndRenderPass(m_vkCommandBuffers[i]);
 
         resultCode = vkEndCommandBuffer(m_vkCommandBuffers[i]);
@@ -984,15 +984,15 @@ uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags 
     std::terminate();
 }
 
-void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex,  const std::shared_ptr<Model> &model)
+void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex,  const std::shared_ptr<Mesh> &Model)
 {
     static auto lastTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
     float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     lastTime = currentTime;
     UnifromBufferObject mvpMatrix = {};
-    model->setRotation(deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
-    mvpMatrix.model = model->getModelMatrix();
+    Model->setRotation(deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
+    mvpMatrix.Model = Model->getModelMatrix();
     mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
     mvpMatrix.projection[1][1] *= -1; // flip Y (OGL coordinate system to VK)

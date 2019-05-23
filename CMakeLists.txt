@@ -16,11 +16,11 @@ set(SOURCES
     Source/Engine/Renderer/Shader.cpp
     Source/Engine/Renderer/ResourcesMaker.cpp
     Source/Engine/Renderer/Image.cpp
-    Source/Engine/Renderer/Model.cpp
+    Source/Engine/Renderer/Mesh.cpp
     Source/Engine/Renderer/Buffer.cpp
     Source/Engine/Renderer/SingleTimeCommandBuffer.cpp
     Source/Engine/IO/ResourcesLoader.cpp
-    Source/Engine/IO/ModelsLoader.cpp
+    Source/Engine/IO/MeshesLoader.cpp
     Source/Engine/IO/TgaLoader.cpp
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
@@ -35,11 +35,11 @@ set(HEADERS
     Source/Engine/Renderer/Shader.hpp
     Source/Engine/Renderer/ResourcesMaker.hpp
     Source/Engine/Renderer/Image.hpp
-    Source/Engine/Renderer/Model.hpp
+    Source/Engine/Renderer/Mesh.hpp
     Source/Engine/Renderer/Buffer.hpp
     Source/Engine/Renderer/SingleTimeCommandBuffer.hpp
     Source/Engine/IO/ResourcesLoader.hpp
-    Source/Engine/IO/ModelsLoader.hpp
+    Source/Engine/IO/MeshesLoader.hpp
     Source/Engine/IO/TgaLoader.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp

@@ -27,21 +27,21 @@ uint32_t ResourcesMaker::findMemoryType(uint32_t requiredTypes, VkMemoryProperty
     std::terminate();
 }
 
-std::shared_ptr<Model> ResourcesMaker::createModelFromFile(const fs::path &path)
+std::shared_ptr<Mesh> ResourcesMaker::createMeshFromFile(const fs::path &path)
 {
-    m_modelsLoader.loadFile(path);
-    auto model = m_modelsLoader.generateModel();
-    if (model == nullptr)
+    m_ModelsLoader.loadFile(path);
+    auto Model = m_ModelsLoader.generateModel();
+    if (Model == nullptr)
     {
         return {};
     }
 
-    VkDeviceSize vkVerticesBufferSize = model->getVerticiesSizeForBuffer();
+    VkDeviceSize vkVerticesBufferSize = Model->getVerticiesSizeForBuffer();
     auto verticesStagingBuffer = createBuffer(
                              vkVerticesBufferSize,
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    VkResult resultCode = verticesStagingBuffer->copyFromRawPointer(model->getVerticesData(), vkVerticesBufferSize);
+    VkResult resultCode = verticesStagingBuffer->copyFromRawPointer(Model->getVerticesData(), vkVerticesBufferSize);
     if (resultCode != VK_SUCCESS)
     {
         return {};
@@ -51,12 +51,12 @@ std::shared_ptr<Model> ResourcesMaker::createModelFromFile(const fs::path &path)
                                       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    VkDeviceSize vkIndecesBufferSize = model->getVerticiesIndecesSizeForBuffer();
+    VkDeviceSize vkIndecesBufferSize = Model->getVerticiesIndecesSizeForBuffer();
     auto indecesStagingBuffer = createBuffer(
                              vkIndecesBufferSize,
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    resultCode = indecesStagingBuffer->copyFromRawPointer(model->getVerticiesIndicesData(), vkIndecesBufferSize);
+    resultCode = indecesStagingBuffer->copyFromRawPointer(Model->getVerticiesIndicesData(), vkIndecesBufferSize);
     if (resultCode != VK_SUCCESS)
     {
         return {};
@@ -67,8 +67,8 @@ std::shared_ptr<Model> ResourcesMaker::createModelFromFile(const fs::path &path)
                              VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    model->setBuffer(vkVerticesBuffer, vkIndecesBuffer);
-    return model;
+    Model->setBuffer(vkVerticesBuffer, vkIndecesBuffer);
+    return Model;
 }
 
 std::shared_ptr<Image> ResourcesMaker::createTextureFromFile(const fs::path &filePath) const

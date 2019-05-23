@@ -3,8 +3,8 @@
 #include "global.hpp"
 #include "ResourcesMaker.hpp"
 #include "Shader.hpp"
-#include "Model.hpp"
-#include "../IO/ModelsLoader.hpp"
+#include "Mesh.hpp"
+#include "../IO/MeshesLoader.hpp"
 #include "../IO/TgaLoader.hpp"
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
@@ -30,7 +30,7 @@ namespace Renderer
 
 struct UnifromBufferObject
 {
-    glm::mat4 model;
+    glm::mat4 Model;
     glm::mat4 view;
     glm::mat4 projection;
 };
@@ -72,7 +72,7 @@ public:
     ~Renderer();
 private:
     ResourcesMaker *m_resourcesMaker = nullptr;
-    std::shared_ptr<Model> m_model;
+    std::shared_ptr<Mesh> m_Model;
     std::shared_ptr<Image> m_texture;
 
     // window
@@ -159,7 +159,7 @@ private:
     void recreateSwapchain();
 
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
-    void updateUniformBuffer(uint32_t, const std::shared_ptr<Model>&);
+    void updateUniformBuffer(uint32_t, const std::shared_ptr<Mesh>&);
 
     void createDepthResources();
 
