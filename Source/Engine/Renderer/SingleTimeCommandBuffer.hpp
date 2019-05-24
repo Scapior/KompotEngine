@@ -16,6 +16,7 @@ class SingleTimeCommandBuffer
 public:
     SingleTimeCommandBuffer(VkDevice, VkCommandPool, VkQueue);
     operator VkCommandBuffer() const;
+    operator const VkCommandBuffer*() const;
     VkResult submit();
     ~SingleTimeCommandBuffer();
 private:

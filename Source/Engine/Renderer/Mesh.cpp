@@ -19,7 +19,6 @@ Mesh::Mesh(const std::vector<glm::vec3> &vertices,
         i++;
         m_vertices.push_back(vertex);
     }
-    m_ModelMatrix = glm::mat4(1.0f);
 }
 
 VkDeviceSize Mesh::getVerticiesSizeForBuffer() const
@@ -47,38 +46,18 @@ uint32_t Mesh::getIndicesCount() const
     return  static_cast<uint32_t>(m_verticesIndices.size());
 }
 
-const VkBuffer &Mesh::getVertexBuffer() const
+const VkBuffer *Mesh::getVertexBuffer() const
 {
-    return m_verticesBuffer->getBuffer();
+    return &m_verticesBuffer->getBuffer();
 }
 
-const VkBuffer &Mesh::getIndecesBuffer() const
+const VkBuffer *Mesh::getIndecesBuffer() const
 {
-    return m_indecesBuffer->getBuffer();
+    return &m_indecesBuffer->getBuffer();
 }
 
 void Mesh::setBuffer(const std::shared_ptr<Buffer> &verticesBuffer, const std::shared_ptr<Buffer> &indecesBuffer)
 {
     m_verticesBuffer = verticesBuffer;
     m_indecesBuffer  = indecesBuffer;
-}
-
-void Mesh::setPosition(const glm::vec3 &position)
-{
-    m_ModelMatrix = glm::translate(m_ModelMatrix, position);
-}
-
-void Mesh::setRotation(float angle, const glm::vec3 &axes)
-{
-    m_ModelMatrix = glm::rotate(m_ModelMatrix, angle, axes);
-}
-
-void Mesh::setScale(const glm::vec3 &scale)
-{
-    m_ModelMatrix = glm::scale(m_ModelMatrix, scale);
-}
-
-glm::mat4 Mesh::getModelMatrix() const
-{
-    return m_ModelMatrix;
 }

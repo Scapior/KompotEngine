@@ -2,12 +2,94 @@
 
 using namespace KompotEngine::Renderer;
 
-ResourcesMaker::ResourcesMaker(VkPhysicalDevice vkPhysicalDevice, VkDevice vkDevice, VkCommandPool vkCommandPool, VkQueue vkGraphicsQueue)
-    : m_vkDevice(vkDevice), m_vkPhysicalDevice(vkPhysicalDevice), m_vkCommandPool(vkCommandPool), m_vkGraphicsQueue(vkGraphicsQueue) {}
+ResourcesMaker::ResourcesMaker(VkPhysicalDevice vkPhysicalDevice,
+                               VkDevice vkDevice,
+                               VkCommandPool vkCommandPool,
+                               VkQueue vkGraphicsQueue,
+                               VkDescriptorSetLayout vkDescriptorSetLayout)
+    : m_vkDevice(vkDevice),
+      m_vkPhysicalDevice(vkPhysicalDevice),
+      m_vkCommandPool(vkCommandPool),
+      m_vkGraphicsQueue(vkGraphicsQueue),
+      m_descriptorPoolManager(vkDevice),
+      m_vkDescriptorSetLayout(vkDescriptorSetLayout)
+{
+}
 
 SingleTimeCommandBuffer ResourcesMaker::createSingleTimeCommandBuffer() const
 {
     return SingleTimeCommandBuffer(m_vkDevice, m_vkCommandPool, m_vkGraphicsQueue);
+}
+
+std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
+        const std::string &className,
+        std::shared_ptr<Mesh> meshPointer,
+        std::shared_ptr<Image> texturePointer)
+{
+    if (!meshPointer)
+    {
+        meshPointer = createMeshFromFile(className + ".kem");
+    }
+
+    if (!texturePointer)
+    {
+        texturePointer = createTextureFromFile(className + ".tga");
+    }
+
+
+    VkDeviceSize vkUniformSize = sizeof(UnifromBufferObject);
+
+    std::vector<std::shared_ptr<Buffer>> vkUniformMatricesBuffers{2};
+    for (auto i = 0_u64t; i < vkUniformMatricesBuffers.size(); ++i)
+    {
+        vkUniformMatricesBuffers[i] = createBuffer(
+                     vkUniformSize,
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
+    }
+
+    auto vkDescriptorSets = m_descriptorPoolManager.allocateDescriptorSet(2, &m_vkDescriptorSetLayout);
+    for (auto i = 0_u64t; i < vkDescriptorSets.size(); ++i)
+    {
+        VkDescriptorBufferInfo vkDescriptorBufferInfo = {};
+        vkDescriptorBufferInfo.buffer = vkUniformMatricesBuffers[i]->getBuffer();
+        vkDescriptorBufferInfo.offset = 0_64t;
+        vkDescriptorBufferInfo.range = sizeof(UnifromBufferObject);
+
+        VkDescriptorImageInfo vkDescriptorImageInfo = {};
+        vkDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        vkDescriptorImageInfo.imageView = texturePointer->getImageView();
+        vkDescriptorImageInfo.sampler = texturePointer->getSampler();
+
+        std::array<VkWriteDescriptorSet, 2_u32t> vkWriteDescriptorsets = {};
+
+        vkWriteDescriptorsets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        vkWriteDescriptorsets[0].dstSet = vkDescriptorSets[i];
+        vkWriteDescriptorsets[0].dstBinding = 0_u32t;
+        vkWriteDescriptorsets[0].dstArrayElement = 0_u32t;
+        vkWriteDescriptorsets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        vkWriteDescriptorsets[0].descriptorCount = 1_u32t;
+        vkWriteDescriptorsets[0].pBufferInfo = &vkDescriptorBufferInfo;
+
+        vkWriteDescriptorsets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        vkWriteDescriptorsets[1].dstSet = vkDescriptorSets[i];
+        vkWriteDescriptorsets[1].dstBinding = 1_u32t;
+        vkWriteDescriptorsets[1].dstArrayElement = 0_u32t;
+        vkWriteDescriptorsets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        vkWriteDescriptorsets[1].descriptorCount = 1_u32t;
+        vkWriteDescriptorsets[1].pImageInfo = &vkDescriptorImageInfo;
+
+        vkUpdateDescriptorSets(m_vkDevice, vkWriteDescriptorsets.size(), vkWriteDescriptorsets.data(), 0_u32t, nullptr);
+    }
+
+    return std::make_shared<KompotEngine::MeshObject>(m_vkDevice,
+                                                      m_descriptorPoolManager,
+                                                      className,
+                                                      vkDescriptorSets,
+                                                      meshPointer,
+                                                      texturePointer,
+                                                      vkUniformMatricesBuffers);
 }
 
 uint32_t ResourcesMaker::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties) const
@@ -27,21 +109,21 @@ uint32_t ResourcesMaker::findMemoryType(uint32_t requiredTypes, VkMemoryProperty
     std::terminate();
 }
 
-std::shared_ptr<Mesh> ResourcesMaker::createMeshFromFile(const fs::path &path)
+std::shared_ptr<Mesh> ResourcesMaker::createMeshFromFile(const fs::path &path) const
 {
     m_ModelsLoader.loadFile(path);
-    auto Model = m_ModelsLoader.generateModel();
-    if (Model == nullptr)
+    auto mesh = m_ModelsLoader.generateModel();
+    if (mesh == nullptr)
     {
         return {};
     }
 
-    VkDeviceSize vkVerticesBufferSize = Model->getVerticiesSizeForBuffer();
+    VkDeviceSize vkVerticesBufferSize = mesh->getVerticiesSizeForBuffer();
     auto verticesStagingBuffer = createBuffer(
                              vkVerticesBufferSize,
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    VkResult resultCode = verticesStagingBuffer->copyFromRawPointer(Model->getVerticesData(), vkVerticesBufferSize);
+    VkResult resultCode = verticesStagingBuffer->copyFromRawPointer(mesh->getVerticesData(), vkVerticesBufferSize);
     if (resultCode != VK_SUCCESS)
     {
         return {};
@@ -51,12 +133,12 @@ std::shared_ptr<Mesh> ResourcesMaker::createMeshFromFile(const fs::path &path)
                                       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    VkDeviceSize vkIndecesBufferSize = Model->getVerticiesIndecesSizeForBuffer();
+    VkDeviceSize vkIndecesBufferSize = mesh->getVerticiesIndecesSizeForBuffer();
     auto indecesStagingBuffer = createBuffer(
                              vkIndecesBufferSize,
                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    resultCode = indecesStagingBuffer->copyFromRawPointer(Model->getVerticiesIndicesData(), vkIndecesBufferSize);
+    resultCode = indecesStagingBuffer->copyFromRawPointer(mesh->getVerticiesIndicesData(), vkIndecesBufferSize);
     if (resultCode != VK_SUCCESS)
     {
         return {};
@@ -67,8 +149,9 @@ std::shared_ptr<Mesh> ResourcesMaker::createMeshFromFile(const fs::path &path)
                              VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    Model->setBuffer(vkVerticesBuffer, vkIndecesBuffer);
-    return Model;
+    mesh->setBuffer(vkVerticesBuffer, vkIndecesBuffer);
+
+    return mesh;
 }
 
 std::shared_ptr<Image> ResourcesMaker::createTextureFromFile(const fs::path &filePath) const

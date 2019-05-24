@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "World.hpp"
 #include "Renderer/Renderer.hpp"
 #include <BuildVersion.hpp>
 #include <vulkan/vulkan.hpp>
@@ -8,8 +9,10 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <memory>
 
-namespace KompotEngine {
+namespace KompotEngine
+{
 
 struct EngineConfig
 {
@@ -33,6 +36,8 @@ private:
     Renderer::Renderer *m_renderer = nullptr;
 
     GLFWwindow* m_glfwWindowHandler;
+
+    std::shared_ptr<World> m_world;
 
     // GLFW callbacks
 

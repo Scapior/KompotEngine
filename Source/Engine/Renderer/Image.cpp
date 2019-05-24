@@ -5,12 +5,26 @@ using namespace KompotEngine::Renderer;
 Image::Image(VkDevice vkDevice, VkImage vkImage, VkImageView vkImageView)
     : m_vkDevice(vkDevice), m_vkImage(vkImage), m_vkImageView(vkImageView) { }
 
-Image::Image(VkDevice vkDevice, VkExtent2D vkExtent, VkImage vkImage, VkImageView vkImageView, VkSampler vkImageSampler,
-             VkFormat vkFormat, VkImageLayout vkImageLayout, VkDeviceMemory vkImageMemory,
-             VkImageAspectFlags vkImageAspectFlags, uint32_t mipLevelsCount)
-    : m_vkDevice(vkDevice), m_vkExtent(vkExtent), m_vkImage(vkImage), m_vkImageView(vkImageView),
-      m_vkImageSampler(vkImageSampler), m_vkImageFormat(vkFormat), m_vkCurrentImageLayout(vkImageLayout),
-      m_vkImageMemory(vkImageMemory), m_vkImageAspectFlags(vkImageAspectFlags), m_mipLevelsCount(mipLevelsCount) { }
+Image::Image(VkDevice vkDevice,
+             VkExtent2D vkExtent,
+             VkImage vkImage,
+             VkImageView vkImageView,
+             VkSampler vkImageSampler,
+             VkFormat vkFormat,
+             VkImageLayout vkImageLayout,
+             VkDeviceMemory vkImageMemory,
+             VkImageAspectFlags vkImageAspectFlags,
+             uint32_t mipLevelsCount)
+    : m_vkDevice(vkDevice),
+      m_vkExtent(vkExtent),
+      m_vkImage(vkImage),
+      m_vkImageView(vkImageView),
+      m_vkImageSampler(vkImageSampler),
+      m_vkImageFormat(vkFormat),
+      m_vkCurrentImageLayout(vkImageLayout),
+      m_vkImageMemory(vkImageMemory),
+      m_vkImageAspectFlags(vkImageAspectFlags),
+      m_mipLevelsCount(mipLevelsCount) { }
 
 Image::~Image()
 {
@@ -92,7 +106,7 @@ void Image::transitImageLayout(VkImageLayout newImageLayout, SingleTimeCommandBu
     m_vkCurrentImageLayout = newImageLayout;
 }
 
-VkImage Image::getImage() const
+const VkImage &Image::getImage() const
 {
     return m_vkImage;
 }

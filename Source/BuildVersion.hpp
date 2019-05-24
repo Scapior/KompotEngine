@@ -1,4 +1,4 @@
 #pragma once    
 
-static const unsigned int BUILD_VERSION = 389;    
-static const unsigned int GIT_HASH_SHORT = 0xbb83be6;
+static const unsigned int BUILD_VERSION = 433;    
+static const unsigned int GIT_HASH_SHORT = 0x2db7f9f;

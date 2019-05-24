@@ -42,11 +42,12 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     glfwSetWindowTitle(m_glfwWindowHandler, newWindowTitile.str().c_str());
 #endif
 
-    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_instanceName);
+    m_world.reset(new World());
+    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_world, m_instanceName);
     log << "Renderer successfully initialized." << std::endl;
 
-
     glfwSetFramebufferSizeCallback(m_glfwWindowHandler, resizeCallback);
+
 }
 
 Engine::~Engine()

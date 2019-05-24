@@ -18,13 +18,13 @@ public:
     ~Image();
     void transitImageLayout(VkImageLayout, SingleTimeCommandBuffer);
 
-    VkImage     getImage() const;
-    VkImageView getImageView() const;
-    VkSampler   getSampler() const;
-    VkExtent2D  getExtent() const;
-    uint32_t    getMipLevelsCount() const;
+    const VkImage &getImage() const;
+    VkImageView    getImageView() const;
+    VkSampler      getSampler() const;
+    VkExtent2D     getExtent() const;
+    uint32_t       getMipLevelsCount() const;
+    void           setCurrentLayout(VkImageLayout);
     VkImageAspectFlags getImageAspectFlags() const;
-    void        setCurrentLayout(VkImageLayout);
 
 private:
     VkDevice       m_vkDevice;

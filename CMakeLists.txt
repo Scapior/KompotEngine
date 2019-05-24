@@ -12,6 +12,8 @@ project(KompotEngine)
 set(SOURCES
     Source/main.cpp
     Source/Engine/Engine.cpp
+    Source/Engine/World.cpp
+    Source/Engine/MeshObject.cpp
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/Shader.cpp
     Source/Engine/Renderer/ResourcesMaker.cpp
@@ -19,6 +21,7 @@ set(SOURCES
     Source/Engine/Renderer/Mesh.cpp
     Source/Engine/Renderer/Buffer.cpp
     Source/Engine/Renderer/SingleTimeCommandBuffer.cpp
+    Source/Engine/Renderer/DescriptorPoolManager.cpp
     Source/Engine/IO/ResourcesLoader.cpp
     Source/Engine/IO/MeshesLoader.cpp
     Source/Engine/IO/TgaLoader.cpp
@@ -31,6 +34,8 @@ set(HEADERS
     Source/global.hpp
     Source/BuildVersion.hpp
     Source/Engine/Engine.hpp
+    Source/Engine/World.hpp
+    Source/Engine/MeshObject.hpp
     Source/Engine/Renderer/Renderer.hpp
     Source/Engine/Renderer/Shader.hpp
     Source/Engine/Renderer/ResourcesMaker.hpp
@@ -38,6 +43,7 @@ set(HEADERS
     Source/Engine/Renderer/Mesh.hpp
     Source/Engine/Renderer/Buffer.hpp
     Source/Engine/Renderer/SingleTimeCommandBuffer.hpp
+    Source/Engine/Renderer/DescriptorPoolManager.hpp
     Source/Engine/IO/ResourcesLoader.hpp
     Source/Engine/IO/MeshesLoader.hpp
     Source/Engine/IO/TgaLoader.hpp

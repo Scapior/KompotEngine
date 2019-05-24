@@ -7,8 +7,13 @@ PFN_vkCreateDebugUtilsMessengerEXT  Renderer::pfn_vkCreateDebugUtilsMessengerEXT
 PFN_vkDestroyDebugUtilsMessengerEXT Renderer::pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
 #endif
 
-Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
-    : m_glfwWindowHandler(window), m_windowsName(windowName), m_isResized(false)
+Renderer::Renderer(GLFWwindow *window,
+                   const std::shared_ptr<World> &world,
+                   const std::string &windowName)
+    : m_glfwWindowHandler(window),
+      m_world(world),
+      m_windowsName(windowName),
+      m_isResized(false)
 {
     createVkInstance();
     setupDebugCallback();
@@ -16,37 +21,32 @@ Renderer::Renderer(GLFWwindow *window, const std::string &windowName)
     selectPysicalDevice();
     createDevice();
     createCommandPool();
-    m_resourcesMaker = new ResourcesMaker(m_vkPhysicalDevice, m_vkDevice, m_vkCommandPool, m_vkGraphicsQueue);
+    createDescriptorSetLayout();
+    m_resourcesMaker = new ResourcesMaker(m_vkPhysicalDevice,
+                                          m_vkDevice,
+                                          m_vkCommandPool,
+                                          m_vkGraphicsQueue,
+                                          m_vkDescriptorSetLayout);
 
     createSwapchain();
     createRenderPass();
-    createDescriptorSetLayout();
     createGraphicsPipeline();
-
-    m_Model = m_resourcesMaker->createMeshFromFile("cube.kem");    
-    m_texture = m_resourcesMaker->createTextureFromFile("texture.tga");
-
-//    createTextureImage();
-//    createTextureImageView();
-//    createTextureSampler();
-    createUniformBuffer();
-    createDescriptorPool();
-    createDescriptorSets();
     createDepthResources();
     createFramebuffers();
-    createCommandBuffers();
     createSyncObjects();
+
+    m_world->createObject("cube");
+    //m_world->createObject("cube");
 }
 
 void Renderer::cleanupSwapchain()
 {
-    delete m_resourcesMaker;
     m_vkDepthImage.reset();
     for (auto framebuffer : m_vkFramebuffers)
     {
         vkDestroyFramebuffer(m_vkDevice, framebuffer, nullptr);
     }
-    vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, static_cast<uint32_t>(m_vkCommandBuffers.size()), m_vkCommandBuffers.data());
+    m_vkDepthImage.reset();
     vkDestroyPipeline(m_vkDevice, m_vkPipeline, nullptr);
     vkDestroyPipelineLayout(m_vkDevice, m_vkPipelineLayout, nullptr);
     vkDestroyRenderPass(m_vkDevice, m_vkRenderPass, nullptr);
@@ -56,19 +56,12 @@ void Renderer::cleanupSwapchain()
 
 Renderer::~Renderer()
 {
+    delete m_resourcesMaker;
+    m_world->clear();
+
     cleanupSwapchain();
     vkDestroyDescriptorSetLayout(m_vkDevice, m_vkDescriptorSetLayout, nullptr);
-    for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        m_vkUniformMatricesBuffers[i].reset();
-    }
-    vkDestroyDescriptorPool(m_vkDevice, m_vkDescriptorPool, nullptr);
-//    vkDestroySampler(m_vkDevice, m_vkTextureSampler, nullptr);
-//    vkDestroyImageView(m_vkDevice, m_vkTextureImageView, nullptr);
-//    vkDestroyImage(m_vkDevice, m_vkTextureImage, nullptr);
-//    vkFreeMemory(m_vkDevice, m_vkTextureImageMemory, nullptr);
-    m_texture.reset();
-    m_Model.reset();
+
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
     {
         vkDestroySemaphore(m_vkDevice, m_vkImageAvailableSemaphores[i], nullptr);
@@ -94,6 +87,7 @@ void Renderer::run()
         auto &renderFinishedSemaphore = m_vkRenderFinishedSemaphores[currentFrameIndex];
 
         vkWaitForFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        m_world->loadObjects(*m_resourcesMaker);
 
         auto imageIndex = 0_u32t;
         auto resultCode = vkAcquireNextImageKHR(m_vkDevice, m_vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr, &imageIndex);
@@ -105,7 +99,60 @@ void Renderer::run()
             continue;
         }
 
-        updateUniformBuffer(imageIndex, m_Model);
+        // setup command buffer
+
+        auto commandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
+
+        VkRenderPassBeginInfo vkRenderPassBeginInfo = {};
+        vkRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        vkRenderPassBeginInfo.renderPass = m_vkRenderPass;
+        vkRenderPassBeginInfo.framebuffer = m_vkFramebuffers[imageIndex];
+        vkRenderPassBeginInfo.renderArea.offset = {0_32t, 0_32t};
+        vkRenderPassBeginInfo.renderArea.extent = m_vkExtent;
+
+        std::array<VkClearValue, 2_u32t> vkClearValues;
+
+        vkClearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+        vkClearValues[1].depthStencil = {1.0f, 0};
+        vkRenderPassBeginInfo.clearValueCount = vkClearValues.size();
+        vkRenderPassBeginInfo.pClearValues = vkClearValues.data();
+
+        static auto lastTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+        lastTime = currentTime;
+        UnifromBufferObject mvpMatrix = {};
+        mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
+        mvpMatrix.projection[1][1] *= -1;
+
+        VkDeviceSize vkOffsetsSizes[] = {0_u32t};
+        vkCmdBeginRenderPass(commandBuffer, &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        for (const auto& object : m_world->getMeshObjects())
+        {
+            mvpMatrix.model = object->getModelMatrix();
+            mvpMatrix.model = glm::rotate(mvpMatrix.model, deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
+            auto uniformMatricesBuffers = object->getUboBuffer();
+            uniformMatricesBuffers->copyFromRawPointer(&mvpMatrix, sizeof(UnifromBufferObject));
+
+
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
+            vkCmdBindVertexBuffers(commandBuffer, 0_u32t, 1_u32t, object->getMesh()->getVertexBuffer(), vkOffsetsSizes);
+            vkCmdBindIndexBuffer(commandBuffer, *object->getMesh()->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, object->getDescriptorSet(),  0_u32t, nullptr);
+            vkCmdDrawIndexed(commandBuffer, object->getMesh()->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
+        }
+        vkCmdEndRenderPass(commandBuffer);
+
+        resultCode = vkEndCommandBuffer(commandBuffer);
+        if (resultCode != VK_SUCCESS)
+        {
+            Log::getInstance() << "Renderer::createCommandBuffers(): Function vkEndCommandBuffer call failed with a code " << resultCode << ". Terminated." << std::endl;
+            std::terminate();
+        }
+
+        // submit
 
         VkPipelineStageFlags pipelineStagesFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo = {};
@@ -114,11 +161,16 @@ void Renderer::run()
         submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
         submitInfo.pWaitDstStageMask = pipelineStagesFlags;
         submitInfo.commandBufferCount = 1_u32t;
-        submitInfo.pCommandBuffers = &m_vkCommandBuffers[imageIndex];
+        submitInfo.pCommandBuffers = commandBuffer;
         submitInfo.signalSemaphoreCount = 1_u32t;
         submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-        vkResetFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
+        resultCode = vkResetFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
+        if (resultCode != VK_SUCCESS)
+        {
+            Log::getInstance() << "Renderer::run(): vkResetFences failed with code " << resultCode << ". Terminated." << std::endl;
+            std::terminate();
+        }
         resultCode = vkQueueSubmit(m_vkGraphicsQueue, 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]);
         if (resultCode != VK_SUCCESS)
         {
@@ -147,7 +199,12 @@ void Renderer::run()
             Log::getInstance() << "Renderer::run(): vkQueuePresentKHR failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
-        vkQueueWaitIdle(m_vkGraphicsQueue);
+        resultCode = vkQueueWaitIdle(m_vkGraphicsQueue);
+        if(resultCode != VK_SUCCESS)
+        {
+            Log::getInstance() << "Renderer::run(): vkQueueWaitIdle failed with code " << resultCode << ". Terminated." << std::endl;
+            std::terminate();
+        }
     }
 
     vkDeviceWaitIdle(m_vkDevice);
@@ -499,10 +556,8 @@ void Renderer::createSwapchain()
 
     for (auto& swapchainImage : swapchainImages)
     {
-        // TODO: создать Image'сы на базе VkImage'в свапчейна
         auto image = m_resourcesMaker->createSwapchainImage(swapchainImage, m_vkImageFormat);
         m_vkSwapchainImages.push_back(image);
-        //createImageView(m_vkSwapchainImages[i], 1_u32t, m_vkImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_vkImageViews[i]);
     }
     m_vkViewport.x = 0.0f;
     m_vkViewport.y = 0.0f;
@@ -602,6 +657,8 @@ void Renderer::createFramebuffers()
 
 void Renderer::createDescriptorSetLayout()
 {
+    m_vkDescriptorSetLayout = nullptr;
+
     VkDescriptorSetLayoutBinding vkUniformBufferDescriptorSetLayoutBinding = {};
     vkUniformBufferDescriptorSetLayoutBinding.binding = 0_u32t;
     vkUniformBufferDescriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -628,101 +685,6 @@ void Renderer::createDescriptorSetLayout()
         std::terminate();
     }
 };
-
-void Renderer::createUniformBuffer()
-{
-    VkDeviceSize vkUniformSize = sizeof(UnifromBufferObject);
-
-    m_vkUniformMatricesBuffers.resize(m_vkSwapchainImages.size());
-
-    for (auto i = 0_u64t; i < m_vkSwapchainImages.size(); ++i)
-    {
-        m_vkUniformMatricesBuffers[i] = m_resourcesMaker->createBuffer(
-                     vkUniformSize,
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        );
-    }
-};
-
-void Renderer::createDescriptorPool()
-{
-    std::array<VkDescriptorPoolSize, 2_u32t> vkDescriptorPoolsSizes = {};
-
-    const auto count = static_cast<uint32_t>(m_vkSwapchainImages.size());
-
-    vkDescriptorPoolsSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    vkDescriptorPoolsSizes[0].descriptorCount = count;
-
-    vkDescriptorPoolsSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    vkDescriptorPoolsSizes[1].descriptorCount = count;
-
-    VkDescriptorPoolCreateInfo vkDescriptorPoolCreateInfo = {};
-    vkDescriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    vkDescriptorPoolCreateInfo.poolSizeCount = vkDescriptorPoolsSizes.size();
-    vkDescriptorPoolCreateInfo.pPoolSizes = vkDescriptorPoolsSizes.data();
-    vkDescriptorPoolCreateInfo.maxSets = count;
-
-    const auto resultCode = vkCreateDescriptorPool(m_vkDevice, &vkDescriptorPoolCreateInfo, nullptr, &m_vkDescriptorPool);
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createDescriptorPool(): Function vkCreateDescriptorPool call failed with a code " << resultCode << ". Terminated." << std::endl;
-        std::terminate();
-    }
-}
-
-void Renderer::createDescriptorSets()
-{
-    std::vector<VkDescriptorSetLayout> vkDescriptorSetsLayouts(m_vkSwapchainImages.size(), m_vkDescriptorSetLayout);
-
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
-    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = m_vkDescriptorPool;
-    descriptorSetAllocateInfo.descriptorSetCount = static_cast<uint32_t>(m_vkSwapchainImages.size());
-    descriptorSetAllocateInfo.pSetLayouts = vkDescriptorSetsLayouts.data();
-
-    m_vkDescriptorSets.resize(m_vkSwapchainImages.size());
-
-    const auto resultCode = vkAllocateDescriptorSets(m_vkDevice, &descriptorSetAllocateInfo, m_vkDescriptorSets.data());
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createDescriptorSets(): Function vkAllocateDescriptorSets call failed with code " << resultCode << ". Terminated." << std::endl;
-        std::terminate();
-    }
-
-    for (auto i = 0_u64t; i < m_vkSwapchainImages.size(); ++i)
-    {
-        VkDescriptorBufferInfo vkDescriptorBufferInfo = {};
-        vkDescriptorBufferInfo.buffer = m_vkUniformMatricesBuffers[i]->getBuffer();
-        vkDescriptorBufferInfo.offset = 0_64t;
-        vkDescriptorBufferInfo.range = sizeof(UnifromBufferObject);
-
-        VkDescriptorImageInfo vkDescriptorImageInfo = {};
-        vkDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        vkDescriptorImageInfo.imageView = m_texture->getImageView();
-        vkDescriptorImageInfo.sampler = m_texture->getSampler();
-
-        std::array<VkWriteDescriptorSet, 2_u32t> vkWriteDescriptorsets = {};
-
-        vkWriteDescriptorsets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        vkWriteDescriptorsets[0].dstSet = m_vkDescriptorSets[i];
-        vkWriteDescriptorsets[0].dstBinding = 0_u32t;
-        vkWriteDescriptorsets[0].dstArrayElement = 0_u32t;
-        vkWriteDescriptorsets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        vkWriteDescriptorsets[0].descriptorCount = 1_u32t;
-        vkWriteDescriptorsets[0].pBufferInfo = &vkDescriptorBufferInfo;
-
-        vkWriteDescriptorsets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        vkWriteDescriptorsets[1].dstSet = m_vkDescriptorSets[i];
-        vkWriteDescriptorsets[1].dstBinding = 1_u32t;
-        vkWriteDescriptorsets[1].dstArrayElement = 0_u32t;
-        vkWriteDescriptorsets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        vkWriteDescriptorsets[1].descriptorCount = 1_u32t;
-        vkWriteDescriptorsets[1].pImageInfo = &vkDescriptorImageInfo;
-
-        vkUpdateDescriptorSets(m_vkDevice, vkWriteDescriptorsets.size(), vkWriteDescriptorsets.data(), 0_u32t, nullptr);
-    }
-}
 
 void Renderer::createGraphicsPipeline()
 {
@@ -867,68 +829,6 @@ void Renderer::createCommandPool()
     }
 }
 
-void Renderer::createCommandBuffers()
-{
-    m_vkCommandBuffers.resize(m_vkFramebuffers.size());
-
-    VkCommandBufferAllocateInfo vkCommandBuffersAllocateInfo = {};
-    vkCommandBuffersAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    vkCommandBuffersAllocateInfo.commandPool = m_vkCommandPool;
-    vkCommandBuffersAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    vkCommandBuffersAllocateInfo.commandBufferCount = static_cast<uint32_t>(m_vkCommandBuffers.size());
-
-    auto resultCode = vkAllocateCommandBuffers(m_vkDevice, &vkCommandBuffersAllocateInfo, m_vkCommandBuffers.data());
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createCommandBuffers(): Function vkAllocateCommandBuffers call failed with a code " << resultCode << ". Terminated." << std::endl;
-        std::terminate();
-    }
-
-    for (auto i = 0_u64t; i < m_vkCommandBuffers.size(); ++i)
-    {
-        VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
-        vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-        resultCode = vkBeginCommandBuffer(m_vkCommandBuffers[i], &vkCommandBufferBeginInfo);
-        if (resultCode != VK_SUCCESS)
-        {
-            Log::getInstance() << "Renderer::createCommandBuffers(): Function vkBeginCommandBuffer call failed with a code " << resultCode << ". Terminated." << std::endl;
-            std::terminate();
-        }
-
-        VkRenderPassBeginInfo vkRenderPassBeginInfo = {};
-        vkRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        vkRenderPassBeginInfo.renderPass = m_vkRenderPass;
-        vkRenderPassBeginInfo.framebuffer = m_vkFramebuffers[i];
-        vkRenderPassBeginInfo.renderArea.offset = {0_32t, 0_32t};
-        vkRenderPassBeginInfo.renderArea.extent = m_vkExtent;
-
-        std::array<VkClearValue, 2_u32t> vkClearValues;
-
-        vkClearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-        vkClearValues[1].depthStencil = {1.0f, 0};
-        vkRenderPassBeginInfo.clearValueCount = vkClearValues.size();
-        vkRenderPassBeginInfo.pClearValues = vkClearValues.data();
-
-        VkDeviceSize vkOffsetsSizes[] = {0_u32t};
-        vkCmdBeginRenderPass(m_vkCommandBuffers[i], &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-            vkCmdBindVertexBuffers(m_vkCommandBuffers[i], 0_u32t, 1_u32t, &m_Model->getVertexBuffer(), vkOffsetsSizes);
-            vkCmdBindIndexBuffer(m_vkCommandBuffers[i], m_Model->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
-            vkCmdBindDescriptorSets(m_vkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, &m_vkDescriptorSets[i],  0_u32t, nullptr);
-            vkCmdDrawIndexed(m_vkCommandBuffers[i], m_Model->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
-        vkCmdEndRenderPass(m_vkCommandBuffers[i]);
-
-        resultCode = vkEndCommandBuffer(m_vkCommandBuffers[i]);
-        if (resultCode != VK_SUCCESS)
-        {
-            Log::getInstance() << "Renderer::createCommandBuffers(): Function vkEndCommandBuffer call failed with a code " << resultCode << ". Terminated." << std::endl;
-            std::terminate();
-        }
-    }
-}
-
 void Renderer::createSyncObjects()
 {
     m_vkImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -964,7 +864,6 @@ void Renderer::recreateSwapchain()
     createGraphicsPipeline();
     createDepthResources();
     createFramebuffers();
-    createCommandBuffers();
 }
 
 uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties)
@@ -982,22 +881,6 @@ uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags 
 
     Log::getInstance() << "Renderer::findMemoryType(): Failed to find suitable memory type. Terminated."<< std::endl;
     std::terminate();
-}
-
-void Renderer::updateUniformBuffer(uint32_t swapchainImageIndex,  const std::shared_ptr<Mesh> &Model)
-{
-    static auto lastTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
-    lastTime = currentTime;
-    UnifromBufferObject mvpMatrix = {};
-    Model->setRotation(deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
-    mvpMatrix.Model = Model->getModelMatrix();
-    mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
-    mvpMatrix.projection[1][1] *= -1; // flip Y (OGL coordinate system to VK)
-
-    m_vkUniformMatricesBuffers[swapchainImageIndex]->copyFromRawPointer(&mvpMatrix, sizeof(UnifromBufferObject));
 }
 
 void Renderer::createDepthResources()

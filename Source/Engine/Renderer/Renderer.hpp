@@ -4,6 +4,7 @@
 #include "ResourcesMaker.hpp"
 #include "Shader.hpp"
 #include "Mesh.hpp"
+#include "../World.hpp"
 #include "../IO/MeshesLoader.hpp"
 #include "../IO/TgaLoader.hpp"
 #include <vulkan/vulkan.hpp>
@@ -21,19 +22,13 @@
 #include <set>
 #include <array>
 #include <chrono>
+#include <memory>
 
 namespace KompotEngine
 {
 
 namespace Renderer
 {
-
-struct UnifromBufferObject
-{
-    glm::mat4 Model;
-    glm::mat4 view;
-    glm::mat4 projection;
-};
 
 struct SwapchainSupportDetails
 {
@@ -59,24 +54,24 @@ static const uint64_t MAX_FRAMES_IN_FLIGHT = 2_u64t;
 
 static std::vector<const char*> validationLayers {
 #ifdef ENGINE_DEBUG
-    "VK_LAYER_LUNARG_standard_validation"
+    "VK_LAYER_LUNARG_standard_validation\0",
+    "VK_LAYER_LUNARG_monitor"
 #endif
 };
 
 class Renderer
 {
 public:
-    Renderer(GLFWwindow*, const std::string&);
+    Renderer(GLFWwindow*, const std::shared_ptr<World>&, const std::string&);
     void run();
     void resize();
     ~Renderer();
 private:
     ResourcesMaker *m_resourcesMaker = nullptr;
-    std::shared_ptr<Mesh> m_Model;
-    std::shared_ptr<Image> m_texture;
 
     // window
     GLFWwindow *m_glfwWindowHandler = nullptr;
+    std::shared_ptr<World> m_world;
     std::string m_windowsName;
     bool m_isResized;
 
@@ -98,22 +93,19 @@ private:
     VkSwapchainKHR   m_vkSwapchain;
 
     std::vector<std::shared_ptr<Image>> m_vkSwapchainImages;
-//    std::vector<VkImage>     m_vkImages;
-//    std::vector<VkImageView> m_vkImageViews;
+
     VkViewport m_vkViewport;
     VkRect2D   m_vkRect;
 
     std::vector<VkFramebuffer> m_vkFramebuffers;
     VkRenderPass    m_vkRenderPass;
 
-    VkDescriptorSetLayout m_vkDescriptorSetLayout;
-    VkDescriptorPool m_vkDescriptorPool;
-    std::vector<VkDescriptorSet> m_vkDescriptorSets;
+    VkDescriptorSetLayout m_vkDescriptorSetLayout;    
+
     VkPipelineLayout m_vkPipelineLayout;
     VkPipeline       m_vkPipeline;
 
     VkCommandPool   m_vkCommandPool;
-    std::vector<VkCommandBuffer> m_vkCommandBuffers; // automatically freed when their command pool is destroyed
 
     std::vector<VkSemaphore> m_vkImageAvailableSemaphores;
     std::vector<VkSemaphore> m_vkRenderFinishedSemaphores;
@@ -125,13 +117,7 @@ private:
     static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
 #endif
 
-    std::vector<std::shared_ptr<Buffer>>       m_vkUniformMatricesBuffers;
-
     std::shared_ptr<Image> m_vkDepthImage;
-
-//    VkImage m_vkDepthImage;
-//    VkDeviceMemory m_vkDepthImageMemory;
-//    VkImageView m_vkDepthImageView;
 
     void createVkInstance();
     void setupDebugCallback();
@@ -147,23 +133,16 @@ private:
     void createRenderPass();
     void createFramebuffers();
     void createDescriptorSetLayout();
-    void createUniformBuffer();
-    void createDescriptorPool();
-    void createDescriptorSets();
     void createGraphicsPipeline();
     void createCommandPool();
-    void createCommandBuffers();
     void createSyncObjects();
 
     void cleanupSwapchain();
     void recreateSwapchain();
 
     uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
-    void updateUniformBuffer(uint32_t, const std::shared_ptr<Mesh>&);
 
     void createDepthResources();
-
-    //void generateMipmaps(VkImage, int32_t, int32_t, uint32_t);
 };
 
 

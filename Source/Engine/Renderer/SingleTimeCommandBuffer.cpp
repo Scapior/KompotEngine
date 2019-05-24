@@ -30,6 +30,11 @@ SingleTimeCommandBuffer::SingleTimeCommandBuffer(VkDevice vkDevice, VkCommandPoo
     }
 }
 
+KompotEngine::Renderer::SingleTimeCommandBuffer::operator const VkCommandBuffer*() const
+{
+    return &m_vkCommandBuffer;
+}
+
 KompotEngine::Renderer::SingleTimeCommandBuffer::operator VkCommandBuffer() const
 {
     return m_vkCommandBuffer;
@@ -70,16 +75,11 @@ VkResult SingleTimeCommandBuffer::submit()
         free();
         return resultCode;
     }
-
-    free();
 }
 
 SingleTimeCommandBuffer::~SingleTimeCommandBuffer()
 {
-    if (m_vkCommandBuffer != nullptr)
-    {
-        this->submit();
-    }
+    free();
 }
 
 void SingleTimeCommandBuffer::free()

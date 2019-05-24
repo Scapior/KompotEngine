@@ -17,6 +17,13 @@ namespace KompotEngine
 namespace Renderer
 {
 
+struct UnifromBufferObject
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+};
+
 struct Vertex
 {
     glm::vec3 position;
@@ -67,16 +74,10 @@ public:
     uint32_t *getVerticiesIndicesData();
     uint32_t  getIndicesCount() const;
 
-    const VkBuffer &getVertexBuffer() const;
-    const VkBuffer &getIndecesBuffer() const;
+    const VkBuffer *getVertexBuffer() const;
+    const VkBuffer *getIndecesBuffer() const;
 
     void setBuffer(const std::shared_ptr<Buffer>&, const std::shared_ptr<Buffer>&);
-
-    void setPosition(const glm::vec3&);
-    void setRotation(float, const glm::vec3&);
-    void setScale(const glm::vec3&);
-
-    glm::mat4 getModelMatrix() const;
 
 private:
     std::vector<Vertex>   m_vertices;
@@ -84,8 +85,6 @@ private:
 
     std::shared_ptr<Buffer> m_verticesBuffer;
     std::shared_ptr<Buffer> m_indecesBuffer;
-
-    glm::mat4 m_ModelMatrix;
 };
 
 } // namespace Renderer
