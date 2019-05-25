@@ -37,6 +37,8 @@ private:
     VkDeviceMemory m_vkImageMemory;
     VkImageAspectFlags m_vkImageAspectFlags;
     uint32_t       m_mipLevelsCount;
+
+    bool m_isSwapChainImage;
 };
 
 } //namespace Renderer

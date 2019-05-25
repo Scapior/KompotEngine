@@ -2,8 +2,16 @@
 
 using namespace KompotEngine::Renderer;
 
-Image::Image(VkDevice vkDevice, VkImage vkImage, VkImageView vkImageView)
-    : m_vkDevice(vkDevice), m_vkImage(vkImage), m_vkImageView(vkImageView) { }
+Image::Image(VkDevice vkDevice,
+             VkImage vkImage,
+             VkImageView vkImageView)
+    : m_vkDevice(vkDevice),
+      m_vkImage(vkImage),
+      m_vkImageView(vkImageView),
+      m_vkImageSampler(nullptr),
+      m_vkImageMemory(nullptr),
+      m_isSwapChainImage(true)
+{ }
 
 Image::Image(VkDevice vkDevice,
              VkExtent2D vkExtent,
@@ -24,17 +32,22 @@ Image::Image(VkDevice vkDevice,
       m_vkCurrentImageLayout(vkImageLayout),
       m_vkImageMemory(vkImageMemory),
       m_vkImageAspectFlags(vkImageAspectFlags),
-      m_mipLevelsCount(mipLevelsCount) { }
+      m_mipLevelsCount(mipLevelsCount),
+      m_isSwapChainImage(false)
+{ }
 
 Image::~Image()
 {
-    if (!m_vkImageSampler)
+    if (m_vkImageSampler)
     {
         vkDestroySampler(m_vkDevice, m_vkImageSampler, nullptr);
     }
     vkDestroyImageView(m_vkDevice, m_vkImageView, nullptr);
-    vkDestroyImage(m_vkDevice, m_vkImage, nullptr);
-    if (!m_vkImageMemory)
+    if (!m_isSwapChainImage)
+    {
+        vkDestroyImage(m_vkDevice, m_vkImage, nullptr);
+    }
+    if (m_vkImageMemory)
     {
         vkFreeMemory(m_vkDevice, m_vkImageMemory, nullptr);
     }

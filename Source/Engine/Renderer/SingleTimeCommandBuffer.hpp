@@ -18,6 +18,7 @@ public:
     operator VkCommandBuffer() const;
     operator const VkCommandBuffer*() const;
     VkResult submit();
+    void free();
     ~SingleTimeCommandBuffer();
 private:
     VkDevice        m_vkDevice;
@@ -25,7 +26,6 @@ private:
     VkCommandPool   m_vkCommandPool;
     VkCommandBuffer m_vkCommandBuffer;
 
-    void free();
 };
 
 } // namespace Renderer

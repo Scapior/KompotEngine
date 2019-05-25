@@ -36,7 +36,19 @@ Renderer::Renderer(GLFWwindow *window,
     createSyncObjects();
 
     m_world->createObject("cube");
-    //m_world->createObject("cube");
+}
+
+void Renderer::recreateSwapchain()
+{
+    vkDeviceWaitIdle(m_vkDevice);
+
+    cleanupSwapchain();
+
+    createSwapchain();
+    createRenderPass();
+    createGraphicsPipeline();
+    createDepthResources();
+    createFramebuffers();
 }
 
 void Renderer::cleanupSwapchain()
@@ -46,7 +58,6 @@ void Renderer::cleanupSwapchain()
     {
         vkDestroyFramebuffer(m_vkDevice, framebuffer, nullptr);
     }
-    m_vkDepthImage.reset();
     vkDestroyPipeline(m_vkDevice, m_vkPipeline, nullptr);
     vkDestroyPipelineLayout(m_vkDevice, m_vkPipelineLayout, nullptr);
     vkDestroyRenderPass(m_vkDevice, m_vkRenderPass, nullptr);
@@ -120,7 +131,7 @@ void Renderer::run()
         static auto lastTime = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
-        lastTime = currentTime;
+        //lastTime = currentTime;
         UnifromBufferObject mvpMatrix = {};
         mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
@@ -177,6 +188,8 @@ void Renderer::run()
             Log::getInstance() << "Renderer::run(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
+
+        commandBuffer.free();
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -852,18 +865,6 @@ void Renderer::createSyncObjects()
             std::terminate();
         }
     }
-}
-
-void Renderer::recreateSwapchain()
-{
-    vkDeviceWaitIdle(m_vkDevice);
-
-    cleanupSwapchain();
-    createSwapchain();
-    createRenderPass();
-    createGraphicsPipeline();
-    createDepthResources();
-    createFramebuffers();
 }
 
 uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties)

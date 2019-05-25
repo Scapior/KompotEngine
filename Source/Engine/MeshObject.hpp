@@ -3,6 +3,7 @@
 #include "Renderer/Mesh.hpp"
 #include "Renderer/Image.hpp"
 #include "Renderer/Buffer.hpp"
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <string>
 #include <memory>

@@ -54,8 +54,7 @@ static const uint64_t MAX_FRAMES_IN_FLIGHT = 2_u64t;
 
 static std::vector<const char*> validationLayers {
 #ifdef ENGINE_DEBUG
-    "VK_LAYER_LUNARG_standard_validation\0",
-    "VK_LAYER_LUNARG_monitor"
+    "VK_LAYER_LUNARG_standard_validation"
 #endif
 };
 
