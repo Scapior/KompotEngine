@@ -17,19 +17,22 @@ void World::clear()
     unlock();
 }
 
-void World::createObject(const std::string &className)
+std::shared_ptr<MeshObject> World::createObject(const std::string &className)
 {
     lock();
-    m_objectClassesToLoad.push_back(className);
+    auto fakeObject = std::make_shared<MeshObject>();
+    m_objectClassesToLoad.emplace_back(className, fakeObject);
     unlock();
+    return fakeObject;
 }
 
 void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
 {
     lock();
 
-    for (const auto& className : m_objectClassesToLoad)
+    for (auto& objectToLoad : m_objectClassesToLoad)
     {
+        const auto & className = objectToLoad.first;
         std::shared_ptr<Renderer::Mesh>  meshPointer{};
         std::shared_ptr<Renderer::Image> texturePointer{};
 
@@ -45,9 +48,14 @@ void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
             texturePointer = textureSearchResult->second;
         }
 
-        auto object = resourceMaker.createMeshObject(className, meshPointer, texturePointer);
-        m_meshObjects.push_back(object);
+        auto newObject = resourceMaker.createMeshObject(className, meshPointer, texturePointer);
 
+        newObject->setModelMatrix(objectToLoad.second->getModelMatrix());
+
+        objectToLoad.second.swap(newObject);
+        auto &object = objectToLoad.second;
+
+        m_meshObjects.push_back(object);
         if (!meshPointer)
         {
             m_meshesCache.insert(std::pair<std::string, std::shared_ptr<Renderer::Mesh>>(

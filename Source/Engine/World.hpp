@@ -17,7 +17,7 @@ public:
     World();
 
     void clear();
-    void createObject(const std::string&);
+    std::shared_ptr<MeshObject> createObject(const std::string&);
     void loadObjects(Renderer::ResourcesMaker&);
 
     const std::vector<std::shared_ptr<MeshObject>>& getMeshObjects();
@@ -33,7 +33,7 @@ private:
 
     mutable std::map<std::string, std::shared_ptr<Renderer::Mesh>>  m_meshesCache;
     mutable std::map<std::string, std::shared_ptr<Renderer::Image>> m_imagesCache;
-    mutable std::vector<std::string> m_objectClassesToLoad;
+    mutable std::vector<std::pair<std::string, std::shared_ptr<MeshObject>>> m_objectClassesToLoad;
 };
 
 

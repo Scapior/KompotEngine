@@ -35,7 +35,9 @@ Renderer::Renderer(GLFWwindow *window,
     createFramebuffers();
     createSyncObjects();
 
-    m_world->createObject("cube");
+    auto cube = m_world->createObject("cube");
+
+    cube->moveTo(glm::vec3(-0.7f));
 }
 
 void Renderer::recreateSwapchain()
@@ -91,7 +93,7 @@ Renderer::~Renderer()
 void Renderer::run()
 {
     auto currentFrameIndex = 0_u64t;
-    while (!glfwWindowShouldClose(m_glfwWindowHandler)) // todo: remove all this
+    while (!glfwWindowShouldClose(m_glfwWindowHandler))
     {
         currentFrameIndex = ++currentFrameIndex % MAX_FRAMES_IN_FLIGHT;
         auto &imageAvailableSemaphore = m_vkImageAvailableSemaphores[currentFrameIndex];
@@ -205,7 +207,10 @@ void Renderer::run()
             m_isResized)
         {
             m_isResized = false;
-            recreateSwapchain();
+            if(!glfwWindowShouldClose(m_glfwWindowHandler))
+            {
+                recreateSwapchain();
+            }
         }
         else if(resultCode != VK_SUCCESS)
         {
