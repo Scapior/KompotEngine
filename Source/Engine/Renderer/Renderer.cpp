@@ -37,7 +37,7 @@ Renderer::Renderer(GLFWwindow *window,
 
     auto cube = m_world->createObject("cube");
 
-    cube->moveTo(glm::vec3(-0.7f));
+    cube->moveTo(glm::vec3(-2.0f));
 }
 
 void Renderer::recreateSwapchain()
@@ -103,7 +103,12 @@ void Renderer::run()
         m_world->loadObjects(*m_resourcesMaker);
 
         auto imageIndex = 0_u32t;
-        auto resultCode = vkAcquireNextImageKHR(m_vkDevice, m_vkSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr, &imageIndex);
+        auto resultCode = vkAcquireNextImageKHR(m_vkDevice,
+                                                m_vkSwapchain,
+                                                std::numeric_limits<uint64_t>::max(),
+                                                imageAvailableSemaphore,
+                                                nullptr,
+                                                &imageIndex);
 
         if (resultCode == VK_ERROR_OUT_OF_DATE_KHR || m_isResized)
         {
@@ -112,9 +117,7 @@ void Renderer::run()
             continue;
         }
 
-        // setup command buffer
-
-        auto commandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
+        // setup command buffer        
 
         VkRenderPassBeginInfo vkRenderPassBeginInfo = {};
         vkRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -133,14 +136,10 @@ void Renderer::run()
         static auto lastTime = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
-        //lastTime = currentTime;
         UnifromBufferObject mvpMatrix = {};
         mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
         mvpMatrix.projection[1][1] *= -1;
-
-        VkDeviceSize vkOffsetsSizes[] = {0_u32t};
-        vkCmdBeginRenderPass(commandBuffer, &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         for (const auto& object : m_world->getMeshObjects())
         {
@@ -148,12 +147,20 @@ void Renderer::run()
             mvpMatrix.model = glm::rotate(mvpMatrix.model, deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
             auto uniformMatricesBuffers = object->getUboBuffer();
             uniformMatricesBuffers->copyFromRawPointer(&mvpMatrix, sizeof(UnifromBufferObject));
+        }
 
+        auto commandBuffer = m_resourcesMaker->createSingleTimeCommandBuffer();
 
+        VkDeviceSize vkOffsetsSizes[] = {0_u32t};
+        vkCmdBeginRenderPass(commandBuffer, &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        for (const auto& object : m_world->getMeshObjects())
+        {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
             vkCmdBindVertexBuffers(commandBuffer, 0_u32t, 1_u32t, object->getMesh()->getVertexBuffer(), vkOffsetsSizes);
             vkCmdBindIndexBuffer(commandBuffer, *object->getMesh()->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t, object->getDescriptorSet(),  0_u32t, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t,
+                                    object->getDescriptorSet(), 0_u32t, nullptr);
             vkCmdDrawIndexed(commandBuffer, object->getMesh()->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         }
         vkCmdEndRenderPass(commandBuffer);
@@ -189,9 +196,7 @@ void Renderer::run()
         {
             Log::getInstance() << "Renderer::run(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
-        }
-
-        commandBuffer.free();
+        }        
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -223,6 +228,7 @@ void Renderer::run()
             Log::getInstance() << "Renderer::run(): vkQueueWaitIdle failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
+        commandBuffer.free();
     }
 
     vkDeviceWaitIdle(m_vkDevice);
@@ -532,7 +538,7 @@ void Renderer::createSwapchain()
         queuefamilies.presentFamilyIndex.value()
     };
 
-    auto imageExtent = chooseExtent(swapchainDetails.capabilities);
+    m_vkExtent = chooseExtent(swapchainDetails.capabilities);
     m_vkImageFormat = swapchainDetails.format.format;
 
     VkSwapchainCreateInfoKHR vkSwapchainCreateInfo = {};
@@ -541,7 +547,7 @@ void Renderer::createSwapchain()
     vkSwapchainCreateInfo.minImageCount = swapchainDetails.capabilities.minImageCount + 1_u32t;
     vkSwapchainCreateInfo.imageFormat = swapchainDetails.format.format;
     vkSwapchainCreateInfo.imageColorSpace = swapchainDetails.format.colorSpace;
-    vkSwapchainCreateInfo.imageExtent = imageExtent;
+    vkSwapchainCreateInfo.imageExtent = m_vkExtent;
     vkSwapchainCreateInfo.imageArrayLayers = 1_u32t;
     vkSwapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -706,6 +712,7 @@ void Renderer::createDescriptorSetLayout()
 
 void Renderer::createGraphicsPipeline()
 {
+    m_vkPipelineLayout = nullptr;
     Shader vertexShader("triangle.vert.spv", m_vkDevice);
     Shader fragmentShader("triangle.frag.spv", m_vkDevice);
     if (!vertexShader.load())

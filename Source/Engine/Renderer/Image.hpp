@@ -26,6 +26,8 @@ public:
     void           setCurrentLayout(VkImageLayout);
     VkImageAspectFlags getImageAspectFlags() const;
 
+    VkResult       generateMipLevels(SingleTimeCommandBuffer&);
+
 private:
     VkDevice       m_vkDevice;
     VkExtent2D     m_vkExtent;

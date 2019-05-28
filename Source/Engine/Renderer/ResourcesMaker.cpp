@@ -186,7 +186,9 @@ std::shared_ptr<Image> ResourcesMaker::createTextureFromFile(const fs::path &fil
 
     image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, createSingleTimeCommandBuffer());
     copyBufferToImage(*stagingBuffer.get(), *image.get());
-    image->transitImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, createSingleTimeCommandBuffer());
+    auto commandBuffer = createSingleTimeCommandBuffer();
+    image->generateMipLevels(commandBuffer);
+    commandBuffer.submit();
 
     return image;
 }
@@ -227,7 +229,7 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
         VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties,
         VkImageAspectFlags imageAspectFlags) const
-{
+{  
     VkImage vkImage{};
 
     VkImageCreateInfo vkImageCreateInfo = {};
@@ -339,7 +341,6 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
     if (vkImageSampler)
     {
         image->transitImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, createSingleTimeCommandBuffer());
-        generateMipmaps(*image);
     }
     return image;
 }
@@ -455,89 +456,4 @@ VkResult ResourcesMaker::copyBufferToImage(Buffer &buffer, Image &image) const
     vkCmdCopyBufferToImage(commandBuffer, buffer.getBuffer(), image.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1_u32t, &vkBufferImageCopyRegion);
     commandBuffer.submit();
     return VK_SUCCESS;
-}
-
-void ResourcesMaker::generateMipmaps(Image &image) const
-{
-    auto commandBuffer = createSingleTimeCommandBuffer();
-
-    VkImageMemoryBarrier vkImageMemoryBarrier = {};
-    vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    vkImageMemoryBarrier.image = image.getImage();
-    vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    vkImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    vkImageMemoryBarrier.subresourceRange.aspectMask = image.getImageAspectFlags();
-    vkImageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
-    vkImageMemoryBarrier.subresourceRange.layerCount = 1_u32t;
-    vkImageMemoryBarrier.subresourceRange.levelCount = 1_u32t;
-
-    int32_t mipWidth = static_cast<int>(image.getExtent().width);
-    int32_t mipHeight = static_cast<int>(image.getExtent().height);
-
-    for (auto i = 1_u32t; i < image.getMipLevelsCount(); ++i)
-    {
-        vkImageMemoryBarrier.subresourceRange.baseMipLevel = i - 1_u32t;
-        vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        vkCmdPipelineBarrier(commandBuffer,
-                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0_u32t,
-                             0_u32t, nullptr, 0_u32t, nullptr, 1_u32t, &vkImageMemoryBarrier);
-
-        VkImageBlit vkImageBlit = {};
-        vkImageBlit.srcOffsets[0] = { 0_32t, 0_32t, 0_32t };
-        vkImageBlit.srcOffsets[1] = { mipWidth, mipHeight, 1_32t };
-        vkImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        vkImageBlit.srcSubresource.mipLevel = i - 1_u32t;
-        vkImageBlit.srcSubresource.baseArrayLayer = 0_u32t;
-        vkImageBlit.srcSubresource.layerCount = 1_u32t;
-        vkImageBlit.dstOffsets[0] = { 0_32t, 0_32t, 0_32t };
-        vkImageBlit.dstOffsets[1] = { mipWidth > 1_32t ? mipWidth / 2_32t : 1_32t, mipHeight > 1_32t ? mipHeight / 2_32t : 1_32t, 1_32t };
-        vkImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        vkImageBlit.dstSubresource.mipLevel = i;
-        vkImageBlit.dstSubresource.baseArrayLayer = 0_u32t;
-        vkImageBlit.dstSubresource.layerCount = 1_u32t;
-
-        vkCmdBlitImage(commandBuffer,
-                       image.getImage(),
-                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                       image.getImage(),
-                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                       1_u32t,
-                       &vkImageBlit,
-                       VK_FILTER_LINEAR);
-
-        vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        vkCmdPipelineBarrier(
-                    commandBuffer,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0_u32t,
-                    0_u32t, nullptr,
-                    0_u32t, nullptr,
-                    1_u32t, &vkImageMemoryBarrier);
-
-        if (mipWidth > 1) mipWidth /= 2;
-        if (mipHeight > 1) mipHeight /= 2;
-    }
-
-    vkImageMemoryBarrier.subresourceRange.baseMipLevel = image.getMipLevelsCount() - 1;
-    vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    image.setCurrentLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    vkCmdPipelineBarrier(commandBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0_u32t,
-        0_u32t, nullptr,
-        0_u32t, nullptr,
-        1_u32t, &vkImageMemoryBarrier);
-    commandBuffer.submit();
 }

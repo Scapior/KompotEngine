@@ -52,7 +52,6 @@ private:
     VkBuffer createVkBuffer(VkDeviceSize, VkBufferUsageFlags) const;
     VkDeviceMemory allocateAndBindVkBufferMemory(VkBuffer, VkMemoryPropertyFlags) const;
     VkResult copyBufferToImage(Buffer&, Image&) const;
-    void generateMipmaps(Image&) const;
 };
 
 

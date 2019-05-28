@@ -149,6 +149,88 @@ VkImageAspectFlags Image::getImageAspectFlags() const
     return m_vkImageAspectFlags;
 }
 
+VkResult Image::generateMipLevels(SingleTimeCommandBuffer &commandBuffer)
+{
+    VkImageMemoryBarrier vkImageMemoryBarrier = {};
+    vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    vkImageMemoryBarrier.image = m_vkImage;
+    vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    vkImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    vkImageMemoryBarrier.subresourceRange.aspectMask = m_vkImageAspectFlags;
+    vkImageMemoryBarrier.subresourceRange.baseArrayLayer = 0_u32t;
+    vkImageMemoryBarrier.subresourceRange.layerCount = 1_u32t;
+    vkImageMemoryBarrier.subresourceRange.levelCount = 1_u32t;
+
+    for (auto i = 1_u32t; i < m_mipLevelsCount; ++i)
+    {
+        vkImageMemoryBarrier.subresourceRange.baseMipLevel = i - 1_u32t;
+        vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             0_u32t,
+                             0_u32t, nullptr,
+                             0_u32t, nullptr,
+                             1_u32t, &vkImageMemoryBarrier);
+
+        VkImageBlit vkImageBlit {};
+        vkImageBlit.srcOffsets[1].x = static_cast<int32_t>(m_vkExtent.width >> (i - 1));
+        vkImageBlit.srcOffsets[1].y = static_cast<int32_t>(m_vkExtent.height >> (i - 1));
+        vkImageBlit.srcOffsets[1].z = 1_32t;
+        vkImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkImageBlit.srcSubresource.mipLevel = i - 1_u32t;
+        vkImageBlit.srcSubresource.layerCount = 1_u32t;
+
+        vkImageBlit.dstOffsets[1].x = static_cast<int32_t>(m_vkExtent.width >> i);
+        vkImageBlit.dstOffsets[1].y = static_cast<int32_t>(m_vkExtent.height >> i);
+        vkImageBlit.dstOffsets[1].z = 1_32t;
+        vkImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkImageBlit.dstSubresource.mipLevel = i;
+        vkImageBlit.dstSubresource.layerCount = 1_u32t;
+
+        vkCmdBlitImage(commandBuffer,
+                       m_vkImage,
+                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       m_vkImage,
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                       1_u32t, &vkImageBlit,
+                       VK_FILTER_LINEAR);
+
+        vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    0_u32t,
+                    0_u32t, nullptr,
+                    0_u32t, nullptr,
+                    1_u32t, &vkImageMemoryBarrier);
+    }
+
+    vkImageMemoryBarrier.subresourceRange.baseMipLevel = m_mipLevelsCount - 1;
+    vkImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    vkImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    vkImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    vkImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    m_vkCurrentImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    vkCmdPipelineBarrier(commandBuffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0_u32t,
+        0_u32t, nullptr,
+        0_u32t, nullptr,
+        1_u32t, &vkImageMemoryBarrier);
+}
+
 void Image::setCurrentLayout(VkImageLayout imageLayout)
 {
     m_vkCurrentImageLayout = imageLayout;
