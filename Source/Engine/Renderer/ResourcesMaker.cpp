@@ -2,23 +2,19 @@
 
 using namespace KompotEngine::Renderer;
 
-ResourcesMaker::ResourcesMaker(VkPhysicalDevice vkPhysicalDevice,
-                               VkDevice vkDevice,
+ResourcesMaker::ResourcesMaker(Device &device,
                                VkCommandPool vkCommandPool,
-                               VkQueue vkGraphicsQueue,
                                VkDescriptorSetLayout vkDescriptorSetLayout)
-    : m_vkDevice(vkDevice),
-      m_vkPhysicalDevice(vkPhysicalDevice),
+    : m_device(device),
       m_vkCommandPool(vkCommandPool),
-      m_vkGraphicsQueue(vkGraphicsQueue),
-      m_descriptorPoolManager(vkDevice),
+      m_descriptorPoolManager(device),
       m_vkDescriptorSetLayout(vkDescriptorSetLayout)
 {
 }
 
 SingleTimeCommandBuffer ResourcesMaker::createSingleTimeCommandBuffer() const
 {
-    return SingleTimeCommandBuffer(m_vkDevice, m_vkCommandPool, m_vkGraphicsQueue);
+    return SingleTimeCommandBuffer(m_device, m_vkCommandPool, m_device.getGraphicsQueue());
 }
 
 std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
@@ -80,10 +76,10 @@ std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
         vkWriteDescriptorsets[1].descriptorCount = 1_u32t;
         vkWriteDescriptorsets[1].pImageInfo = &vkDescriptorImageInfo;
 
-        vkUpdateDescriptorSets(m_vkDevice, vkWriteDescriptorsets.size(), vkWriteDescriptorsets.data(), 0_u32t, nullptr);
+        vkUpdateDescriptorSets(m_device, vkWriteDescriptorsets.size(), vkWriteDescriptorsets.data(), 0_u32t, nullptr);
     }
 
-    return std::make_shared<KompotEngine::MeshObject>(m_vkDevice,
+    return std::make_shared<KompotEngine::MeshObject>(m_device,
                                                       m_descriptorPoolManager,
                                                       className,
                                                       vkDescriptorSets,
@@ -95,7 +91,7 @@ std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
 uint32_t ResourcesMaker::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties) const
 {
     VkPhysicalDeviceMemoryProperties vkPhysicalDevicememoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice, &vkPhysicalDevicememoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(m_device, &vkPhysicalDevicememoryProperties);
 
     for (auto i = 0_u32t; i < vkPhysicalDevicememoryProperties.memoryTypeCount; ++i)
     {
@@ -211,13 +207,13 @@ std::shared_ptr<Image> ResourcesMaker::createSwapchainImage(VkImage vkImage, VkF
     vkImageViewCreateInfo.subresourceRange.layerCount = 1_u32t;
 
     VkImageView vkImageView{};
-    auto resultCode = vkCreateImageView(m_vkDevice, &vkImageViewCreateInfo, nullptr, &vkImageView);
+    auto resultCode = vkCreateImageView(m_device, &vkImageViewCreateInfo, nullptr, &vkImageView);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createSwapchainImage(): Function vkCreateImageView call failed with a code " << resultCode << "." << std::endl;
         std::terminate();
     }
-    return std::make_shared<Image>(m_vkDevice, vkImage, vkImageView);
+    return std::make_shared<Image>(m_device, vkImage, vkImageView);
 }
 
 std::shared_ptr<Image> ResourcesMaker::createImage(
@@ -247,7 +243,7 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
     vkImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vkImageCreateInfo.initialLayout = initialLayout;
 
-    auto resultCode = vkCreateImage(m_vkDevice, &vkImageCreateInfo, nullptr, &vkImage);
+    auto resultCode = vkCreateImage(m_device, &vkImageCreateInfo, nullptr, &vkImage);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createImage(): Function vkCreateImage call failed with a code " << resultCode << "." << std::endl;
@@ -255,7 +251,7 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
     }
 
     VkMemoryRequirements vkMemoryRequirements;
-    vkGetImageMemoryRequirements(m_vkDevice, vkImage, &vkMemoryRequirements);
+    vkGetImageMemoryRequirements(m_device, vkImage, &vkMemoryRequirements);
 
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -263,20 +259,20 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
     vkMemoryAllocateInfo.memoryTypeIndex = findMemoryType(vkMemoryRequirements.memoryTypeBits, properties);
 
     VkDeviceMemory vkImageMemory;
-    resultCode = vkAllocateMemory(m_vkDevice, &vkMemoryAllocateInfo, nullptr, &vkImageMemory);
+    resultCode = vkAllocateMemory(m_device, &vkMemoryAllocateInfo, nullptr, &vkImageMemory);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createImage(): Function vkAllocateMemory call failed with a code " << resultCode << "." << std::endl;
-        vkDestroyImage(m_vkDevice, vkImage, nullptr);
+        vkDestroyImage(m_device, vkImage, nullptr);
         return {};
     }
 
-    resultCode = vkBindImageMemory(m_vkDevice, vkImage, vkImageMemory, 0_u64t);
+    resultCode = vkBindImageMemory(m_device, vkImage, vkImageMemory, 0_u64t);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createImage(): Function vkBindImageMemory call failed with a code " << resultCode << "." << std::endl;
-        vkDestroyImage(m_vkDevice, vkImage, nullptr);
-        vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
+        vkDestroyImage(m_device, vkImage, nullptr);
+        vkFreeMemory(m_device, vkImageMemory, nullptr);
         return {};
     }
 
@@ -296,12 +292,12 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
     vkImageViewCreateInfo.subresourceRange.layerCount = 1_u32t;
 
     VkImageView vkImageView{};
-    resultCode = vkCreateImageView(m_vkDevice, &vkImageViewCreateInfo, nullptr, &vkImageView);
+    resultCode = vkCreateImageView(m_device, &vkImageViewCreateInfo, nullptr, &vkImageView);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createImage(): Function vkCreateImageView call failed with a code " << resultCode << "." << std::endl;
-        vkDestroyImage(m_vkDevice, vkImage, nullptr);
-        vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
+        vkDestroyImage(m_device, vkImage, nullptr);
+        vkFreeMemory(m_device, vkImageMemory, nullptr);
         return {};
     }
 
@@ -326,17 +322,17 @@ std::shared_ptr<Image> ResourcesMaker::createImage(
         vkSamplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         vkSamplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
-        resultCode = vkCreateSampler(m_vkDevice, &vkSamplerCreateInfo, nullptr, &vkImageSampler);
+        resultCode = vkCreateSampler(m_device, &vkSamplerCreateInfo, nullptr, &vkImageSampler);
         if (resultCode != VK_SUCCESS)
         {
             Log::getInstance() << "ResourcesMaker::createImage(): Function vkCreateSampler call failed with a code " << resultCode << "." << std::endl;
-            vkDestroyImage(m_vkDevice, vkImage, nullptr);
-            vkDestroyImageView(m_vkDevice, vkImageView, nullptr);
-            vkFreeMemory(m_vkDevice, vkImageMemory, nullptr);
+            vkDestroyImage(m_device, vkImage, nullptr);
+            vkDestroyImageView(m_device, vkImageView, nullptr);
+            vkFreeMemory(m_device, vkImageMemory, nullptr);
             return {};
         }
     }
-    auto image = std::make_shared<Image>(m_vkDevice, extent, vkImage, vkImageView, vkImageSampler, format,
+    auto image = std::make_shared<Image>(m_device, extent, vkImage, vkImageView, vkImageSampler, format,
                                          initialLayout, vkImageMemory, imageAspectFlags, mipLevelsCount);
     if (vkImageSampler)
     {
@@ -359,7 +355,7 @@ std::shared_ptr<Buffer> ResourcesMaker::createBuffer(VkDeviceSize size, VkBuffer
         return {};
     }
 
-    return std::make_shared<Buffer>(m_vkDevice, vkBuffer, vkBufferMemory, size);
+    return std::make_shared<Buffer>(m_device, vkBuffer, vkBufferMemory, size);
 }
 
 std::shared_ptr<Buffer> ResourcesMaker::createBufferCopy(const std::shared_ptr<Buffer> &sourceBuffer, VkBufferUsageFlags usage,
@@ -386,7 +382,7 @@ std::shared_ptr<Buffer> ResourcesMaker::createBufferCopy(const std::shared_ptr<B
     vkCmdCopyBuffer(commandBuffer, sourceBuffer->getBuffer(), vkBuffer, 1_u32t, &vkBufferCopyRegion);
     commandBuffer.submit();
 
-    return std::make_shared<Buffer>(m_vkDevice, vkBuffer, vkBufferMemory, bufferSize);
+    return std::make_shared<Buffer>(m_device, vkBuffer, vkBufferMemory, bufferSize);
 }
 
 VkBuffer ResourcesMaker::createVkBuffer(VkDeviceSize size, VkBufferUsageFlags usage) const
@@ -398,7 +394,7 @@ VkBuffer ResourcesMaker::createVkBuffer(VkDeviceSize size, VkBufferUsageFlags us
     vkBufferCreateInfo.usage = usage;
     vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    auto resultCode = vkCreateBuffer(m_vkDevice, &vkBufferCreateInfo, nullptr, &vkBuffer);
+    auto resultCode = vkCreateBuffer(m_device, &vkBufferCreateInfo, nullptr, &vkBuffer);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createBuffer(): Function vkCreateBuffer call failed with a code" << resultCode << ". Terminated."<< std::endl;
@@ -411,25 +407,25 @@ VkDeviceMemory ResourcesMaker::allocateAndBindVkBufferMemory(VkBuffer vkBuffer, 
     VkDeviceMemory vkBufferMemory = nullptr;
 
     VkMemoryRequirements vkMemoryRequirements = {};
-    vkGetBufferMemoryRequirements(m_vkDevice, vkBuffer, &vkMemoryRequirements);
+    vkGetBufferMemoryRequirements(m_device, vkBuffer, &vkMemoryRequirements);
 
     VkMemoryAllocateInfo vkMomoryAllocateInfo = {};
     vkMomoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     vkMomoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
     vkMomoryAllocateInfo.memoryTypeIndex = findMemoryType(vkMemoryRequirements.memoryTypeBits, memoryProperies);
 
-    auto resultCode = vkAllocateMemory(m_vkDevice, &vkMomoryAllocateInfo, nullptr, &vkBufferMemory);
+    auto resultCode = vkAllocateMemory(m_device, &vkMomoryAllocateInfo, nullptr, &vkBufferMemory);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createBuffer(): Function vkAllocateMemory call failed with a code" << resultCode << ". Terminated."<< std::endl;
         return nullptr;
     }
 
-    resultCode = vkBindBufferMemory(m_vkDevice, vkBuffer, vkBufferMemory, 0_u32t);
+    resultCode = vkBindBufferMemory(m_device, vkBuffer, vkBufferMemory, 0_u32t);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "ResourcesMaker::createBuffer(): Function vkBindBufferMemory call failed with a code" << resultCode << ". Terminated."<< std::endl;
-        vkFreeMemory(m_vkDevice, vkBufferMemory, nullptr);
+        vkFreeMemory(m_device, vkBufferMemory, nullptr);
         vkBufferMemory = nullptr;
     }
     return vkBufferMemory;

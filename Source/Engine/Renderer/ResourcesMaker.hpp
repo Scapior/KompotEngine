@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "Device.hpp"
 #include "Buffer.hpp"
 #include "Image.hpp"
 #include "SingleTimeCommandBuffer.hpp"
@@ -24,7 +25,7 @@ namespace Renderer
 class ResourcesMaker
 {
 public:
-    ResourcesMaker(VkPhysicalDevice, VkDevice, VkCommandPool, VkQueue, VkDescriptorSetLayout);
+    ResourcesMaker(Device&, VkCommandPool, VkDescriptorSetLayout);
 
     SingleTimeCommandBuffer createSingleTimeCommandBuffer() const;
 
@@ -38,10 +39,8 @@ public:
     std::shared_ptr<Buffer> createBufferCopy(const std::shared_ptr<Buffer>&, VkBufferUsageFlags, VkMemoryPropertyFlags) const;
 
 private:
-    VkDevice         m_vkDevice;
-    VkPhysicalDevice m_vkPhysicalDevice;
+    Device         m_device;
     VkCommandPool    m_vkCommandPool;
-    VkQueue          m_vkGraphicsQueue;
     mutable DescriptorPoolManager m_descriptorPoolManager;
     VkDescriptorSetLayout m_vkDescriptorSetLayout;
 

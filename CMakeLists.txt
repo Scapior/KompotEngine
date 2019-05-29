@@ -14,6 +14,7 @@ set(SOURCES
     Source/Engine/Engine.cpp
     Source/Engine/World.cpp
     Source/Engine/MeshObject.cpp
+    Source/Engine/Renderer/Device.cpp
     Source/Engine/Renderer/Renderer.cpp
     Source/Engine/Renderer/Shader.cpp
     Source/Engine/Renderer/ResourcesMaker.cpp
@@ -36,6 +37,7 @@ set(HEADERS
     Source/Engine/Engine.hpp
     Source/Engine/World.hpp
     Source/Engine/MeshObject.hpp
+    Source/Engine/Renderer/Device.hpp
     Source/Engine/Renderer/Renderer.hpp
     Source/Engine/Renderer/Shader.hpp
     Source/Engine/Renderer/ResourcesMaker.hpp

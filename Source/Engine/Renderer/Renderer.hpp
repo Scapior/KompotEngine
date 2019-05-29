@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "Device.hpp"
 #include "ResourcesMaker.hpp"
 #include "Shader.hpp"
 #include "Mesh.hpp"
@@ -37,26 +38,7 @@ struct SwapchainSupportDetails
     VkPresentModeKHR         presentMode;
 };
 
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t> graphicFamilyIndex;
-    std::optional<uint32_t> presentFamilyIndex;
-
-    bool isComplete() const
-    {
-        return graphicFamilyIndex.has_value() &&
-               presentFamilyIndex.has_value();
-    }
-
-};
-
 static const uint64_t MAX_FRAMES_IN_FLIGHT = 2_u64t;
-
-static std::vector<const char*> validationLayers {
-#ifdef ENGINE_DEBUG
-    "VK_LAYER_LUNARG_standard_validation"
-#endif
-};
 
 class Renderer
 {
@@ -78,14 +60,8 @@ private:
     VkExtent2D m_vkExtent;
 
     // vulkan members
-    VkInstance       m_vkInstance = nullptr;
-    VkSurfaceKHR     m_vkSurface = nullptr;
-
-    VkPhysicalDevice m_vkPhysicalDevice  = nullptr; // will be implicitly destroyed with VkInstance
-    VkDevice         m_vkDevice  = nullptr;
-
-    VkQueue          m_vkGraphicsQueue;
-    VkQueue          m_vkPresentQueue;
+    Device m_device;
+    VkSurfaceKHR m_vkSurface;
 
     VkFormat         m_vkImageFormat;
 
@@ -110,19 +86,9 @@ private:
     std::vector<VkSemaphore> m_vkRenderFinishedSemaphores;
     std::vector<VkFence>     m_vkInFlightFramesFence;
 
-#ifdef ENGINE_DEBUG
-    VkDebugUtilsMessengerEXT m_vkDebugMessenger;
-    static PFN_vkCreateDebugUtilsMessengerEXT  pfn_vkCreateDebugUtilsMessengerEXT;
-    static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
-#endif
-
     std::shared_ptr<Image> m_vkDepthImage;
 
-    void createVkInstance();
-    void setupDebugCallback();
-    void createSurface();
-    void selectPysicalDevice();
-    QueueFamilyIndices findQueueFamilies();
+    void createSurface(); 
     SwapchainSupportDetails getSwapchainDetails();
     void createDevice();
     VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
@@ -138,8 +104,6 @@ private:
 
     void cleanupSwapchain();
     void recreateSwapchain();
-
-    uint32_t findMemoryType(uint32_t, VkMemoryPropertyFlags);
 
     void createDepthResources();
 };

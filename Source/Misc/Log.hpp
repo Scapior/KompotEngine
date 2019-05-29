@@ -1,5 +1,6 @@
 #pragma once
 
+#include "global.hpp"
 #include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <fstream>
@@ -23,6 +24,9 @@ public:
         VkDebugUtilsMessageTypeFlagsEXT,
         const VkDebugUtilsMessengerCallbackDataEXT*,
         void*);
+
+    static void setupDebugCallback(VkInstance, VkDevice);
+    static void deleteDebugCallback();
 
     template <typename T>
     Log& operator<<(const T& value)
@@ -50,4 +54,11 @@ private:
     }
     std::ofstream m_logFile;
     std::mutex    m_mutex;
+
+#ifdef ENGINE_DEBUG
+    VkDebugUtilsMessengerEXT m_vkDebugMessenger;
+    VkInstance m_vkDebugMessengerInstance;
+    static PFN_vkCreateDebugUtilsMessengerEXT  pfn_vkCreateDebugUtilsMessengerEXT;
+    static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
+#endif
 };

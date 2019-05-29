@@ -2,30 +2,22 @@
 
 using namespace KompotEngine::Renderer;
 
-#ifdef ENGINE_DEBUG
-PFN_vkCreateDebugUtilsMessengerEXT  Renderer::pfn_vkCreateDebugUtilsMessengerEXT = nullptr;
-PFN_vkDestroyDebugUtilsMessengerEXT Renderer::pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
-#endif
-
 Renderer::Renderer(GLFWwindow *window,
                    const std::shared_ptr<World> &world,
                    const std::string &windowName)
     : m_glfwWindowHandler(window),
       m_world(world),
       m_windowsName(windowName),
-      m_isResized(false)
+      m_isResized(false),
+      m_device(windowName)
 {
-    createVkInstance();
-    setupDebugCallback();
+    Log::setupDebugCallback(m_device.getInstance(), m_device);
     createSurface();
-    selectPysicalDevice();
-    createDevice();
+    m_device.create(m_vkSurface);
     createCommandPool();
     createDescriptorSetLayout();
-    m_resourcesMaker = new ResourcesMaker(m_vkPhysicalDevice,
-                                          m_vkDevice,
+    m_resourcesMaker = new ResourcesMaker(m_device,
                                           m_vkCommandPool,
-                                          m_vkGraphicsQueue,
                                           m_vkDescriptorSetLayout);
 
     createSwapchain();
@@ -36,13 +28,11 @@ Renderer::Renderer(GLFWwindow *window,
     createSyncObjects();
 
     auto cube = m_world->createObject("cube");
-
-    cube->moveTo(glm::vec3(-2.0f));
 }
 
 void Renderer::recreateSwapchain()
 {
-    vkDeviceWaitIdle(m_vkDevice);
+    vkDeviceWaitIdle(m_device);
 
     cleanupSwapchain();
 
@@ -58,13 +48,13 @@ void Renderer::cleanupSwapchain()
     m_vkDepthImage.reset();
     for (auto framebuffer : m_vkFramebuffers)
     {
-        vkDestroyFramebuffer(m_vkDevice, framebuffer, nullptr);
+        vkDestroyFramebuffer(m_device, framebuffer, nullptr);
     }
-    vkDestroyPipeline(m_vkDevice, m_vkPipeline, nullptr);
-    vkDestroyPipelineLayout(m_vkDevice, m_vkPipelineLayout, nullptr);
-    vkDestroyRenderPass(m_vkDevice, m_vkRenderPass, nullptr);
+    vkDestroyPipeline(m_device, m_vkPipeline, nullptr);
+    vkDestroyPipelineLayout(m_device, m_vkPipelineLayout, nullptr);
+    vkDestroyRenderPass(m_device, m_vkRenderPass, nullptr);
     m_vkSwapchainImages.clear();
-    vkDestroySwapchainKHR(m_vkDevice, m_vkSwapchain, nullptr);
+    vkDestroySwapchainKHR(m_device, m_vkSwapchain, nullptr);
 }
 
 Renderer::~Renderer()
@@ -73,21 +63,18 @@ Renderer::~Renderer()
     m_world->clear();
 
     cleanupSwapchain();
-    vkDestroyDescriptorSetLayout(m_vkDevice, m_vkDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(m_device, m_vkDescriptorSetLayout, nullptr);
 
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT ; ++i)
     {
-        vkDestroySemaphore(m_vkDevice, m_vkImageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(m_vkDevice, m_vkRenderFinishedSemaphores[i], nullptr);
-        vkDestroyFence(m_vkDevice, m_vkInFlightFramesFence[i], nullptr);
+        vkDestroySemaphore(m_device, m_vkImageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(m_device, m_vkRenderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(m_device, m_vkInFlightFramesFence[i], nullptr);
     }
-    vkDestroyCommandPool(m_vkDevice, m_vkCommandPool, nullptr);
-    vkDestroyDevice(m_vkDevice, nullptr);
-    vkDestroySurfaceKHR(m_vkInstance, m_vkSurface, nullptr);
-#ifdef ENGINE_DEBUG
-    pfn_vkDestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
-#endif
-    vkDestroyInstance(m_vkInstance, nullptr);
+    vkDestroyCommandPool(m_device, m_vkCommandPool, nullptr);
+    vkDestroySurfaceKHR(m_device.getInstance(), m_vkSurface, nullptr);
+
+    Log::deleteDebugCallback();
 }
 
 void Renderer::run()
@@ -99,11 +86,11 @@ void Renderer::run()
         auto &imageAvailableSemaphore = m_vkImageAvailableSemaphores[currentFrameIndex];
         auto &renderFinishedSemaphore = m_vkRenderFinishedSemaphores[currentFrameIndex];
 
-        vkWaitForFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        vkWaitForFences(m_device, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
         m_world->loadObjects(*m_resourcesMaker);
 
         auto imageIndex = 0_u32t;
-        auto resultCode = vkAcquireNextImageKHR(m_vkDevice,
+        auto resultCode = vkAcquireNextImageKHR(m_device,
                                                 m_vkSwapchain,
                                                 std::numeric_limits<uint64_t>::max(),
                                                 imageAvailableSemaphore,
@@ -185,13 +172,13 @@ void Renderer::run()
         submitInfo.signalSemaphoreCount = 1_u32t;
         submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-        resultCode = vkResetFences(m_vkDevice, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
+        resultCode = vkResetFences(m_device, 1_u32t, &m_vkInFlightFramesFence[currentFrameIndex]);
         if (resultCode != VK_SUCCESS)
         {
             Log::getInstance() << "Renderer::run(): vkResetFences failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
-        resultCode = vkQueueSubmit(m_vkGraphicsQueue, 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]);
+        resultCode = vkQueueSubmit(m_device.getGraphicsQueue(), 1_u32t, &submitInfo, m_vkInFlightFramesFence[currentFrameIndex]);
         if (resultCode != VK_SUCCESS)
         {
             Log::getInstance() << "Renderer::run(): vkQueueSubmit failed with code " << resultCode << ". Terminated." << std::endl;
@@ -206,7 +193,7 @@ void Renderer::run()
         presentInfo.pSwapchains = &m_vkSwapchain;
         presentInfo.pImageIndices = &imageIndex;
 
-        resultCode = vkQueuePresentKHR(m_vkGraphicsQueue, &presentInfo);
+        resultCode = vkQueuePresentKHR(m_device.getGraphicsQueue(), &presentInfo);
         if (resultCode == VK_ERROR_OUT_OF_DATE_KHR ||
             resultCode == VK_SUBOPTIMAL_KHR ||
             m_isResized)
@@ -222,7 +209,7 @@ void Renderer::run()
             Log::getInstance() << "Renderer::run(): vkQueuePresentKHR failed with code " << resultCode << ". Terminated." << std::endl;
             std::terminate();
         }
-        resultCode = vkQueueWaitIdle(m_vkGraphicsQueue);
+        resultCode = vkQueueWaitIdle(m_device.getGraphicsQueue());
         if(resultCode != VK_SUCCESS)
         {
             Log::getInstance() << "Renderer::run(): vkQueueWaitIdle failed with code " << resultCode << ". Terminated." << std::endl;
@@ -231,7 +218,7 @@ void Renderer::run()
         commandBuffer.free();
     }
 
-    vkDeviceWaitIdle(m_vkDevice);
+    vkDeviceWaitIdle(m_device);
 }
 
 void Renderer::resize()
@@ -239,82 +226,9 @@ void Renderer::resize()
     m_isResized = true;
 }
 
-void Renderer::createVkInstance()
-{
-    VkApplicationInfo vkApplicationInfo = {};
-    vkApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    vkApplicationInfo.pApplicationName = m_windowsName.c_str();
-    vkApplicationInfo.applicationVersion = VK_MAKE_VERSION(0_u8t, 0_u8t, 1_u8t);
-    vkApplicationInfo.pEngineName = ENGINE_NAME;
-    vkApplicationInfo.engineVersion = VK_MAKE_VERSION(ENGINE_VESRION_MAJOR, ENGINE_VESRION_MINOR, ENGINE_VESRION_PATCH);
-    vkApplicationInfo.apiVersion = VK_API_VERSION_1_1;
-
-    auto extensionsCount = 0_u32t;
-    auto glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionsCount);
-    std::vector<const char*> extensions(extensionsCount);
-    for (auto i = 0_u32t; i < extensionsCount; ++i)
-    {
-        extensions[i] = glfwExtensions[i];
-    }
-#ifdef ENGINE_DEBUG
-    extensions.push_back("VK_EXT_debug_utils");
-#endif
-
-    VkInstanceCreateInfo vkInstanceInfo = {};
-    vkInstanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    vkInstanceInfo.pApplicationInfo = &vkApplicationInfo;
-    vkInstanceInfo.enabledLayerCount = static_cast<unsigned int>(validationLayers.size());
-    vkInstanceInfo.ppEnabledLayerNames = validationLayers.data();
-    vkInstanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    vkInstanceInfo.ppEnabledExtensionNames = extensions.data();
-
-    const auto resultCode = vkCreateInstance(&vkInstanceInfo, nullptr, &m_vkInstance);
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createVkInstance(): Function vkCreateInstance call failed with a code " << resultCode << ". Terminated." << std::endl;
-        std::terminate();
-    }
-}
-
-void Renderer::setupDebugCallback()
-{
-#ifdef ENGINE_DEBUG
-    pfn_vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>
-                                          (vkGetInstanceProcAddr(m_vkInstance, "vkCreateDebugUtilsMessengerEXT"));
-    if (pfn_vkCreateDebugUtilsMessengerEXT == nullptr)
-    {
-        Log::getInstance() << "Renderer::setupDebugCallback(): Function vkGetInstanceProcAddr call for vkCreateDebugUtilsMessengerEXT failed. Terminated." << std::endl;
-        std::terminate();
-    }
-
-    pfn_vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>
-                                          (vkGetInstanceProcAddr(m_vkInstance, "vkDestroyDebugUtilsMessengerEXT"));
-    if (pfn_vkDestroyDebugUtilsMessengerEXT == nullptr)
-    {
-        Log::getInstance() << "Renderer::setupDebugCallback(): Function vkGetInstanceProcAddr call for vkDestroyDebugUtilsMessengerEXT failed. Terminated." << std::endl;
-        std::terminate();
-    }
-
-    VkDebugUtilsMessengerCreateInfoEXT vkDebugUtilsMessengerCreateInfo = {};
-    vkDebugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    vkDebugUtilsMessengerCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                                      VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    vkDebugUtilsMessengerCreateInfo.messageType = VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                                  VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                                  VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    vkDebugUtilsMessengerCreateInfo.pfnUserCallback = Log::vulkanDebugCallback;
-
-    VkResult resultCode = pfn_vkCreateDebugUtilsMessengerEXT(m_vkInstance, &vkDebugUtilsMessengerCreateInfo, nullptr, &m_vkDebugMessenger);
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::setupDebugCallback(): Function vkCreateDebugUtilsMessengerEXT call failed wih code " << resultCode << std::endl;
-    }
-#endif
-}
-
 void Renderer::createSurface()
 {
-    const auto resultCode = glfwCreateWindowSurface(m_vkInstance, m_glfwWindowHandler, nullptr, &m_vkSurface);
+    const auto resultCode = glfwCreateWindowSurface(m_device.getInstance(), m_glfwWindowHandler, nullptr, &m_vkSurface);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createSurface(): glfwCreateWindowSurface failed wih a code " << resultCode << ". Terminated." << std::endl;
@@ -322,172 +236,24 @@ void Renderer::createSurface()
     }
 }
 
-void Renderer::selectPysicalDevice()
-{
-    auto physicalDevicesCount = 0_u32t;
-    vkEnumeratePhysicalDevices(m_vkInstance, &physicalDevicesCount, nullptr);
-
-    if (physicalDevicesCount == 0_u32t)
-    {
-        Log::getInstance() << "Renderer::selectPysicalDevice(): No physical devices found. Terminated." << std::endl;
-        std::terminate();
-    }
-
-    std::vector<VkPhysicalDevice> vkPhysicalDevices(physicalDevicesCount);
-    vkEnumeratePhysicalDevices(m_vkInstance, &physicalDevicesCount, vkPhysicalDevices.data());
-
-    std::string lastDeviceName;
-    auto lastPhysicalDeviceMemorySize = 0_u32t;
-    for (auto &physicalDevice : vkPhysicalDevices)
-    {
-        VkPhysicalDeviceProperties vkPhysicalDeviceProperties;
-        vkGetPhysicalDeviceProperties(physicalDevice, &vkPhysicalDeviceProperties);
-
-        lastDeviceName = vkPhysicalDeviceProperties.deviceName;
-
-        VkPhysicalDeviceMemoryProperties vkPhysicalDeviceMemoryProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &vkPhysicalDeviceMemoryProperties);
-        auto memoryHeaps = std::vector<VkMemoryHeap>(vkPhysicalDeviceMemoryProperties.memoryHeaps,
-                                               vkPhysicalDeviceMemoryProperties.memoryHeaps + vkPhysicalDeviceMemoryProperties.memoryHeapCount);
-        auto physicalDeviceMemorySize = 1_u32t;
-        for (const auto& heap : memoryHeaps)
-        {
-            if (heap.flags & VkMemoryHeapFlagBits::VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
-            {
-                physicalDeviceMemorySize = static_cast<uint32_t>(heap.size);
-                break;
-            }
-        }
-
-        if (vkPhysicalDeviceProperties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-        {
-            if (physicalDeviceMemorySize > lastPhysicalDeviceMemorySize)
-            {
-                m_vkPhysicalDevice = physicalDevice;
-            }
-        }
-        else if (vkPhysicalDeviceProperties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
-        {
-            if (m_vkPhysicalDevice == nullptr)
-            {
-                m_vkPhysicalDevice = physicalDevice;
-            }
-        }
-    }
-
-    if (m_vkPhysicalDevice == nullptr)
-    {
-        Log::getInstance() << "Renderer::selectPysicalDevice(): No situable physical devices found" << std::endl;
-        std::terminate();
-    }
-
-    Log::getInstance() << "Renderer::selectPysicalDevice(): Founded physical device \"" << lastDeviceName << "\"." << std::endl;
-}
-
-QueueFamilyIndices Renderer::findQueueFamilies()
-{
-    QueueFamilyIndices indices;
-    auto queueFamiliesCount = 0_u32t;
-
-    vkGetPhysicalDeviceQueueFamilyProperties(m_vkPhysicalDevice, &queueFamiliesCount, nullptr);
-    std::vector<VkQueueFamilyProperties> vkQueueFamiliesProperties(queueFamiliesCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(m_vkPhysicalDevice, &queueFamiliesCount, vkQueueFamiliesProperties.data());
-
-    for ( auto i = 0_u32t; i < vkQueueFamiliesProperties.size(); ++i)
-    {
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_vkPhysicalDevice, i, m_vkSurface, &presentSupport);
-
-        if (vkQueueFamiliesProperties[i].queueCount > 0_u32t && presentSupport)
-        {
-            indices.presentFamilyIndex = i;
-        }
-
-        if (vkQueueFamiliesProperties[i].queueCount > 0_u32t && vkQueueFamiliesProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            indices.graphicFamilyIndex = i;
-        }
-
-        if (indices.isComplete())
-        {
-            break;
-        }
-    }
-
-    if (!indices.isComplete())
-    {
-        Log::getInstance() << "Renderer::findQueueFamilies(): Not all queue families found. Terminated." << std::endl;
-        std::terminate();
-    }
-
-    return indices;
-}
-
 SwapchainSupportDetails Renderer::getSwapchainDetails()
 {
-    SwapchainSupportDetails swapchainDetails;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_vkPhysicalDevice, m_vkSurface, &swapchainDetails.capabilities);
+    SwapchainSupportDetails swapchainDetails {};
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_device, m_vkSurface, &swapchainDetails.capabilities);
 
     auto formatsCount = 0_u32t;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(m_vkPhysicalDevice, m_vkSurface, &formatsCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_device, m_vkSurface, &formatsCount, nullptr);
     std::vector<VkSurfaceFormatKHR> vkSurfaceFormats(formatsCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(m_vkPhysicalDevice, m_vkSurface, &formatsCount, vkSurfaceFormats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_device, m_vkSurface, &formatsCount, vkSurfaceFormats.data());
     swapchainDetails.format = chooseSurfaceFormat(vkSurfaceFormats);
 
     auto presentModesCount = 0_u32t;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(m_vkPhysicalDevice, m_vkSurface, &presentModesCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_device, m_vkSurface, &presentModesCount, nullptr);
     std::vector<VkPresentModeKHR> vkPresentModes(presentModesCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(m_vkPhysicalDevice, m_vkSurface, &presentModesCount, vkPresentModes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_device, m_vkSurface, &presentModesCount, vkPresentModes.data());
     swapchainDetails.presentMode = choosePresentMode(vkPresentModes);
 
     return swapchainDetails;
-}
-
-void Renderer::createDevice()
-{
-    const auto familiesIndecies = findQueueFamilies();
-    std::set<uint32_t> indices = {
-        familiesIndecies.graphicFamilyIndex.value(),
-        familiesIndecies.presentFamilyIndex.value()
-    };
-    const auto queuePriority = 1.0f;
-
-    std::vector<VkDeviceQueueCreateInfo> vkDeviceQueueCreateInfos;
-    for (const auto familyIndex : indices)
-    {
-        VkDeviceQueueCreateInfo vkDeviceQueueCreateInfo = {};
-        vkDeviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        vkDeviceQueueCreateInfo.queueFamilyIndex = familyIndex;
-        vkDeviceQueueCreateInfo.queueCount = 1_u32t;
-        vkDeviceQueueCreateInfo.pQueuePriorities = &queuePriority;
-        vkDeviceQueueCreateInfos.push_back(vkDeviceQueueCreateInfo);
-    }
-
-    VkPhysicalDeviceFeatures vkPhysicalDeviceFeatures = {};
-    vkPhysicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
-    std::vector<const char*> extensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-
-    VkDeviceCreateInfo vkDeviceCreateInfo = {};
-    vkDeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    vkDeviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(indices.size());
-    vkDeviceCreateInfo.pQueueCreateInfos = vkDeviceQueueCreateInfos.data();
-    vkDeviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    vkDeviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
-    vkDeviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    vkDeviceCreateInfo.ppEnabledExtensionNames = extensions.data();
-    vkDeviceCreateInfo.pEnabledFeatures = &vkPhysicalDeviceFeatures;
-
-    const auto resultCode = vkCreateDevice(m_vkPhysicalDevice, &vkDeviceCreateInfo, nullptr, &m_vkDevice);
-    if (resultCode != VK_SUCCESS)
-    {
-        Log::getInstance() << "Renderer::createDevice(): Function vkCreateDevice call failed with a code " << resultCode << ". Terminated." << std::endl;
-        std::terminate();
-    }
-
-    vkGetDeviceQueue(m_vkDevice, familiesIndecies.graphicFamilyIndex.value(), 0_u32t, &m_vkGraphicsQueue);
-    vkGetDeviceQueue(m_vkDevice, familiesIndecies.presentFamilyIndex.value(), 0_u32t, &m_vkPresentQueue);
 }
 
 VkSurfaceFormatKHR Renderer::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &vkSurfaceFormats)
@@ -532,7 +298,7 @@ VkPresentModeKHR Renderer::choosePresentMode(const std::vector<VkPresentModeKHR>
 void Renderer::createSwapchain()
 {
     const auto swapchainDetails = getSwapchainDetails();
-    const auto queuefamilies = findQueueFamilies();
+    const auto queuefamilies = m_device.findQueueFamilies();
     uint32_t queuefamiliesIndicies[] = {
         queuefamilies.graphicFamilyIndex.value(),
         queuefamilies.presentFamilyIndex.value()
@@ -567,16 +333,16 @@ void Renderer::createSwapchain()
     vkSwapchainCreateInfo.clipped = VK_TRUE;
     vkSwapchainCreateInfo.oldSwapchain = nullptr;
 
-    const auto resultCode = vkCreateSwapchainKHR(m_vkDevice, &vkSwapchainCreateInfo, nullptr, &m_vkSwapchain);
+    const auto resultCode = vkCreateSwapchainKHR(m_device, &vkSwapchainCreateInfo, nullptr, &m_vkSwapchain);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createSwapchain(): Function vkCreateSwapchainKHR call failed with a code " << resultCode << ". Terminated." << std::endl;
         std::terminate();
     }
     auto swapchainImagesCount = 0_u32t;
-    vkGetSwapchainImagesKHR(m_vkDevice, m_vkSwapchain, &swapchainImagesCount, nullptr);
+    vkGetSwapchainImagesKHR(m_device, m_vkSwapchain, &swapchainImagesCount, nullptr);
     std::vector<VkImage> swapchainImages(swapchainImagesCount);
-    vkGetSwapchainImagesKHR(m_vkDevice, m_vkSwapchain, &swapchainImagesCount, swapchainImages.data());
+    vkGetSwapchainImagesKHR(m_device, m_vkSwapchain, &swapchainImagesCount, swapchainImages.data());
 
     for (auto& swapchainImage : swapchainImages)
     {
@@ -646,7 +412,7 @@ void Renderer::createRenderPass()
     vkRenderPassCreateInfo.dependencyCount = 1_u32t;
     vkRenderPassCreateInfo.pDependencies = &vkSubpassDependency;
 
-    const auto resultCode = vkCreateRenderPass(m_vkDevice, &vkRenderPassCreateInfo, nullptr, &m_vkRenderPass);
+    const auto resultCode = vkCreateRenderPass(m_device, &vkRenderPassCreateInfo, nullptr, &m_vkRenderPass);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createRenderPass(): Function vkCreateRenderPass call failed with a code " << resultCode << ". Terminated." << std::endl;
@@ -670,7 +436,7 @@ void Renderer::createFramebuffers()
         vkFramebufferCreateInfo.height = m_vkExtent.height;
         vkFramebufferCreateInfo.layers = 1_u32t;
 
-        const auto resultCode = vkCreateFramebuffer(m_vkDevice, &vkFramebufferCreateInfo, nullptr, &m_vkFramebuffers[i]);
+        const auto resultCode = vkCreateFramebuffer(m_device, &vkFramebufferCreateInfo, nullptr, &m_vkFramebuffers[i]);
         if (resultCode != VK_SUCCESS)
         {
             Log::getInstance() << "Renderer::createFramebuffers(): Function vkCreateFramebuffer call failed with a code " << resultCode << ". Terminated." << std::endl;
@@ -702,7 +468,7 @@ void Renderer::createDescriptorSetLayout()
     vkDescriptorSetLayoutCreateInfo.bindingCount = vkDescriptorSetLayoutBindings.size();
     vkDescriptorSetLayoutCreateInfo.pBindings = vkDescriptorSetLayoutBindings.data();
 
-    const auto resultCode = vkCreateDescriptorSetLayout(m_vkDevice, &vkDescriptorSetLayoutCreateInfo, nullptr, &m_vkDescriptorSetLayout);
+    const auto resultCode = vkCreateDescriptorSetLayout(m_device, &vkDescriptorSetLayoutCreateInfo, nullptr, &m_vkDescriptorSetLayout);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createDescriptorSetLayout(): Function vkCreateDescriptorSetLayout call failed with a code " << resultCode << ". Terminated." << std::endl;
@@ -713,8 +479,8 @@ void Renderer::createDescriptorSetLayout()
 void Renderer::createGraphicsPipeline()
 {
     m_vkPipelineLayout = nullptr;
-    Shader vertexShader("triangle.vert.spv", m_vkDevice);
-    Shader fragmentShader("triangle.frag.spv", m_vkDevice);
+    Shader vertexShader("triangle.vert.spv", m_device);
+    Shader fragmentShader("triangle.frag.spv", m_device);
     if (!vertexShader.load())
     {
         Log::getInstance() << "Renderer::createGraphicsPipeline(): Vertex shader loading error. Terminated." << std::endl;
@@ -809,7 +575,7 @@ void Renderer::createGraphicsPipeline()
     VkPipelineLayoutCreateInfo.setLayoutCount = 1_u32t;
     VkPipelineLayoutCreateInfo.pSetLayouts = &m_vkDescriptorSetLayout;
 
-    auto resultCode = vkCreatePipelineLayout(m_vkDevice, &VkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout);
+    auto resultCode = vkCreatePipelineLayout(m_device, &VkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createGraphicsPipeline(): Function vkCreatePipelineLayout call failed with a code " << resultCode << ". Terminated." << std::endl;
@@ -831,7 +597,7 @@ void Renderer::createGraphicsPipeline()
     vkGraphicsPipelineCreateInfo.renderPass = m_vkRenderPass;
     vkGraphicsPipelineCreateInfo.subpass = 0_u32t;
 
-    resultCode = vkCreateGraphicsPipelines(m_vkDevice, nullptr, 1_u32t, &vkGraphicsPipelineCreateInfo, nullptr, &m_vkPipeline);
+    resultCode = vkCreateGraphicsPipelines(m_device, nullptr, 1_u32t, &vkGraphicsPipelineCreateInfo, nullptr, &m_vkPipeline);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createGraphicsPipeline(): Function vkCreateGraphicsPipelines call failed with a code " << resultCode << ". Terminated." << std::endl;
@@ -842,11 +608,11 @@ void Renderer::createGraphicsPipeline()
 void Renderer::createCommandPool()
 {
     VkCommandPoolCreateInfo vkCommandPoolCreateInfo = {};
-    const auto queueFamilies = findQueueFamilies();
+    const auto queueFamilies = m_device.findQueueFamilies();
     vkCommandPoolCreateInfo.sType  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     vkCommandPoolCreateInfo.queueFamilyIndex = queueFamilies.graphicFamilyIndex.value();
 
-    const auto resultCode = vkCreateCommandPool(m_vkDevice, &vkCommandPoolCreateInfo, nullptr, &m_vkCommandPool);
+    const auto resultCode = vkCreateCommandPool(m_device, &vkCommandPoolCreateInfo, nullptr, &m_vkCommandPool);
     if (resultCode != VK_SUCCESS)
     {
         Log::getInstance() << "Renderer::createCommandPool(): Function vkCreateCommandPool failed with a code " << resultCode << ". Terminated." << std::endl;
@@ -869,31 +635,14 @@ void Renderer::createSyncObjects()
 
     for (auto i = 0_u64t; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        if (VK_SUCCESS != vkCreateSemaphore(m_vkDevice, &vkSemaphoreCreateInfo, nullptr, &m_vkImageAvailableSemaphores[i]) ||
-            VK_SUCCESS != vkCreateSemaphore(m_vkDevice, &vkSemaphoreCreateInfo, nullptr, &m_vkRenderFinishedSemaphores[i]) ||
-            VK_SUCCESS != vkCreateFence(m_vkDevice, &vkFenceCreateInfo, nullptr, &m_vkInFlightFramesFence[i]))
+        if (VK_SUCCESS != vkCreateSemaphore(m_device, &vkSemaphoreCreateInfo, nullptr, &m_vkImageAvailableSemaphores[i]) ||
+            VK_SUCCESS != vkCreateSemaphore(m_device, &vkSemaphoreCreateInfo, nullptr, &m_vkRenderFinishedSemaphores[i]) ||
+            VK_SUCCESS != vkCreateFence(m_device, &vkFenceCreateInfo, nullptr, &m_vkInFlightFramesFence[i]))
         {
             Log::getInstance() << "Failed to create synchronization objects. Terminated." << std::endl;
             std::terminate();
         }
     }
-}
-
-uint32_t Renderer::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties)
-{
-    VkPhysicalDeviceMemoryProperties vkPhysicalDevicememoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice, &vkPhysicalDevicememoryProperties);
-
-    for (auto i = 0_u32t; i < vkPhysicalDevicememoryProperties.memoryTypeCount; ++i)
-    {
-        if ((requiredTypes & (1 << i)) && (vkPhysicalDevicememoryProperties.memoryTypes[i].propertyFlags & requiredProperties) == requiredProperties)
-        {
-            return i;
-        }
-    }
-
-    Log::getInstance() << "Renderer::findMemoryType(): Failed to find suitable memory type. Terminated."<< std::endl;
-    std::terminate();
 }
 
 void Renderer::createDepthResources()
