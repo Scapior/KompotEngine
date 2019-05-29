@@ -8,6 +8,7 @@
 #include "../IO/MeshesLoader.hpp"
 #include "../IO/TgaLoader.hpp"
 #include "../MeshObject.hpp"
+#include "../../Misc/OptionsParser/OptionsParser.hpp"
 #include "DescriptorPoolManager.hpp"
 #include <vulkan/vulkan.hpp>
 #include <memory>

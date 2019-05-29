@@ -1,6 +1,6 @@
 #include "global.hpp"
 #include "Engine/Engine.hpp"
-#include "Misc/ProgramOptions/ProgramOptions.hpp"
+#include "Misc/OptionsParser/OptionsParser.hpp"
 #include <fstream>
 
 using namespace KompotEngine;
@@ -10,7 +10,7 @@ int main(int argc, char **argv)
     std::ios::sync_with_stdio(false);
     EngineConfig engineConfig;
 
-    ProgramOptions options;
+    OptionsParser options;
     options.addOptions()
         ("editmode",   "Run engine as editor",  false,    &engineConfig.isEditMode)
         ("fullscreen", "Fullscreen mode",       false,    &engineConfig.isFullscreen)

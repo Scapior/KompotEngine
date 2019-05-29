@@ -28,7 +28,7 @@ set(SOURCES
     Source/Engine/IO/TgaLoader.cpp
     Source/Misc/Log.cpp
     Source/Misc/TickingObject.cpp
-    Source/Misc/ProgramOptions/ProgramOptions.cpp
+    Source/Misc/OptionsParser/OptionsParser.cpp
 )
 
 set(HEADERS
@@ -51,7 +51,7 @@ set(HEADERS
     Source/Engine/IO/TgaLoader.hpp
     Source/Misc/Log.hpp
     Source/Misc/TickingObject.hpp
-    Source/Misc/ProgramOptions/ProgramOptions.hpp
+    Source/Misc/OptionsParser/OptionsParser.hpp
 )
 
 set(GLSL_SOURCE_FILES

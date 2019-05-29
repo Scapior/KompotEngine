@@ -9,7 +9,7 @@
 
 #include <typeinfo>
 
-class ProgramOptions
+class OptionsParser
 {
 private:
     typedef std::variant<std::string, bool,

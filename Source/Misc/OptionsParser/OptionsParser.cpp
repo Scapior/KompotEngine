@@ -1,29 +1,29 @@
-#include "ProgramOptions.hpp"
+#include "OptionsParser.hpp"
 
 template<typename T>
-void ProgramOptions::Options::Option::setByPointer(const Variant &variant, PointerVariant &pointerVariant)
+void OptionsParser::Options::Option::setByPointer(const Variant &variant, PointerVariant &pointerVariant)
 {
     T &reference = *std::get<T*>(pointerVariant);
     reference = std::get<T>(variant);
 }
 
-void ProgramOptions::Options::Option::notify() const
+void OptionsParser::Options::Option::notify() const
 {
     std::visit(visitorPointer{}, value, pointer);
 }
 
 template<typename T>
-void ProgramOptions::Options::Option::setFromStream(Variant &variant, const T &value)
+void OptionsParser::Options::Option::setFromStream(Variant &variant, const T &value)
 {
     variant = value;
 }
 
-void ProgramOptions::Options::Option::set(std::stringstream &optionsStream)
+void OptionsParser::Options::Option::set(std::stringstream &optionsStream)
 {
     std::visit(visitorStream{optionsStream, value}, value);
 }
 
-void ProgramOptions::Options::notify() const
+void OptionsParser::Options::notify() const
 {
     for (const auto& option : m_options)
     {
@@ -32,7 +32,7 @@ void ProgramOptions::Options::notify() const
     }
 }
 
-bool ProgramOptions::Options::contains(const std::string &key) const
+bool OptionsParser::Options::contains(const std::string &key) const
 {
     for (const auto& option : m_options)
     {
@@ -44,7 +44,7 @@ bool ProgramOptions::Options::contains(const std::string &key) const
     return false;
 }
 
-void  ProgramOptions::Options::setByKeyFromStream(const std::string &key, std::stringstream &optionsStream)
+void  OptionsParser::Options::setByKeyFromStream(const std::string &key, std::stringstream &optionsStream)
 {
     for (auto& option : m_options)
     {
@@ -56,7 +56,7 @@ void  ProgramOptions::Options::setByKeyFromStream(const std::string &key, std::s
     }
 }
 
-bool ProgramOptions::Options::keyIsBoolean(const std::string &key) const
+bool OptionsParser::Options::keyIsBoolean(const std::string &key) const
 {
     for (const auto& option : m_options)
     {
@@ -68,7 +68,7 @@ bool ProgramOptions::Options::keyIsBoolean(const std::string &key) const
     return false;
 }
 
-void ProgramOptions::loadFromArguments(int argc, char **argv)
+void OptionsParser::loadFromArguments(int argc, char **argv)
 {
     std::stringstream argumentStream;
     for (int i = 1; i < argc; ++i)
@@ -117,7 +117,7 @@ void ProgramOptions::loadFromArguments(int argc, char **argv)
     SetOptionsFromStringstream(argumentStream);
 }
 
-void ProgramOptions::loadFromFile(std::ifstream& inputStream)
+void OptionsParser::loadFromFile(std::ifstream& inputStream)
 {
     std::stringstream optionsStream{};
     while (!inputStream.eof())
@@ -155,7 +155,7 @@ void ProgramOptions::loadFromFile(std::ifstream& inputStream)
     SetOptionsFromStringstream(optionsStream);
 }
 
-void ProgramOptions::SetOptionsFromStringstream(std::stringstream &optionsStream)
+void OptionsParser::SetOptionsFromStringstream(std::stringstream &optionsStream)
 {
     while (!optionsStream.eof())
     {
@@ -169,13 +169,13 @@ void ProgramOptions::SetOptionsFromStringstream(std::stringstream &optionsStream
     }
 }
 
-void ProgramOptions::notify() const
+void OptionsParser::notify() const
 {
     m_options.notify();
 }
 
 
-bool ProgramOptions::compareChar(char c1, char c2)
+bool OptionsParser::compareChar(char c1, char c2)
 {
     if (c1 == c2)
         return true;
@@ -184,16 +184,17 @@ bool ProgramOptions::compareChar(char c1, char c2)
     return false;
 }
 
-bool ProgramOptions::caseInsensitiveStringEquals(const std::string & stringLeft, const std::string &stringRight)
+bool OptionsParser::caseInsensitiveStringEquals(const std::string & stringLeft, const std::string &stringRight)
 {
     return ( (stringLeft.size() == stringRight.size() ) &&
              std::equal(stringLeft.begin(), stringLeft.end(), stringRight.begin(), &compareChar) );
 }
 
-std::string ProgramOptions::trim(const std::string &text)
+std::string OptionsParser::trim(const std::string &text)
 {
     const auto leftSpacePosition = text.find_first_not_of(' ');
+    auto result = text.substr(leftSpacePosition);
     const auto rightSpacePosition = text.find_last_not_of(' ');
-    auto result = text.substr(leftSpacePosition, text.size() - rightSpacePosition - 1_u64t);
+    result = text.substr(0_u64t, rightSpacePosition + 1_u64t);
     return result;
 }

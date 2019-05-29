@@ -22,14 +22,29 @@ std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
         std::shared_ptr<Mesh> meshPointer,
         std::shared_ptr<Image> texturePointer)
 {
+    std::string modelFileName;
+    std::string textureFileName;
+
+    OptionsParser classOptions;
+    classOptions.addOptions()
+        ("ModelFileName", "", std::string(), &modelFileName)
+        ("TextureName",   "", std::string(), &textureFileName);
+
+    std::ifstream configFile(className + ".kec");
+    if (configFile.is_open())
+    {
+        classOptions.loadFromFile(configFile);
+    }
+    classOptions.notify();
+
     if (!meshPointer)
     {
-        meshPointer = createMeshFromFile(className + ".kem");
+        meshPointer = createMeshFromFile(modelFileName);
     }
 
     if (!texturePointer)
     {
-        texturePointer = createTextureFromFile(className + ".tga");
+        texturePointer = createTextureFromFile(textureFileName);
     }
 
 

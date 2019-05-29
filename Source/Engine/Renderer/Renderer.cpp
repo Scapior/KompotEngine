@@ -27,7 +27,7 @@ Renderer::Renderer(GLFWwindow *window,
     createFramebuffers();
     createSyncObjects();
 
-    auto cube = m_world->createObject("cube");
+    auto cube = m_world->createObject("Cube");
 }
 
 void Renderer::recreateSwapchain()
