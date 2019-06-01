@@ -132,7 +132,7 @@ void Renderer::run()
 
         m_world->lock();
 
-        for (const auto& object : m_world->getMeshObjects())
+        for (auto&& [objectId, object] : m_world->getMeshObjects())
         {
             mvpMatrix.model = object->getModelMatrix();
             mvpMatrix.model = glm::rotate(mvpMatrix.model, deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -145,18 +145,7 @@ void Renderer::run()
         VkDeviceSize vkOffsetsSizes[] = {0_u32t};
         vkCmdBeginRenderPass(commandBuffer, &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-
-        auto &object = m_world->getMeshObjects().back();
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-        vkCmdBindVertexBuffers(commandBuffer, 0_u32t, 1_u32t, object->getMesh()->getVertexBuffer(), vkOffsetsSizes);
-        vkCmdBindIndexBuffer(commandBuffer, *object->getMesh()->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t,
-                                object->getDescriptorSet(), 0_u32t, nullptr);
-        vkCmdDrawIndexed(commandBuffer, object->getMesh()->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
-
-
-        for (const auto& object : m_world->getMeshObjects())
+        for (auto&& [objectId, object]  : m_world->getMeshObjects())
         {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
             vkCmdBindVertexBuffers(commandBuffer, 0_u32t, 1_u32t, object->getMesh()->getVertexBuffer(), vkOffsetsSizes);

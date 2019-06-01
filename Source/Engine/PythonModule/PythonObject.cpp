@@ -8,7 +8,12 @@ PythonObject::PythonObject()
 
 PythonObject::PythonObject(PyObject *pyObject)
     : m_pyObject(pyObject)
-{}
+{
+    if (pyObject != nullptr)
+    {
+        Py_INCREF(pyObject);
+    }
+}
 
 
 PythonObject::~PythonObject()
@@ -20,7 +25,9 @@ PythonObject::~PythonObject()
     m_pyObject = nullptr;
 }
 
+
 KompotEngine::PythonObject::operator PyObject *()
 {
+    Py_INCREF(m_pyObject);
     return m_pyObject;
 }

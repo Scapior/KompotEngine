@@ -8,6 +8,7 @@ World::World()
 {
     m_objectsFlag.clear();
     m_objectsToLoadFlag.clear();
+    m_objectsToDeleteFlag.clear();
 }
 
 void World::clear()
@@ -23,17 +24,27 @@ std::shared_ptr<MeshObject> World::createObject(const std::string &className)
     lockObjectToLoad();
     auto objectId = m_LastFreeId++;
     auto object = std::make_shared<MeshObject>(objectId, className);
-    m_objectClassesToLoad.emplace_back(object);
+    m_objectClassesToLoad[objectId] = object;
     unlockObjectToLoad();
     return object;
 }
 
 void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
 {
+    lock();
+    lockObjectToDelete();
+    for (const auto& objectId : m_objectsToDelete)
+    {
+        m_meshObjects.erase(objectId);
+    }
+    unlock();
+    m_objectsToDelete.clear();
+    unlockObjectToDelete();
+
     lockObjectToLoad();
     std::vector<std::shared_ptr<MeshObject>> newLoadedObjects;
 
-    for (auto& objectToLoad : m_objectClassesToLoad)
+    for (auto&& [objectId, objectToLoad] : m_objectClassesToLoad)
     {
         const auto &className = objectToLoad->getClass();
         std::shared_ptr<Renderer::Mesh>  meshPointer{};
@@ -75,7 +86,7 @@ void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
 
     for (auto &newObject : newLoadedObjects )
     {
-        m_meshObjects.push_back(newObject);
+        m_meshObjects[newObject->getObjectId()] = newObject;
     }
 
     newLoadedObjects.clear();
@@ -84,9 +95,31 @@ void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
 
 }
 
-const std::vector<std::shared_ptr<MeshObject>>& World::getMeshObjects()
+void World::deleteObject(uint64_t objectId)
+{
+    lockObjectToDelete();
+    m_objectsToDelete.push_back(objectId);
+    unlockObjectToDelete();
+}
+
+const std::map<uint64_t, std::shared_ptr<MeshObject>>& World::getMeshObjects()
 {
     return m_meshObjects;
+}
+
+std::shared_ptr<MeshObject> World::getObjectById(uint64_t objectId)
+{
+    if (m_meshObjects.find(objectId) != m_meshObjects.end())
+    {
+        return m_meshObjects[objectId];
+    }
+
+    if (m_objectClassesToLoad.find(objectId) != m_objectClassesToLoad.end())
+    {
+        return m_objectClassesToLoad[objectId];
+    }
+
+    return nullptr;
 }
 
 void World::lock() const
@@ -107,4 +140,14 @@ void World::lockObjectToLoad() const
 void World::unlockObjectToLoad() const
 {
     m_objectsToLoadFlag.clear();
+}
+
+void World::lockObjectToDelete() const
+{
+    while (m_objectsToDeleteFlag.test_and_set()){}
+}
+
+void World::unlockObjectToDelete() const
+{
+    m_objectsToDeleteFlag.clear();
 }
