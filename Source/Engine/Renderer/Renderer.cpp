@@ -28,6 +28,8 @@ Renderer::Renderer(GLFWwindow *window,
     createSyncObjects();
 
     auto cube = m_world->createObject("Cube");
+
+    cube->scale(glm::vec3(0.1f, 0.1f, 0.1f));
 }
 
 void Renderer::recreateSwapchain()
@@ -124,9 +126,11 @@ void Renderer::run()
         auto currentTime = std::chrono::high_resolution_clock::now();
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         UnifromBufferObject mvpMatrix = {};
-        mvpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        mvpMatrix.view = glm::lookAt(glm::vec3(-2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
         mvpMatrix.projection[1][1] *= -1;
+
+        m_world->lock();
 
         for (const auto& object : m_world->getMeshObjects())
         {
@@ -141,6 +145,17 @@ void Renderer::run()
         VkDeviceSize vkOffsetsSizes[] = {0_u32t};
         vkCmdBeginRenderPass(commandBuffer, &vkRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+
+        auto &object = m_world->getMeshObjects().back();
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
+        vkCmdBindVertexBuffers(commandBuffer, 0_u32t, 1_u32t, object->getMesh()->getVertexBuffer(), vkOffsetsSizes);
+        vkCmdBindIndexBuffer(commandBuffer, *object->getMesh()->getIndecesBuffer(), 0_u32t, VK_INDEX_TYPE_UINT32);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 0_u32t, 1_u32t,
+                                object->getDescriptorSet(), 0_u32t, nullptr);
+        vkCmdDrawIndexed(commandBuffer, object->getMesh()->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
+
+
         for (const auto& object : m_world->getMeshObjects())
         {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
@@ -151,6 +166,8 @@ void Renderer::run()
             vkCmdDrawIndexed(commandBuffer, object->getMesh()->getIndicesCount(), 1_u32t, 0_u32t, 0_u32t, 0_u32t);
         }
         vkCmdEndRenderPass(commandBuffer);
+
+        m_world->unlock();
 
         resultCode = vkEndCommandBuffer(commandBuffer);
         if (resultCode != VK_SUCCESS)

@@ -30,7 +30,7 @@ public:
 
     SingleTimeCommandBuffer createSingleTimeCommandBuffer() const;
 
-    std::shared_ptr<MeshObject> createMeshObject(const std::string&, std::shared_ptr<Mesh>, std::shared_ptr<Image>);
+    std::shared_ptr<MeshObject> createMeshObject(uint64_t, const std::string&, std::shared_ptr<Mesh>, std::shared_ptr<Image>);
     std::shared_ptr<Mesh> createMeshFromFile(const fs::path&) const;
     std::shared_ptr<Image> createTextureFromFile(const fs::path&) const;
     std::shared_ptr<Image> createSwapchainImage(VkImage, VkFormat) const;

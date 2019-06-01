@@ -2,6 +2,7 @@
 
 #include "global.hpp"
 #include "World.hpp"
+#include "PythonModule/PythonModule.hpp"
 #include "Renderer/Renderer.hpp"
 #include <BuildVersion.hpp>
 #include <vulkan/vulkan.hpp>
@@ -34,6 +35,7 @@ private:
     std::string         m_instanceName;
     EngineConfig        m_engineSettings;
     Renderer::Renderer *m_renderer = nullptr;
+    PythonModule       *m_pythonModule = nullptr;
 
     GLFWwindow* m_glfwWindowHandler;
 

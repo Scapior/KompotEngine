@@ -26,14 +26,20 @@ public:
     void unlock() const;
 
 private:
-    mutable std::atomic_flag m_atomicFlag;
-    bool isNeedToLoadResource;
+
+    void lockObjectToLoad() const;
+    void unlockObjectToLoad() const;
+
+    mutable std::atomic_flag m_objectsFlag;
+    mutable std::atomic_flag m_objectsToLoadFlag;
 
     std::vector<std::shared_ptr<MeshObject>> m_meshObjects;
 
     mutable std::map<std::string, std::shared_ptr<Renderer::Mesh>>  m_meshesCache;
     mutable std::map<std::string, std::shared_ptr<Renderer::Image>> m_imagesCache;
-    mutable std::vector<std::pair<std::string, std::shared_ptr<MeshObject>>> m_objectClassesToLoad;
+    mutable std::vector<std::shared_ptr<MeshObject>> m_objectClassesToLoad;
+
+    static uint64_t m_LastFreeId;
 };
 
 

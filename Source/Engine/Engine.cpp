@@ -43,7 +43,9 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
 #endif
 
     m_world.reset(new World());
+    m_pythonModule = new PythonModule(m_world);
     m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_world, m_instanceName);
+
     log << "Renderer successfully initialized." << std::endl;
 
     glfwSetFramebufferSizeCallback(m_glfwWindowHandler, resizeCallback);
@@ -59,10 +61,12 @@ Engine::~Engine()
 void Engine::run()
 {
     std::thread(&Renderer::Renderer::run, m_renderer).detach();
+    m_pythonModule->start();
     while (!glfwWindowShouldClose(m_glfwWindowHandler)) // TODO: replace this
     {
         glfwPollEvents();
     }
+    m_pythonModule->stop();
 }
 
 void Engine::resizeCallback(GLFWwindow *glfwWindowHandler, int, int)

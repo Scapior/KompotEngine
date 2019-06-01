@@ -1,2 +1,3 @@
 ModelFileName = cube.kem 
 TextureName = cube.tga 
+ScriptFile = cube.py

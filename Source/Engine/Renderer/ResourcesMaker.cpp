@@ -18,17 +18,20 @@ SingleTimeCommandBuffer ResourcesMaker::createSingleTimeCommandBuffer() const
 }
 
 std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
+        uint64_t objectId,
         const std::string &className,
         std::shared_ptr<Mesh> meshPointer,
         std::shared_ptr<Image> texturePointer)
 {
     std::string modelFileName;
     std::string textureFileName;
+    std::string scriptFileName;
 
     OptionsParser classOptions;
     classOptions.addOptions()
         ("ModelFileName", "", std::string(), &modelFileName)
-        ("TextureName",   "", std::string(), &textureFileName);
+        ("TextureName",   "", std::string(), &textureFileName)
+        ("ScriptFile",   "", std::string(), &scriptFileName);
 
     std::ifstream configFile(className + ".kec");
     if (configFile.is_open())
@@ -91,16 +94,18 @@ std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
         vkWriteDescriptorsets[1].descriptorCount = 1_u32t;
         vkWriteDescriptorsets[1].pImageInfo = &vkDescriptorImageInfo;
 
-        vkUpdateDescriptorSets(m_device, vkWriteDescriptorsets.size(), vkWriteDescriptorsets.data(), 0_u32t, nullptr);
+            vkUpdateDescriptorSets(m_device, vkWriteDescriptorsets.size(), vkWriteDescriptorsets.data(), 0_u32t, nullptr);
     }
 
-    return std::make_shared<KompotEngine::MeshObject>(m_device,
+    return std::make_shared<KompotEngine::MeshObject>(objectId,
+                                                      m_device,
                                                       m_descriptorPoolManager,
                                                       className,
                                                       vkDescriptorSets,
                                                       meshPointer,
                                                       texturePointer,
-                                                      vkUniformMatricesBuffers);
+                                                      vkUniformMatricesBuffers,
+                                                      scriptFileName);
 }
 
 uint32_t ResourcesMaker::findMemoryType(uint32_t requiredTypes, VkMemoryPropertyFlags requiredProperties) const

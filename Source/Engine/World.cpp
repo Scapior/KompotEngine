@@ -2,10 +2,12 @@
 
 using namespace KompotEngine;
 
+uint64_t World::m_LastFreeId = 0;
+
 World::World()
-    : isNeedToLoadResource(false)
 {
-    m_atomicFlag.clear();
+    m_objectsFlag.clear();
+    m_objectsToLoadFlag.clear();
 }
 
 void World::clear()
@@ -16,23 +18,24 @@ void World::clear()
     m_imagesCache.clear();
     unlock();
 }
-
 std::shared_ptr<MeshObject> World::createObject(const std::string &className)
 {
-    lock();
-    auto fakeObject = std::make_shared<MeshObject>();
-    m_objectClassesToLoad.emplace_back(className, fakeObject);
-    unlock();
-    return fakeObject;
+    lockObjectToLoad();
+    auto objectId = m_LastFreeId++;
+    auto object = std::make_shared<MeshObject>(objectId, className);
+    m_objectClassesToLoad.emplace_back(object);
+    unlockObjectToLoad();
+    return object;
 }
 
 void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
 {
-    lock();
+    lockObjectToLoad();
+    std::vector<std::shared_ptr<MeshObject>> newLoadedObjects;
 
     for (auto& objectToLoad : m_objectClassesToLoad)
     {
-        const auto & className = objectToLoad.first;
+        const auto &className = objectToLoad->getClass();
         std::shared_ptr<Renderer::Mesh>  meshPointer{};
         std::shared_ptr<Renderer::Image> texturePointer{};
 
@@ -48,29 +51,37 @@ void World::loadObjects(Renderer::ResourcesMaker &resourceMaker)
             texturePointer = textureSearchResult->second;
         }
 
-        auto newObject = resourceMaker.createMeshObject(className, meshPointer, texturePointer);
+        auto newObject = resourceMaker.createMeshObject(objectToLoad->getObjectId(), className, meshPointer, texturePointer);
+        newObject->setModelMatrix(objectToLoad->getModelMatrix());
 
-        newObject->setModelMatrix(objectToLoad.second->getModelMatrix());
-
-        objectToLoad.second.swap(newObject);
-        auto &object = objectToLoad.second;
-
-        m_meshObjects.push_back(object);
+        newLoadedObjects.push_back(newObject);
         if (!meshPointer)
         {
             m_meshesCache.insert(std::pair<std::string, std::shared_ptr<Renderer::Mesh>>(
-                                     className, object->getMesh()));
+                                     className, newObject->getMesh()));
         }
 
         if (!texturePointer)
         {
             m_imagesCache.insert(std::pair<std::string, std::shared_ptr<Renderer::Image>>(
-                                     className, object->getTextureImage()));
+                                     className, newObject->getTextureImage()));
         }
-
     }
     m_objectClassesToLoad.clear();
+
+    unlockObjectToLoad();
+
+    lock();
+
+    for (auto &newObject : newLoadedObjects )
+    {
+        m_meshObjects.push_back(newObject);
+    }
+
+    newLoadedObjects.clear();
+
     unlock();
+
 }
 
 const std::vector<std::shared_ptr<MeshObject>>& World::getMeshObjects()
@@ -80,10 +91,20 @@ const std::vector<std::shared_ptr<MeshObject>>& World::getMeshObjects()
 
 void World::lock() const
 {
-    while (m_atomicFlag.test_and_set()){}
+    while (m_objectsFlag.test_and_set()){}
 }
 
 void World::unlock() const
 {
-    m_atomicFlag.clear();
+    m_objectsFlag.clear();
+}
+
+void World::lockObjectToLoad() const
+{
+    while (m_objectsToLoadFlag.test_and_set()){}
+}
+
+void World::unlockObjectToLoad() const
+{
+    m_objectsToLoadFlag.clear();
 }

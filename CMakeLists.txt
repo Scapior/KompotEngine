@@ -12,6 +12,8 @@ project(KompotEngine)
 set(SOURCES
     Source/main.cpp
     Source/Engine/Engine.cpp
+    Source/Engine/PythonModule/PythonModule.cpp
+    Source/Engine/PythonModule/PythonObject.cpp
     Source/Engine/World.cpp
     Source/Engine/MeshObject.cpp
     Source/Engine/Renderer/Device.cpp
@@ -35,6 +37,8 @@ set(HEADERS
     Source/global.hpp
     Source/BuildVersion.hpp
     Source/Engine/Engine.hpp
+    Source/Engine/PythonModule/PythonModule.hpp
+    Source/Engine/PythonModule/PythonObject.hpp
     Source/Engine/World.hpp
     Source/Engine/MeshObject.hpp
     Source/Engine/Renderer/Device.hpp

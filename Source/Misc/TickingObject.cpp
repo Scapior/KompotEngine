@@ -20,7 +20,7 @@ void TickingObject::start()
         while (m_isRunning)
         {
             const auto callTime = std::chrono::high_resolution_clock::now();
-            //this->tick();
+            this->tick();
             const auto timeNow = std::chrono::high_resolution_clock::now();
             auto workDuration = timeNow - callTime;
             if (workDuration < m_interval)

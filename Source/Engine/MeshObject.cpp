@@ -2,9 +2,11 @@
 
 using namespace KompotEngine;
 
-MeshObject::MeshObject()
-    : m_vkDevice(nullptr),
-      m_vkDescriptorPool(nullptr)
+MeshObject::MeshObject(uint64_t id, const std::string &className)
+    : m_objectId(id),
+      m_vkDevice(nullptr),
+      m_vkDescriptorPool(nullptr),
+      m_className(className)
 {
     m_modelMatrix = glm::mat4({1.0f, 0.0f, 0.0f, 0.0f},
                               {0.0f, 1.0f, 0.0f, 0.0f},
@@ -12,23 +14,36 @@ MeshObject::MeshObject()
                               {0.0f, 0.0f, 0.0f, 1.0f} );
 }
 
-MeshObject::MeshObject(const VkDevice &vkDevice,
+MeshObject::MeshObject(uint64_t id,
+                       const VkDevice &vkDevice,
                        const VkDescriptorPool &vkDescriptorPool,
                        const std::string &className,
                        const std::vector<VkDescriptorSet> &vkDescriptorSets,
                        const std::shared_ptr<Renderer::Mesh> &mesh,
                        const std::shared_ptr<Renderer::Image> &texture,
-                       const std::vector<std::shared_ptr<Renderer::Buffer>> &vkUniformMatricesBuffers)
-    : MeshObject()
+                       const std::vector<std::shared_ptr<Renderer::Buffer>> &vkUniformMatricesBuffers,
+                       const std::string &scriptFileName)
+    : MeshObject(id, className)
 {
     m_vkDevice = vkDevice;
     m_vkDescriptorPool = vkDescriptorPool;
-    m_className = className;
     m_vkDescriptorSets = vkDescriptorSets;
     m_mesh = mesh;
     m_texture = texture;
     m_vkUniformMatricesBuffers = vkUniformMatricesBuffers;
     m_currentDescriptorIndex = 0;
+    if (!scriptFileName.empty())
+    {
+        if (const auto rfindResult = scriptFileName.rfind(".py");
+            scriptFileName.rfind(".py") == scriptFileName.size() - 3)
+        {
+            m_scriptFileName = scriptFileName.substr(0, rfindResult);
+        }
+        else
+        {
+            m_scriptFileName = scriptFileName;
+        }
+    }
 }
 
 MeshObject::~MeshObject()
@@ -39,9 +54,19 @@ MeshObject::~MeshObject()
     }
 }
 
+uint64_t MeshObject::getObjectId() const
+{
+    return m_objectId;
+}
+
 std::string MeshObject::getClass() const
 {
     return m_className;
+}
+
+std::string MeshObject::getScriptModuleName() const
+{
+    return m_scriptFileName;
 }
 
 void MeshObject::setMesh(const std::shared_ptr<Renderer::Mesh> &mesh)
@@ -74,26 +99,31 @@ const VkDescriptorSet *MeshObject::getDescriptorSet() const
 
 void MeshObject::moveTo(const glm::vec3 &position)
 {
-    m_modelMatrix = glm::translate(m_modelMatrix, position);
+    m_position = position;
     updateOrientationData();
 }
 
-void MeshObject::rotate(float angleInRadians, const glm::vec3 &axes)
+void MeshObject::rotate(const glm::vec3 &axes)
 {
-    m_modelMatrix = glm::rotate(m_modelMatrix, angleInRadians, axes);
+    m_rotation = axes;
     updateOrientationData();
 }
 
 void MeshObject::scale(const glm::vec3 &scale)
 {
-    m_modelMatrix = glm::scale(m_modelMatrix, scale);
+    m_scale = scale;
     updateOrientationData();
 }
 
 void MeshObject::setModelMatrix(const glm::mat4 &modelMatrix)
 {
     m_modelMatrix = modelMatrix;
-    updateOrientationData();
+
+    glm::quat rot;
+    glm::vec3 skew;
+    glm::vec4 persp;
+
+    glm::decompose(m_modelMatrix, m_scale, rot, m_position, skew, persp);
 }
 
 glm::vec3 MeshObject::getPosition() const
@@ -101,7 +131,7 @@ glm::vec3 MeshObject::getPosition() const
     return m_position;
 }
 
-glm::quat MeshObject::getRotation() const
+glm::vec3 MeshObject::getRotation() const
 {
     return m_rotation;
 }
@@ -123,8 +153,12 @@ std::shared_ptr<Renderer::Buffer> MeshObject::getUboBuffer()
 
 void MeshObject::updateOrientationData()
 {
-    glm::vec3 skew;
-    glm::vec4 perspective;
-    glm::decompose(m_modelMatrix, m_scale, m_rotation, m_position, skew, perspective);
-    m_rotation = glm::conjugate(m_rotation);
+    m_modelMatrix = glm::mat4(1.0f);
+    m_modelMatrix = glm::translate(m_modelMatrix, m_position);
+
+    m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(m_rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    m_modelMatrix = glm::scale(m_modelMatrix, m_scale);
 }

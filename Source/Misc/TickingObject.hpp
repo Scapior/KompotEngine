@@ -11,14 +11,15 @@ class TickingObject
 {
 public:
     TickingObject(const std::chrono::milliseconds&);
-    virtual ~TickingObject();
-    virtual void tick() = 0;
+    ~TickingObject();
     void start();
     void stop();
 
 private:
     std::chrono::milliseconds m_interval;
     std::atomic_bool m_isRunning;
+
+    virtual void tick() = 0;
 };
 
 
