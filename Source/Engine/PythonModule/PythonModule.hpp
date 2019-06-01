@@ -21,8 +21,8 @@ class PythonModule : public TickingObject
 public:
     PythonModule(std::shared_ptr<World>&);
     ~PythonModule();
-    void runScript(const std::string&);
 
+    void sendKeyInput(int);
 
 private:
 
@@ -42,10 +42,13 @@ private:
     static PyObject * m_python_addObject(PyObject*, PyObject*);
     static PyObject * m_python_deleteObject(PyObject*, PyObject*);
     static PyObject * m_python_moveObjectTo(PyObject*, PyObject*);
+    static PyObject * m_python_getObjectPosition(PyObject*, PyObject*);
     static PyObject * m_python_rotateObject(PyObject*, PyObject*);
     static PyObject * m_python_scaleObject(PyObject*, PyObject*);
+    static PyObject * m_python_getKeysInputQueue(PyObject*, PyObject*);
 
     std::map<uint64_t, PythonObject> m_modulesCache;
+    static std::vector<int> m_inputQueue;
     //std::vector<uint64_t> m_objectsToDelete;
 };
 

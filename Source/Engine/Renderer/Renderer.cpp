@@ -26,10 +26,6 @@ Renderer::Renderer(GLFWwindow *window,
     createDepthResources();
     createFramebuffers();
     createSyncObjects();
-
-    auto cube = m_world->createObject("Cube");
-
-    cube->scale(glm::vec3(0.1f, 0.1f, 0.1f));
 }
 
 void Renderer::recreateSwapchain()
@@ -122,12 +118,12 @@ void Renderer::run()
         vkRenderPassBeginInfo.clearValueCount = vkClearValues.size();
         vkRenderPassBeginInfo.pClearValues = vkClearValues.data();
 
-        static auto lastTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+        //static auto lastTime = std::chrono::high_resolution_clock::now();
+        //auto currentTime = std::chrono::high_resolution_clock::now();
+        //float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         UnifromBufferObject mvpMatrix = {};
-        mvpMatrix.view = glm::lookAt(glm::vec3(-2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        mvpMatrix.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 10.0f);
+        mvpMatrix.view = glm::lookAt(glm::vec3(5.0f, 15.0f, 10.0f), glm::vec3(0.0f, 5.0f, 10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        mvpMatrix.projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 50.0f);
         mvpMatrix.projection[1][1] *= -1;
 
         m_world->lock();
@@ -135,7 +131,7 @@ void Renderer::run()
         for (auto&& [objectId, object] : m_world->getMeshObjects())
         {
             mvpMatrix.model = object->getModelMatrix();
-            mvpMatrix.model = glm::rotate(mvpMatrix.model, deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
+            //mvpMatrix.model = glm::rotate(mvpMatrix.model, deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
             auto uniformMatricesBuffers = object->getUboBuffer();
             uniformMatricesBuffers->copyFromRawPointer(&mvpMatrix, sizeof(UnifromBufferObject));
         }

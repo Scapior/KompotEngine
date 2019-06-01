@@ -1,8 +1,9 @@
 import KompotEngine as engine
 
 def onTick(*args, **kwargs):
-    world = kwargs['worldId']
-    objectId = kwargs['objectId']
+    pass
+    #world = kwargs['worldId']
+    #objectId = kwargs['objectId']
     
     #newObjectId = engine.addObject(world, 'Cube')    
     #pos = newObjectId * -0.1

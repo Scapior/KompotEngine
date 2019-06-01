@@ -44,7 +44,6 @@ private:
     // GLFW callbacks
 
     static void keyCallback(GLFWwindow*, int, int, int, int);
-    static void characterCallback(GLFWwindow*, unsigned int, int);
     static void resizeCallback(GLFWwindow*, int, int);
 };
 

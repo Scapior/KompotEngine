@@ -2,10 +2,11 @@
 
 using namespace KompotEngine;
 
+std::vector<int> PythonModule::m_inputQueue;
 
 PythonModule::PythonModule(std::shared_ptr<World> &world)
-    : TickingObject(2000ms),
-      m_mainScript(nullptr)//33ms
+    : TickingObject(33ms),
+      m_mainScript(nullptr)
 {
     m_world = world;
 
@@ -30,6 +31,11 @@ PythonModule::PythonModule(std::shared_ptr<World> &world)
 PythonModule::~PythonModule()
 {
     Py_Finalize();
+}
+
+void PythonModule::sendKeyInput(int code)
+{
+    m_inputQueue.push_back(code);
 }
 
 PythonObject PythonModule::loadModule(const std::string &moduleName)
@@ -105,8 +111,10 @@ PyObject *PythonModule::initPythonModule()
         {"addObject", &PythonModule::m_python_addObject, METH_VARARGS, "Add new object of passed class to world"},
         {"deleteObject", &PythonModule::m_python_deleteObject, METH_VARARGS, "Remove object by ID"},
         {"moveObjectTo", &PythonModule::m_python_moveObjectTo, METH_VARARGS, "Move object"},
+        {"getObjectPosition", &PythonModule::m_python_getObjectPosition, METH_VARARGS, "Get position of the object"},
         {"rotateObject", &PythonModule::m_python_rotateObject, METH_VARARGS, "Rotate object"},
         {"scaleObject", &PythonModule::m_python_scaleObject, METH_VARARGS, "Scale object"},
+        {"getInput", &PythonModule::m_python_getKeysInputQueue, METH_VARARGS, "Return all pressed keys scancodes"},
         {nullptr, nullptr, 0, nullptr}
     };
 
@@ -177,6 +185,19 @@ PyObject * PythonModule::m_python_moveObjectTo(PyObject*, PyObject* args)
     Py_RETURN_NONE;
 }
 
+PyObject *PythonModule::m_python_getObjectPosition(PyObject *, PyObject *args)
+{
+    uint64_t worldPointerContainer = 0;
+    uint64_t objectId;
+    if(!PyArg_ParseTuple(args, "KK", &worldPointerContainer, &objectId))
+    {
+        return nullptr;
+    }
+    auto world = reinterpret_cast<World*>(worldPointerContainer);
+    const auto objectPosition = world->getObjectById(objectId)->getPosition();
+    return Py_BuildValue("fff", objectPosition.x, objectPosition.y, objectPosition.z);
+}
+
 PyObject * PythonModule::m_python_rotateObject(PyObject *, PyObject * args)
 {
     uint64_t worldPointerContainer = 0;
@@ -206,4 +227,16 @@ PyObject * PythonModule::m_python_scaleObject(PyObject *, PyObject * args)
     if (object)
     object->scale(glm::vec3(x,y,z));
     Py_RETURN_NONE;
+}
+
+PyObject *PythonModule::m_python_getKeysInputQueue(PyObject *, PyObject *)
+{
+    PyObject *list = PyList_New(0);
+    for (auto& keyCode : m_inputQueue)
+    {
+        PyList_Append(list, PyLong_FromLong(static_cast<long>(keyCode)));
+    }
+    m_inputQueue.clear();
+    return list;
+
 }

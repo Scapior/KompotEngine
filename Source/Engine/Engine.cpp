@@ -49,6 +49,7 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     log << "Renderer successfully initialized." << std::endl;
 
     glfwSetFramebufferSizeCallback(m_glfwWindowHandler, resizeCallback);
+    glfwSetKeyCallback(m_glfwWindowHandler, keyCallback);
 
 }
 
@@ -67,6 +68,17 @@ void Engine::run()
         glfwPollEvents();
     }
     m_pythonModule->stop();
+}
+
+
+void Engine::keyCallback(GLFWwindow* glfwWindowHandler, int key, int scancode, int action, int mods)
+{
+    Engine &engine = *reinterpret_cast<Engine*>(glfwGetWindowUserPointer(glfwWindowHandler));
+    if (action != GLFW_PRESS)
+    {
+        return;
+    }
+    engine.m_pythonModule->sendKeyInput(key);
 }
 
 void Engine::resizeCallback(GLFWwindow *glfwWindowHandler, int, int)

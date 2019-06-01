@@ -33,7 +33,7 @@ std::shared_ptr<KompotEngine::MeshObject> ResourcesMaker::createMeshObject(
         ("TextureName",   "", std::string(), &textureFileName)
         ("ScriptFile",   "", std::string(), &scriptFileName);
 
-    std::ifstream configFile(className + ".kec");
+    std::ifstream configFile(className + ".class");
     if (configFile.is_open())
     {
         classOptions.loadFromFile(configFile);
