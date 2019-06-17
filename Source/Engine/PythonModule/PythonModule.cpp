@@ -61,7 +61,8 @@ void PythonModule::tick()
 //    m_objectsToDelete.clear();
 
     m_world->lock();
-
+    PyThreadState* pythonThreadState = PyEval_SaveThread();
+    PyGILState_STATE pythonGilState = PyGILState_Ensure();
     static PyObject* argsEmpty = PyTuple_New(0);
     PythonObject kwargs = Py_BuildValue("{s:K}",
                                          "worldId", reinterpret_cast<uint64_t>(m_world.get()));
@@ -101,6 +102,8 @@ void PythonModule::tick()
             }
         }        
     }
+    PyGILState_Release(pythonGilState);
+    PyEval_RestoreThread(pythonThreadState);
     m_world->unlock();
 }
 
