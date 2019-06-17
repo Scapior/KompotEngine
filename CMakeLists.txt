@@ -63,29 +63,29 @@ set(HEADERS
 add_subdirectory(Shaders)
 
 if (WIN32)
-    find_package(PythonLibs REQUIRED)
+    find_package(Python REQUIRED Interpreter Development)
     include_directories(
-            ${PYTHON_INCLUDE_DIRS}
+            ${Python_INCLUDE_DIRS}
             "$ENV{VULKAN_SDK}\\Include"
             "C:\\cpp\\Include"
     )
     link_directories(
-        ${PYTHON_LIBRARIES}
+        ${Python_LIBRARY_DIRS}
         "$ENV{VULKAN_SDK}\\lib"
         "C:\\cpp\\Libs"
     )
 endif()
 
 if (UNIX)
-    find_package(PythonLibs REQUIRED)
+    find_package(Python REQUIRED Interpreter Development)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLFW REQUIRED glfw3)
     include_directories(
             ${GLFW_INCLUDE_DIRS}
-            ${PYTHON_INCLUDE_DIRS}
+            ${Python_INCLUDE_DIRS}
     )
     link_directories(
-        ${PYTHON_LIBRARIES}
+        ${Python_LIBRARY_DIRS}
     )
 endif()
 
@@ -93,7 +93,6 @@ add_executable(
     KompotEngine
     ${SOURCES}
     ${HEADERS}
-    ${GLSL_SOURCE_FILES}
 )
 
 add_dependencies(KompotEngine Shaders)
@@ -108,17 +107,17 @@ target_include_directories(
 )
 
 if (WIN32)
-    target_link_libraries(KompotEngine
-            ${PYTHON_LIBRARIES}
+	file(COPY "C:\\cpp\\Libs\\glfw3.dll"
+		DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    target_link_libraries(KompotEngine			
+            ${Python_LIBRARIES}
             vulkan-1
             glfw3
     )
-    file(COPY "C:\\cpp\\Libs\\glfw3.dll"
-         DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 else()
     target_link_libraries(KompotEngine
             ${GLFW_LIBRARIES}
-            ${PYTHON_LIBRARIES}
+            ${Python_LIBRARIES}
             vulkan
             stdc++fs
     )

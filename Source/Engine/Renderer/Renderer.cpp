@@ -9,6 +9,21 @@ Renderer::Renderer(GLFWwindow *window,
       m_isResized(false),
       m_device(windowName)
 {
+    Log::setupDebugCallback(m_device.getInstance(), m_device);
+    createSurface();
+    m_device.create(m_vkSurface);
+    createCommandPool();
+    createDescriptorSetLayout();
+    m_resourcesMaker = new ResourcesMaker(m_device,
+        m_vkCommandPool,
+        m_vkDescriptorSetLayout);
+
+    createSwapchain();
+    createRenderPass();
+    createGraphicsPipeline();
+    createDepthResources();
+    createFramebuffers();
+    createSyncObjects();
 }
 
 void Renderer::recreateSwapchain()
@@ -61,22 +76,6 @@ Renderer::~Renderer()
 void Renderer::run(const std::shared_ptr<KompotEngine::World>& world)
 {
 	m_world = world;
-
-	Log::setupDebugCallback(m_device.getInstance(), m_device);
-    createSurface();
-    m_device.create(m_vkSurface);
-    createCommandPool();
-    createDescriptorSetLayout();
-    m_resourcesMaker = new ResourcesMaker(m_device,
-                                          m_vkCommandPool,
-                                         m_vkDescriptorSetLayout);
-
-    createSwapchain();
-    createRenderPass();
-    createGraphicsPipeline();
-    createDepthResources();
-    createFramebuffers();
-    createSyncObjects();
 
     auto currentFrameIndex = 0_u64t;
     while (!glfwWindowShouldClose(m_glfwWindowHandler))

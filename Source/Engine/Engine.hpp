@@ -4,7 +4,9 @@
 #include "World.hpp"
 #include "PythonModule/PythonModule.hpp"
 #include "Renderer/Renderer.hpp"
+#pragma warning (disable: 1)
 #include <vulkan/vulkan.hpp>
+#pragma warning (default: 1)
 #include <GLFW/glfw3.h>
 #include <string>
 #include <sstream>
