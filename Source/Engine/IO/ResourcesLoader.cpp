@@ -25,7 +25,7 @@ bool ResourcesLoader::loadFile(const fs::path &filePath)
         m_lastFileBytes.push_back(byte);
     }
 
-    m_lastFilePath = filePath;
+    m_lastFilePath = filePath.string();
 
     return true;
 }

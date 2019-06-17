@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.12)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../)
+
 if (WIN32)
-    list(APPEND CMAKE_CXX_FLAGS "/EHr /std:c++17")
+    list(APPEND CMAKE_CXX_FLAGS "/EHsc /std:c++17")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG  ${CMAKE_BINARY_DIR}/../)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../)
 else()
     list(APPEND CMAKE_CXX_FLAGS "-pthread -fno-exceptions -std=c++17 ${CMAKE_CXX_FLAGS}")
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../)
 project(KompotEngine)
 
 set(SOURCES
@@ -35,7 +38,6 @@ set(SOURCES
 
 set(HEADERS
     Source/global.hpp
-    Source/BuildVersion.hpp
     Source/Engine/Engine.hpp
     Source/Engine/PythonModule/PythonModule.hpp
     Source/Engine/PythonModule/PythonObject.hpp
@@ -58,31 +60,7 @@ set(HEADERS
     Source/Misc/OptionsParser/OptionsParser.hpp
 )
 
-set(GLSL_SOURCE_FILES
-    Shaders/triangle.vert
-    Shaders/triangle.frag
-)
-
-if (WIN32)
-    set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
-else()
-    set(GLSL_VALIDATOR glslangValidator)
-endif()
-
-foreach(GLSL_FILE ${GLSL_SOURCE_FILES})
-    get_filename_component(FILE_NAME ${GLSL_FILE} NAME)
-    set(SPIRV_FILE "${CMAKE_SOURCE_DIR}/Shaders/${FILE_NAME}.spv")
-    add_custom_command(
-        OUTPUT ${SPIRV_FILE}
-        COMMAND ${GLSL_VALIDATOR} -V ${CMAKE_SOURCE_DIR}/${GLSL_FILE} -o ${SPIRV_FILE}
-        DEPENDS ${GLSL_FILE}
-    )
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV_FILE})
-endforeach(GLSL_FILE)
-add_custom_target(
-    Shaders
-    DEPENDS ${SPIRV_BINARY_FILES}
-)
+add_subdirectory(Shaders)
 
 if (WIN32)
     find_package(PythonLibs REQUIRED)
@@ -116,14 +94,6 @@ add_executable(
     ${SOURCES}
     ${HEADERS}
     ${GLSL_SOURCE_FILES}
-    build_version.cmake # for visibility in qt creator project
-)
-
-add_custom_command(
-    TARGET KompotEngine
-    PRE_BUILD
-    COMMAND ${CMAKE_COMMAND}
-        -P "${PROJECT_SOURCE_DIR}/build_version.cmake"
 )
 
 add_dependencies(KompotEngine Shaders)

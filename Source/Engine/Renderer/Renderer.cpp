@@ -3,29 +3,12 @@
 using namespace KompotEngine::Renderer;
 
 Renderer::Renderer(GLFWwindow *window,
-                   const std::shared_ptr<World> &world,
                    const std::string &windowName)
     : m_glfwWindowHandler(window),
-      m_world(world),
       m_windowsName(windowName),
       m_isResized(false),
       m_device(windowName)
 {
-    Log::setupDebugCallback(m_device.getInstance(), m_device);
-    createSurface();
-    m_device.create(m_vkSurface);
-    createCommandPool();
-    createDescriptorSetLayout();
-    m_resourcesMaker = new ResourcesMaker(m_device,
-                                          m_vkCommandPool,
-                                          m_vkDescriptorSetLayout);
-
-    createSwapchain();
-    createRenderPass();
-    createGraphicsPipeline();
-    createDepthResources();
-    createFramebuffers();
-    createSyncObjects();
 }
 
 void Renderer::recreateSwapchain()
@@ -75,8 +58,26 @@ Renderer::~Renderer()
     Log::deleteDebugCallback();
 }
 
-void Renderer::run()
+void Renderer::run(const std::shared_ptr<KompotEngine::World>& world)
 {
+	m_world = world;
+
+	Log::setupDebugCallback(m_device.getInstance(), m_device);
+    createSurface();
+    m_device.create(m_vkSurface);
+    createCommandPool();
+    createDescriptorSetLayout();
+    m_resourcesMaker = new ResourcesMaker(m_device,
+                                          m_vkCommandPool,
+                                         m_vkDescriptorSetLayout);
+
+    createSwapchain();
+    createRenderPass();
+    createGraphicsPipeline();
+    createDepthResources();
+    createFramebuffers();
+    createSyncObjects();
+
     auto currentFrameIndex = 0_u64t;
     while (!glfwWindowShouldClose(m_glfwWindowHandler))
     {
@@ -221,6 +222,7 @@ void Renderer::run()
     }
 
     vkDeviceWaitIdle(m_device);
+	m_world.reset();
 }
 
 void Renderer::resize()

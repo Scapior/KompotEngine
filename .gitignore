@@ -10,8 +10,10 @@ log.txt
 *.ilk
 *.pdb
 *.manifest
-build-debug-win
-build-release-win
+.vs
+CMakeSettings.json
+out
+vs
 
 # Python cache
 

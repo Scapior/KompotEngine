@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #if defined(_DEBUG) || !defined(NDEBUF)
 #define ENGINE_DEBUG
 #endif
@@ -8,6 +10,7 @@
 #include <cstdint> // for uint64_t, etc
 #include <thread>
 #include <chrono>
+#include <string>
 
 using namespace std::string_literals; // "foo"s
 using namespace std::chrono_literals; // 2s, 5 ms

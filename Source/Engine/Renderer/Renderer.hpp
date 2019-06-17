@@ -43,8 +43,8 @@ static const uint64_t MAX_FRAMES_IN_FLIGHT = 2_u64t;
 class Renderer
 {
 public:
-    Renderer(GLFWwindow*, const std::shared_ptr<World>&, const std::string&);
-    void run();
+    Renderer(GLFWwindow*, const std::string&);
+    void run(const std::shared_ptr<KompotEngine::World>&);
     void resize();
     ~Renderer();
 private:
@@ -90,7 +90,6 @@ private:
 
     void createSurface(); 
     SwapchainSupportDetails getSwapchainDetails();
-    void createDevice();
     VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>&);
     VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR&);
     VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>&);

@@ -229,6 +229,8 @@ VkResult Image::generateMipLevels(SingleTimeCommandBuffer &commandBuffer)
         0_u32t, nullptr,
         0_u32t, nullptr,
         1_u32t, &vkImageMemoryBarrier);
+
+	return VK_SUCCESS;
 }
 
 void Image::setCurrentLayout(VkImageLayout imageLayout)

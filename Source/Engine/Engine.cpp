@@ -34,17 +34,11 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
         std::terminate();
     }
 
-#ifdef ENGINE_DEBUG
-    std::stringstream newWindowTitile;
-    newWindowTitile << m_instanceName
-                    << " - build " << std::to_string(BUILD_VERSION)
-                    << std::hex << " [" << GIT_HASH_SHORT << "]" << std::dec;
-    glfwSetWindowTitle(m_glfwWindowHandler, newWindowTitile.str().c_str());
-#endif
+	//glfwSetWindowTitle(m_glfwWindowHandler, m_instanceName.c_str());
 
     m_world.reset(new World());
     m_pythonModule = new PythonModule(m_world);
-    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_world, m_instanceName);
+    m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_instanceName);
 
     log << "Renderer successfully initialized." << std::endl;
 
@@ -61,7 +55,7 @@ Engine::~Engine()
 
 void Engine::run()
 {
-    std::thread(&Renderer::Renderer::run, m_renderer).detach();
+    std::thread(&Renderer::Renderer::run, m_renderer, m_world).detach();
     m_pythonModule->start();
     while (!glfwWindowShouldClose(m_glfwWindowHandler)) // TODO: replace this
     {

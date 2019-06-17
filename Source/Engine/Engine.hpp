@@ -4,7 +4,6 @@
 #include "World.hpp"
 #include "PythonModule/PythonModule.hpp"
 #include "Renderer/Renderer.hpp"
-#include <BuildVersion.hpp>
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <string>
