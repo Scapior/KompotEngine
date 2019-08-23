@@ -122,7 +122,7 @@ void Renderer::run(const std::shared_ptr<KompotEngine::World>& world)
         //auto currentTime = std::chrono::high_resolution_clock::now();
         //float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         UnifromBufferObject mvpMatrix = {};
-        mvpMatrix.view = glm::lookAt(glm::vec3(5.0f, 15.0f, 10.0f), glm::vec3(0.0f, 5.0f, 10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        mvpMatrix.view = glm::lookAt(glm::vec3(0.0f, 15.0f, 10.0f), glm::vec3(0.0f, 5.0f, 10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         mvpMatrix.projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_vkExtent.width) / static_cast<float>(m_vkExtent.height), 0.01f, 50.0f);
         mvpMatrix.projection[1][1] *= -1;
 

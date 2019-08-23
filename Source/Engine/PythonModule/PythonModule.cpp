@@ -67,7 +67,7 @@ void PythonModule::tick()
     PythonObject kwargs = Py_BuildValue("{s:K}",
                                          "worldId", reinterpret_cast<uint64_t>(m_world.get()));
 
-    PyObject_Call(m_mainScriptOnTickFuntion, argsEmpty, kwargs);
+    PythonObject callResult = PyObject_Call(m_mainScriptOnTickFuntion, argsEmpty, kwargs);
 
     for (auto&& [objectId, object] : m_world->getMeshObjects())
     {
@@ -100,6 +100,8 @@ void PythonModule::tick()
             {
                 PythonObject pValue = PyObject_Call(onTickPythonFuntion, argsEmpty, kwargs);
             }
+
+            Py_DECREF(kwargs);
         }        
     }
     PyGILState_Release(pythonGilState);

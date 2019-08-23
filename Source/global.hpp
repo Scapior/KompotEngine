@@ -6,6 +6,14 @@
 #define ENGINE_DEBUG
 #endif
 
+#if defined(__linux) ||  defined (__linux__)
+#define ENGINE_PLATFORM_LINUX
+#endif
+
+#ifdef __win32
+#define ENGINE_PLATFORM_WIN32
+#endif
+
 #include "Misc/Log.hpp"
 #include <cstdint> // for uint64_t, etc
 #include <thread>

@@ -2,12 +2,9 @@
 
 #include "global.hpp"
 #include "World.hpp"
+#include "WindowSystem/Window.hpp"
 #include "PythonModule/PythonModule.hpp"
 #include "Renderer/Renderer.hpp"
-#pragma warning (disable: 1)
-#include <vulkan/vulkan.hpp>
-#pragma warning (default: 1)
-#include <GLFW/glfw3.h>
 #include <string>
 #include <sstream>
 #include <thread>
@@ -28,7 +25,7 @@ struct EngineConfig
 class Engine
 {
 public:
-    Engine(const std::string&, const EngineConfig&);
+    Engine(const std::string& name, const EngineConfig& config);
     ~Engine();
 
     void run();
@@ -38,14 +35,8 @@ private:
     Renderer::Renderer *m_renderer = nullptr;
     PythonModule       *m_pythonModule = nullptr;
 
-    GLFWwindow* m_glfwWindowHandler;
 
     std::shared_ptr<World> m_world;
-
-    // GLFW callbacks
-
-    static void keyCallback(GLFWwindow*, int, int, int, int);
-    static void resizeCallback(GLFWwindow*, int, int);
 };
 
 } // KompotEngine namespace

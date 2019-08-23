@@ -17,6 +17,7 @@ endif()
 set(SOURCES
     Source/main.cpp
     Source/Engine/Engine.cpp
+    Source/Engine/WindowSystem/WindowXCB.cpp
     Source/Engine/PythonModule/PythonModule.cpp
     Source/Engine/PythonModule/PythonObject.cpp
     Source/Engine/World.cpp
@@ -41,6 +42,8 @@ set(SOURCES
 set(HEADERS
     Source/global.hpp
     Source/Engine/Engine.hpp
+    Source/Engine/WindowSystem/Window.hpp
+    Source/Engine/WindowSystem/WindowXCB.hpp
     Source/Engine/PythonModule/PythonModule.hpp
     Source/Engine/PythonModule/PythonObject.hpp
     Source/Engine/World.hpp
@@ -80,10 +83,7 @@ endif()
 
 if (UNIX)
     find_package(Python REQUIRED Interpreter Development)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GLFW REQUIRED glfw3)
     include_directories(
-            ${GLFW_INCLUDE_DIRS}
             ${Python_INCLUDE_DIRS}
     )
     link_directories(
@@ -109,12 +109,9 @@ target_include_directories(
 )
 
 if (WIN32)
-	file(COPY "C:\\cpp\\Libs\\glfw3.dll"
-		DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     target_link_libraries(KompotEngine			
             ${Python_LIBRARIES}
             vulkan-1
-            glfw3
     )
 else()
     target_link_libraries(KompotEngine

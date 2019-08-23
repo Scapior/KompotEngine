@@ -88,14 +88,14 @@ def freezeObject(world):
         for j in range(len(line)):
             level[currentObjectY-i][currentObjectX+j] = currentObject[i][j]
     currentObject = None        
-    i = 0 # check complete line
-    while i < 19:
-        if None in level[i]:
-            i += 1
+    n = 0 # check complete line
+    while n < 19:
+        if None in level[n]:
+            n += 1
         else:
-            for cube in level[i]:
+            for cube in level[n]:
                 engine.deleteObject(world, cube)
-            for i in range(i, 19):
+            for i in range(n, 19):
                 for j in range(10):
                     objectId = level[i+1][j]
                     level[i][j] = objectId
@@ -103,8 +103,6 @@ def freezeObject(world):
                         x,y,z = engine.getObjectPosition(world, objectId)
                         engine.moveObjectTo(world, objectId, x, y, z-1.0)
             level[19] = [None for i in range(10)]
-            
-        
                     
 
 def onTick(*args, **kwargs):
