@@ -1,10 +1,6 @@
 #pragma once
 
 #include "global.hpp"
-#include "World.hpp"
-#include "WindowSystem/Window.hpp"
-#include "PythonModule/PythonModule.hpp"
-#include "Renderer/Renderer.hpp"
 #include <string>
 #include <sstream>
 #include <thread>
@@ -32,11 +28,6 @@ public:
 private:
     std::string         m_instanceName;
     EngineConfig        m_engineSettings;
-    Renderer::Renderer *m_renderer = nullptr;
-    PythonModule       *m_pythonModule = nullptr;
-
-
-    std::shared_ptr<World> m_world;
 };
 
-} // KompotEngine namespace
+}

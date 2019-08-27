@@ -11,7 +11,7 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
 
 	//glfwSetWindowTitle(m_glfwWindowHandler, m_instanceName.c_str());
 
-    m_world.reset(new World());
+    //m_world.reset(new World());
     //m_pythonModule = new PythonModule(m_world);
     //m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_instanceName);
 
