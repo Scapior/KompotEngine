@@ -6,11 +6,27 @@
 #include <fstream>
 #include <sstream>
 #include <cctype>
-
 #include <typeinfo>
 
 class OptionsParser
 {
+private:
+    class Options;
+public:
+    Options& addOptions()
+    {
+        return m_options;
+    }
+
+    void loadFromArguments(int, char**);
+    void loadFromFile(std::ifstream&);
+
+    void notify() const;
+
+    static bool compareChar(char, char);
+    static bool caseInsensitiveStringEquals(const std::string&, const std::string&);
+    static std::string trim(const std::string&);
+
 private:
     typedef std::variant<std::string, bool,
                         int8_t, int16_t, int32_t, int64_t,
@@ -21,6 +37,18 @@ private:
                         uint8_t*, uint16_t*, uint32_t*, uint64_t*> PointerVariant;
     class Options
     {
+    public:
+        template<typename T>
+        Options& operator() (const std::string& key, const std::string& description, const T& value, T* pointer)
+        {
+            m_options.push_back(Option{key, description, Variant(value), PointerVariant(pointer)});
+            return *this;
+        }
+
+        bool contains(const std::string&) const;
+        bool keyIsBoolean(const std::string&) const;
+        void setByKeyFromStream(const std::string&, std::stringstream&);
+        void notify() const;
     private:
         struct Option {
              std::string   key;
@@ -33,10 +61,10 @@ private:
 
         private:
              template<typename T>
-             static void setByPointer(const Variant&, PointerVariant&);
+             static void setByPointer(const Variant& variant, PointerVariant& pointerVariant);
 
              template<typename T>
-             static void setFromStream(Variant&, const T&);
+             static void setFromStream(Variant& , const T&);
 
              struct visitorPointer
              {
@@ -71,37 +99,7 @@ private:
 
         };
         std::vector<Option> m_options;
-    public:
-
-    template<typename T>
-    Options& operator() (const std::string &key, const std::string &description, const T& value, T *pointer)
-    {
-        m_options.push_back(Option{key, description, Variant(value), PointerVariant(pointer)});
-        return *this;
-    }
-
-    bool contains(const std::string&) const;
-    bool keyIsBoolean(const std::string&) const;
-    void setByKeyFromStream(const std::string&, std::stringstream&);
-    void notify() const;
-
     };
     Options m_options;
-    void SetOptionsFromStringstream(std::stringstream&);
-public:
-
-    Options& addOptions()
-    {
-        return m_options;
-    }
-
-    void loadFromArguments(int, char**);
-    void loadFromFile(std::ifstream&);
-
-    void notify() const;
-
-    static bool compareChar(char, char);
-    static bool caseInsensitiveStringEquals(const std::string&, const std::string&);
-    static std::string trim(const std::string&);
-
+    void setOptionsFromStringstream(std::stringstream&);
 };
