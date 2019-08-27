@@ -1,5 +1,4 @@
 # KompotEngine
 
-Testing Jekyll...
-
-TODO: Add information about project to this file
+This branch only for stable builds. At the moment these do not yet exist =)
+Check the Develop branch.
