@@ -1,3 +1,9 @@
+/***************************************************************************
+ *   Copyright (C) 2019 by Maxim Stoyanov
+ *
+ *   scapior.github.io
+ ***************************************************************************/
+
 #include "global.hpp"
 #include "Engine/Engine.hpp"
 #include "Misc/OptionsParser/OptionsParser.hpp"

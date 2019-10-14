@@ -11,6 +11,8 @@ set(SOURCES
 set(HEADERS
     global.hpp
     Engine/Engine.hpp
+    Engine/IEngineSystem.hpp
+    Engine/Component.hpp
     Misc/Log.hpp
     Misc/TickingObject.hpp
     Misc/OptionsParser/OptionsParser.hpp

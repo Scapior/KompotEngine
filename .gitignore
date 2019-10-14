@@ -20,6 +20,11 @@ CodeAnalysis
 
 __pycache__
 
+# Doxygen
+
+Docs/html
+Docs/latex
+
 # SPIR-V byte code
 
 *.spv

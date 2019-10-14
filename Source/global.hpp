@@ -1,11 +1,45 @@
+/***************************************************************************
+ *   Copyright (C) 2019 by Maxim Stoyanov
+ *
+ *   scapior.github.io
+ ***************************************************************************/
+
 #pragma once
 
-#define GLM_ENABLE_EXPERIMENTAL
+/** \file global.hpp
+\brief The file with often user functions or global macros.
+The file contains
+*/
+
+/*! \def ENGINE_BUILD_SERVER
+\brief A macro that be defined when target build is a server.
+If you need to build a server define this macro.
+If this macro not defined, will be defined ENGINE_BUILD_CLIENT.
+*/
+
+/*! \def ENGINE_BUILD_CLIENT
+\brief A macro that be defined when target build is a client.
+Details.
+*/
+
+/*! \fn int open(const char *pathname,int flags)
+\brief Opens a file descriptor.
+\param pathname The name of the descriptor.
+\param flags Opening flags.
+*/
+
+
+
+/* Build mode */
+#ifndef ENGINE_BUILD_SERVER
+#define ENGINE_BUILD_CLIENT
+#endif
 
 #if defined(_DEBUG) || !defined(NDEBUF)
 #define ENGINE_DEBUG
 #endif
 
+/* Platform macros */
 #if defined(__linux) ||  defined (__linux__)
 #define ENGINE_PLATFORM_LINUX
 #endif
@@ -13,6 +47,8 @@
 #ifdef __win32
 #define ENGINE_PLATFORM_WIN32
 #endif
+
+/* Default includes and defines */
 
 #include "Misc/Log.hpp"
 #include <cstdint> // for uint64_t, etc
