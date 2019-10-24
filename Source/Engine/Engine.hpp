@@ -1,6 +1,7 @@
 #pragma once
 
-#include "global.hpp"
+#include <global.hpp>
+#include "EngineConfig.hpp"
 #include <string>
 #include <sstream>
 #include <thread>
@@ -8,15 +9,6 @@
 
 namespace KompotEngine
 {
-
-struct EngineConfig
-{
-    bool isEditMode;
-    bool isFullscreen;
-    uint32_t windowWidth;
-    uint32_t windowHeight;
-    bool isMaximized;
-};
 
 class Engine
 {
