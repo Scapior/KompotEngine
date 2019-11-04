@@ -13,6 +13,8 @@
 #include <xcb/xcb.h>
 #endif
 
+#include <array>
+
 /*!
     \class ClientSubsystem
     \brief This class contain platform depend code for client case.
@@ -28,7 +30,9 @@ class ClientSubsystem : public IEngineSystem
 public:
     ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig);
     ~ClientSubsystem();
-private:
+
+    void run() override;
+    private:
 #ifdef ENGINE_PLATFORM_LINUX
     xcb_connection_t* m_xcbConnection;
     xcb_screen_t* m_xcbScreen;

@@ -20,5 +20,6 @@ namespace KompotEngine
     class IEngineSystem
     {
     public:
+        virtual void run() = 0;
     };
 }
