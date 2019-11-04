@@ -20,8 +20,8 @@ int main(int argc, char** argv)
     options.addOptions()
         ("editmode",   "Run engine as editor",  false,    &engineConfig.isEditMode)
         ("fullscreen", "Fullscreen mode",       false,    &engineConfig.isFullscreen)
-        ("width",      "Window width",          640_u32t, &engineConfig.windowWidth)
-        ("height",     "Window height",         480_u32t, &engineConfig.windowHeight)
+        ("width",      "Window width",          640_u16t, &engineConfig.windowWidth)
+        ("height",     "Window height",         480_u16t, &engineConfig.windowHeight)
         ("maximized",  "Maximize window",       false,    &engineConfig.isMaximized);
 
     std::ifstream configFile("engine.ini");

@@ -31,7 +31,8 @@ public:
 private:
 #ifdef ENGINE_PLATFORM_LINUX
     xcb_connection_t* m_xcbConnection;
-    xcb_screen_t* m_xcbScreenInformation;
+    xcb_screen_t* m_xcbScreen;
+    xcb_window_t m_xcbWindow;
 #endif
 
 #ifdef ENGINE_PLATFORM_WIN32
