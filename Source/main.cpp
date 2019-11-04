@@ -1,8 +1,8 @@
-/***************************************************************************
- *   Copyright (C) 2019 by Maxim Stoyanov
- *
- *   scapior.github.io
- ***************************************************************************/
+/*
+*   Copyright (C) 2019 by Maxim Stoyanov
+*
+*   scapior.github.io
+*/
 
 #include "global.hpp"
 #include "Engine/Engine.hpp"
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     options.loadFromArguments(argc, argv);
     options.notify();
 
-    Engine engine("Test", engineConfig);
+    Engine engine(argc, argv, "Test", engineConfig);
     engine.run();
 
     return 0;

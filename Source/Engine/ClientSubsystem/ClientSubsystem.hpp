@@ -1,10 +1,8 @@
-/***************************************************************************
- *   ClientSubsystem.hpp
- *   18.10.2019
- *   Copyright (C) 2019 by Maxim Stoyanov
- *
- *   scapior.github.io
- ***************************************************************************/
+/*
+*   Copyright (C) 2019 by Maxim Stoyanov
+*
+*   scapior.github.io
+*/
 
 #pragma once
 #include <global.hpp>

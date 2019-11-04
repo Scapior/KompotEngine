@@ -1,10 +1,8 @@
-/***************************************************************************
- *   ClientSubsystem.cpp
- *   18.10.2019
- *   Copyright (C) 2019 by Maxim Stoyanov
- *
- *   scapior.github.io
- ***************************************************************************/
+/*
+*   Copyright (C) 2019 by Maxim Stoyanov
+*
+*   scapior.github.io
+*/
 
 #include "ClientSubsystem.hpp"
 

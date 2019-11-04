@@ -36,14 +36,11 @@ if (WIN32)
             vulkan-1
     )
 else()
+    find_package(PkgConfig)
+    pkg_check_modules(PKG_X11_XCB QUIET x11-xcb)
     target_link_libraries(KompotEngine
             vulkan
             stdc++fs
-            xcb
+            ${PKG_X11_XCB_LIBRARIES}
     )
-    #find_package(PkgConfig)
-    #pkg_check_modules(PKG_X11_XCB QUIET x11-xcb)
-
-    #message("${PKG_X11_XCB_INCLUDE_DIRS}")
-
 endif()

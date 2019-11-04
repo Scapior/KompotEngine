@@ -1,3 +1,9 @@
+/*
+*   Copyright (C) 2019 by Maxim Stoyanov
+*
+*   scapior.github.io
+*/
+
 #include "Engine.hpp"
 
 /*!
@@ -38,7 +44,7 @@ using namespace KompotEngine;
 
   \sa Engine()
 */
-Engine::Engine(const std::string& name, const EngineConfig& config)
+Engine::Engine(int argc, char** argv, const std::string& name, const EngineConfig& config)
     : m_instanceName(name), m_engineSettings(config)
 {
     auto &log = Log::getInstance();
@@ -46,20 +52,21 @@ Engine::Engine(const std::string& name, const EngineConfig& config)
     //const int height = static_cast<int>(m_engineSettings.windowHeight);
 
 	//glfwSetWindowTitle(m_glfwWindowHandler, m_instanceName.c_str());
-
+    m_clientSubsystem = new ClientSubsystem(argc, argv, config);
     //m_world.reset(new World());
     //m_pythonModule = new PythonModule(m_world);
     //m_renderer = new Renderer::Renderer(m_glfwWindowHandler, m_instanceName);
 
-    log << "Renderer successfully initialized." << std::endl;
+    //log << "Renderer successfully initialized." << std::endl;
 }
 
 Engine::~Engine()
 {
-
+    delete m_clientSubsystem;
 }
 
 void Engine::run()
 {
+    //m_clientSubsystem
     //std::thread(&Renderer::Renderer::run, m_renderer, m_world).detach();
 }
