@@ -69,6 +69,10 @@ void Engine::run()
 {
     //m_clientSubsystem
     //std::thread(&Renderer::Renderer::run, m_renderer, m_world).detach();
-    std::thread(&ClientSubsystem::run, m_clientSubsystem).detach();
+//    std::thread(&ClientSubsystem::run, m_clientSubsystem).detach();
+//    while (!m_clientSubsystem->isNeedToExit())
+//    {
 
+//    }
+    m_clientSubsystem->run();
 }

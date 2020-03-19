@@ -7,7 +7,7 @@
 #include "ClientSubsystem.hpp"
 
 using namespace KompotEngine;
-
+xcb_intern_atom_reply_t* reply2;
 ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig)
 {
     Log& log = Log::getInstance();
@@ -28,6 +28,8 @@ ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engi
     uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
     std::array<uint32_t, 2> flagValues{
                 XCB_NONE,
+                XCB_EVENT_MASK_NO_EVENT |
+                XCB_EVENT_MASK_NO_EVENT |
 
                 // changed state or covering
                 XCB_EVENT_MASK_EXPOSURE |
@@ -42,6 +44,8 @@ ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engi
 
                 // move mouse while x button is pressed
                 XCB_EVENT_MASK_POINTER_MOTION | // no mouse button held
+                XCB_EVENT_MASK_POINTER_MOTION_HINT |
+
                 XCB_EVENT_MASK_BUTTON_MOTION |  // one or more
                 XCB_EVENT_MASK_BUTTON_1_MOTION |
                 XCB_EVENT_MASK_BUTTON_2_MOTION |
@@ -55,11 +59,15 @@ ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engi
 
                 // other
 
+                XCB_EVENT_MASK_KEYMAP_STATE |
+                XCB_EVENT_MASK_STRUCTURE_NOTIFY |
                 XCB_EVENT_MASK_VISIBILITY_CHANGE |
                 XCB_EVENT_MASK_RESIZE_REDIRECT |
                 XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
                 XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                 XCB_EVENT_MASK_FOCUS_CHANGE |
+                XCB_EVENT_MASK_PROPERTY_CHANGE |
+                XCB_EVENT_MASK_COLOR_MAP_CHANGE |
                 XCB_EVENT_MASK_OWNER_GRAB_BUTTON
     };
     xcb_create_window(
@@ -75,6 +83,17 @@ ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engi
                 m_xcbScreen->root_visual,
                 mask,
                 flagValues.data());
+
+
+    xcb_intern_atom_cookie_t cookie = xcb_intern_atom(m_xcbConnection, 1, 12, "WM_PROTOCOLS");
+    xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(m_xcbConnection, cookie, 0);
+
+    xcb_intern_atom_cookie_t cookie2 = xcb_intern_atom(m_xcbConnection, 0, 16, "WM_DELETE_WINDOW");
+    reply2 = xcb_intern_atom_reply(m_xcbConnection, cookie2, 0);
+
+    xcb_change_property(m_xcbConnection, XCB_PROP_MODE_REPLACE, m_xcbWindow, (*reply).atom, 4, 32, 1, &(*reply2).atom);
+
+
     xcb_map_window(m_xcbConnection, m_xcbWindow);
     xcb_flush(m_xcbConnection);
 #endif
@@ -87,20 +106,40 @@ ClientSubsystem::~ClientSubsystem()
 #endif
 }
 
-void ClientSubsystem::run(std::condition_variable& conditionVariable)
-{
+void ClientSubsystem::run(/*std::condition_variable& conditionVariable*/)
+{      
     Log& log = Log::getInstance();
-    xcb_generic_event_t *xcbEvent;
-    while(!m_needToExit)
+    xcb_generic_event_t* xcbEvent = xcb_wait_for_event(m_xcbConnection);
+    while (!m_needToExit)
     {
         xcbEvent = xcb_poll_for_event(m_xcbConnection);
         if (xcbEvent == nullptr)
         {
+            //m_needToExit = true;
             continue;
         }
 
         switch (xcbEvent->response_type & ~0x80)
         {
+            case XCB_KEY_PRESS:
+                /* Handle the ButtonPress event type */
+                //xcb_button_press_event_t* xcbButtonPressEvent = reinterpret_cast<xcb_button_press_event_t*>(xcbEvent);
+                //log << xcbButtonPressEvent-> << std::endl;
+                break;
+            case XCB_KEY_RELEASE:
+                // xcb_key_release_event_t
+                break;
+            case XCB_BUTTON_PRESS:
+                // xcb_button_press_event_t
+                break;
+            case XCB_BUTTON_RELEASE:
+                //  xcb_button_release_event_t
+                break;
+            case XCB_MOTION_NOTIFY:
+                // xcb_motion_notify_event_t
+                break;
+            case XCB_ENTER_NOTIFY:
+                break;
             case XCB_EXPOSE:
             {
                 xcb_expose_event_t* xcbExposeEvent = reinterpret_cast<xcb_expose_event_t*>(xcbEvent);
@@ -110,15 +149,14 @@ void ClientSubsystem::run(std::condition_variable& conditionVariable)
                     << xcbExposeEvent->width << "," << xcbExposeEvent->height << ")\n" << std::endl;
                 break;
             }
-            case XCB_BUTTON_PRESS:
+            case XCB_CLIENT_MESSAGE:
             {
-                /* Handle the ButtonPress event type */
-                //xcb_button_press_event_t* xcbButtonPressEvent = reinterpret_cast<xcb_button_press_event_t*>(xcbEvent);
-                //log << xcbButtonPressEvent-> << std::endl;
-
-
-                /* ... */
-
+                xcb_client_message_event_t* xcbClientMessageEvent = reinterpret_cast<xcb_client_message_event_t*>(xcbEvent);
+                if (reply2->atom == xcbClientMessageEvent->data.data32[0])
+                {
+                    m_needToExit = true;
+                }
+                xcbClientMessageEvent->data.data16[9] = 4;
                 break;
             }
             default:
@@ -127,8 +165,7 @@ void ClientSubsystem::run(std::condition_variable& conditionVariable)
                 break;
             }
         }
-        /* Free the Generic Event */
         free (xcbEvent);
     }
-    conditionVariable.wait()
+    //conditionVariable.wait()
 }

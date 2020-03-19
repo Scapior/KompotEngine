@@ -3,6 +3,9 @@
 KompotEngine
 log.txt
 
+# Qt
+CMakeLists.txt.user.*
+
 # MSVS / Win files
 
 *.exe

@@ -8,7 +8,8 @@
 #include <global.hpp>
 #include <Engine/EngineConfig.hpp>
 #include <Engine/IEngineSystem.hpp>
-#include <condition_variable>
+//#include <condition_variable>
+//#include <atomic>
 
 #ifdef ENGINE_PLATFORM_LINUX
 #include <xcb/xcb.h>
@@ -32,9 +33,12 @@ public:
     ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig);
     ~ClientSubsystem();
 
-    void run(std::condition_variable& conditionVariable) override;
-    private:
-    bool m_needToExit = false;
+    void run(/*std::condition_variable& conditionVariable*/) override;
+
+private:
+    /*std::atomic_flag*/ bool m_needToExit = false;
+public:
+    bool isNeedToExit() const { return m_needToExit; }
 
 #ifdef ENGINE_PLATFORM_LINUX
     xcb_connection_t* m_xcbConnection;
