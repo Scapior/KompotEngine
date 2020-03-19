@@ -87,7 +87,48 @@ ClientSubsystem::~ClientSubsystem()
 #endif
 }
 
-void ClientSubsystem::run()
+void ClientSubsystem::run(std::condition_variable& conditionVariable)
 {
+    Log& log = Log::getInstance();
+    xcb_generic_event_t *xcbEvent;
+    while(!m_needToExit)
+    {
+        xcbEvent = xcb_poll_for_event(m_xcbConnection);
+        if (xcbEvent == nullptr)
+        {
+            continue;
+        }
 
+        switch (xcbEvent->response_type & ~0x80)
+        {
+            case XCB_EXPOSE:
+            {
+                xcb_expose_event_t* xcbExposeEvent = reinterpret_cast<xcb_expose_event_t*>(xcbEvent);
+
+                log << "Window " << xcbExposeEvent->window << " exposed. Region to be redrawn at location ("
+                    << xcbExposeEvent->x << "," << xcbExposeEvent->y << "), with dimension ("
+                    << xcbExposeEvent->width << "," << xcbExposeEvent->height << ")\n" << std::endl;
+                break;
+            }
+            case XCB_BUTTON_PRESS:
+            {
+                /* Handle the ButtonPress event type */
+                //xcb_button_press_event_t* xcbButtonPressEvent = reinterpret_cast<xcb_button_press_event_t*>(xcbEvent);
+                //log << xcbButtonPressEvent-> << std::endl;
+
+
+                /* ... */
+
+                break;
+            }
+            default:
+            {
+                log << "Unknown XCB event received" << std::endl;
+                break;
+            }
+        }
+        /* Free the Generic Event */
+        free (xcbEvent);
+    }
+    conditionVariable.wait()
 }

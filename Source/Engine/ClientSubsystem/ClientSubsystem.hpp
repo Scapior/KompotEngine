@@ -8,6 +8,7 @@
 #include <global.hpp>
 #include <Engine/EngineConfig.hpp>
 #include <Engine/IEngineSystem.hpp>
+#include <condition_variable>
 
 #ifdef ENGINE_PLATFORM_LINUX
 #include <xcb/xcb.h>
@@ -31,8 +32,10 @@ public:
     ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig);
     ~ClientSubsystem();
 
-    void run() override;
+    void run(std::condition_variable& conditionVariable) override;
     private:
+    bool m_needToExit = false;
+
 #ifdef ENGINE_PLATFORM_LINUX
     xcb_connection_t* m_xcbConnection;
     xcb_screen_t* m_xcbScreen;
