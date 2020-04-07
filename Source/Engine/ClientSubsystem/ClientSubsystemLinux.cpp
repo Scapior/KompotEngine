@@ -4,6 +4,7 @@
 *   scapior.github.io
 */
 
+#ifdef ENGINE_PLATFORM_LINUX
 #include "ClientSubsystem.hpp"
 
 using namespace KompotEngine;
@@ -169,3 +170,5 @@ void ClientSubsystem::run(/*std::condition_variable& conditionVariable*/)
     }
     //conditionVariable.wait()
 }
+
+#endif

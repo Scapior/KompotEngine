@@ -42,7 +42,7 @@ Details.
 #define ENGINE_PLATFORM_LINUX
 #endif
 
-#ifdef __win32
+#if defined(__WIN32__) || defined(_WIN32) ||  defined(_WIN64)
 #define ENGINE_PLATFORM_WIN32
 #endif
 

@@ -21,5 +21,7 @@ namespace KompotEngine
     {
     public:
         virtual void run() = 0;
+
+        virtual ~IEngineSystem() {}
     };
 }
