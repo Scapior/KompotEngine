@@ -1,3 +1,9 @@
+/*
+*   Copyright (C) 2019 by Maxim Stoyanov
+*
+*   scapior.github.io
+*/
+
 #pragma once
 
 #include "global.hpp"

@@ -37,4 +37,6 @@ add_library(Engine STATIC
     ${GLOBAL_INCLUDES}
 )
 
+
+target_link_libraries(Engine user32.lib)
 target_compile_features(Engine PUBLIC cxx_std_17)

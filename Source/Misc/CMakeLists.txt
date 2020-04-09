@@ -2,12 +2,15 @@ cmake_minimum_required(VERSION 3.12)
 
 set(MISC_SOURCES
     Log.cpp
+    Guid.cpp
     OptionsParser/OptionsParser.cpp
 )
 
 set(MISC_HEADERS
     Log.hpp
+    Guid.hpp
     OptionsParser/OptionsParser.hpp
+    Templates/Functions.hpp
 )
 
 add_library(Misc STATIC
