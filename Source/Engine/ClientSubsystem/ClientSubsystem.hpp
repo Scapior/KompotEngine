@@ -4,7 +4,7 @@
 *   scapior.github.io
 */
 
-//#ifdef ENGINE_PLATFORM_LINUX
+//#ifdef ENGINE_OS_LINUX
 
 #pragma once
 #include <global.hpp>
@@ -13,7 +13,7 @@
 //#include <condition_variable>
 //#include <atomic>
 
-//#ifdef ENGINE_PLATFORM_LINUX
+//#ifdef ENGINE_OS_LINUX
 //#include <xcb/xcb.h>
 //#endif
 
@@ -47,13 +47,13 @@ public:
 private:
     Window* m_mainWindow = nullptr;
 
-//#ifdef ENGINE_PLATFORM_LINUX
+//#ifdef ENGINE_OS_LINUX
 //    xcb_connection_t* m_xcbConnection;
 //    xcb_screen_t* m_xcbScreen;
 //    xcb_window_t m_xcbWindow;
 //#endif
 
-//#ifdef ENGINE_PLATFORM_WIN32
+//#ifdef ENGINE_OS_WIN32
 
 //#endif
 

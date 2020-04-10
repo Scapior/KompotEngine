@@ -1,8 +1,5 @@
 #include "Window.hpp"
-#include <Misc/Templates/Functions.hpp>
 #include "Windows.h" // winapi
-#include <array>
-#include <initializer_list>
 
 using namespace KompotEngine;
 
@@ -14,8 +11,6 @@ struct KompotEngine::PlatformHandlers
     wchar_t*    windowNameWideCharBuffer;
     std::size_t windowNameWideCharBufferSize;
 };
-LRESULT CALLBACK windowProcedure(HWND, UINT, WPARAM, LPARAM);
-static constexpr auto windowClassName = makeArray(L"KompotEngineWindow");
 
 Window::Window(std::string_view windowName, const PlatformHandlers* parentWindowHandlers)
     : m_windowName(windowName),
@@ -54,7 +49,7 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
     }
 
     constexpr uint32_t windowStyleFlags =
-            //WS_OVERLAPPEDWINDOW |
+            WS_SYSMENU |
             WS_BORDER |
             WS_CAPTION |
             WS_MAXIMIZEBOX |
@@ -109,7 +104,11 @@ void Window::run()
     }
 }
 
+#if defined (ENGINE_OS_WINDOWS_x32)
+int32_t Window::windowProcedure(void* hwnd, uint32_t message, uint32_t wParam, int32_t lParam)
+#elif defined(ENGINE_OS_WINDOWS_x64)
 int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam)
+#endif
 {
     HWND hWnd = reinterpret_cast<HWND>(hwnd);
     Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, 0));
@@ -123,3 +122,4 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
     }
     return 0;
 }
+

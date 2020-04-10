@@ -12,33 +12,21 @@
 namespace KompotEngine
 {
 
-//template <typename... T>
-//constexpr auto makeArray(T&&... values) ->
-//        std::array<typename std::decay<typename std::common_type<T...>::type>::type, sizeof...(T)>
-//{
-//    return { std::forward<T>(values)... };
-//}
-
-
-//template <std::size_t N>
-//constexpr std::array<char, N> makeArray(const char* literal[N])
-//{
-//    return ;
-//}
-
-namespace makeArrayDetails {
-template <class T, std::size_t N, std::size_t... I>
-constexpr std::array<std::remove_cv_t<T>, N>
-    makeArrayDetailsImplementation(T (&a)[N], std::index_sequence<I...>)
+namespace Details
 {
-    return { {a[I]...} };
-}
+
+template<typename T, std::size_t N, std::size_t... I, typename ReturnType = std::array<std::remove_cv_t<T>, N>>
+constexpr ReturnType makeArrayDetails(T (&elements)[N], std::index_sequence<I...>)
+{
+    return { { elements[I]...} };
 }
 
-template <class T, std::size_t N>
-constexpr std::array<std::remove_cv_t<T>, N> makeArray(T (&a)[N])
+} // namespace Details
+
+template <typename T, std::size_t N>
+constexpr auto makeArray(T (&elementsArray)[N])
 {
-    return makeArrayDetails::makeArrayDetailsImplementation(a, std::make_index_sequence<N>{});
+    return Details::makeArrayDetails(elementsArray, std::make_index_sequence<N>{});
 }
 
 

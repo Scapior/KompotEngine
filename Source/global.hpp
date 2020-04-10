@@ -30,20 +30,35 @@ Details.
 
 /* Build mode */
 #ifndef ENGINE_BUILD_SERVER
-#define ENGINE_BUILD_CLIENT
+    #define ENGINE_BUILD_CLIENT
 #endif
 
 #if defined(_DEBUG) || !defined(NDEBUF)
-#define ENGINE_DEBUG
+    #define ENGINE_DEBUG
 #endif
 
-/* Platform macros */
-#if defined(__linux) ||  defined (__linux__)
-#define ENGINE_PLATFORM_LINUX
+/* Platform and OS macros */
+
+#if defined(_WIN32) || defined(__WIN32__)
+    #define ENGINE_OS_WINDOWS
+    #if defined(_WIN64) || defined(WIN64)
+        #define ENGINE_PLATFORM_x64
+        #define ENGINE_OS_WINDOWS_x64
+    #else
+        #define ENGINE_PLATFORM_x86
+        #define ENGINE_OS_WINDOWS_x32
+    #endif
 #endif
 
-#if defined(__WIN32__) || defined(_WIN32) ||  defined(_WIN64)
-#define ENGINE_PLATFORM_WIN32
+#if defined(__linux__)
+    #define ENGINE_OS_LINUX
+    #if defined(__x86_64__)
+        #define ENGINE_PLATFORM_x64
+        #define ENGINE_OS_LINUX_x64
+    #elif defined(__i386__)
+        #define ENGINE_PLATFORM_x86
+        #define ENGINE_OS_LINUX_x32
+    #endif
 #endif
 
 /* Default includes and defines */
