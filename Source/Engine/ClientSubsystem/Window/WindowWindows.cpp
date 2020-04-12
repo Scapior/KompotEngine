@@ -91,6 +91,11 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
 
 }
 
+Window::~Window()
+{
+
+}
+
 void Window::run()
 {
     ShowWindow(m_windowHandlers->windowHandler, SW_SHOW);

@@ -19,6 +19,7 @@ class Window
 {
 public:
     Window(std::string_view windowName, const PlatformHandlers* parentWindowHandlers = nullptr);
+	~Window();
 
     void run();
 private:

@@ -24,7 +24,6 @@ public:
         return logSingltone;
     }
 
-    static void callbackForGlfw(int, const char*);
     static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT,
         VkDebugUtilsMessageTypeFlagsEXT,
@@ -35,18 +34,18 @@ public:
     static void deleteDebugCallback();
 
     template <typename T>
-    Log& operator<<(const T& value)
-    {
-        std::lock_guard<std::mutex> scopeLock(m_mutex);
+	Log& operator<<(const T& value)
+	{
+		std::lock_guard<std::mutex> scopeLock(m_mutex);		
         m_logFile << value;
-        m_logFile.flush();
-        return *this;
-    }
+		m_logFile.flush();
+		return *this;
+	}
 
-    Log& operator<<(OstreamManipulator pf)
-    {
-        return operator<< <OstreamManipulator>(pf);
-    }
+	Log& operator<<(OstreamManipulator pf)
+	{
+		return operator<< <OstreamManipulator>(pf);
+	}
 
     ~Log()
     {
@@ -54,10 +53,8 @@ public:
     }
 
 private:
-    Log()
-    {
-        m_logFile.open("log.txt");
-    }
+    Log();
+
     std::ofstream m_logFile;
     std::mutex    m_mutex;
 

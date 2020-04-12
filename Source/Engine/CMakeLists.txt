@@ -15,19 +15,18 @@ set(ENGINE_HEADERS
 
 set(ENGINE_SOURCES
     Engine.cpp
+    ClientSubsystem/ClientSubsystem.cpp
 )
 
 if (WIN32)
     list(APPEND ENGINE_SOURCES
-        ClientSubsystem/ClientSubsystemWindows.cpp
         ClientSubsystem/Window/WindowWindows.cpp
         )
 endif()
 
 if (LINUX)
     list(APPEND ENGINE_SOURCES
-        ClientSubsystem/ClientSubsystemLinux.cpp
-        #ClientSubsystem/Window/WindowLinux.cpp
+        ClientSubsystem/Window/WindowLinux.cpp
         )
 endif()
 
@@ -38,5 +37,11 @@ add_library(Engine STATIC
 )
 
 
-target_link_libraries(Engine user32.lib)
+if(LINUX)
+    find_package(PkgConfig)
+    pkg_check_modules(PKG_X11_XCB REQUIRED x11-xcb)
+    target_link_libraries(Engine ${PKG_X11_XCB_LIBRARIES})
+endif()
+
+#target_link_libraries(Engine user32.lib)
 target_compile_features(Engine PUBLIC cxx_std_17)

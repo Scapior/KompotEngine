@@ -1,14 +1,18 @@
 #include "Log.hpp"
+#include "DateTimeStringFormatter.hpp"
+#include <string>
 
 #ifdef ENGINE_DEBUG
 PFN_vkCreateDebugUtilsMessengerEXT  Log::pfn_vkCreateDebugUtilsMessengerEXT = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT Log::pfn_vkDestroyDebugUtilsMessengerEXT = nullptr;
 #endif
 
-void Log::callbackForGlfw(int code, const char* text)
+Log::Log()
 {
-    Log &log = Log::getInstance();
-    log << "GLFW error: code [" << code << "], text: " << text << std::endl;
+    using namespace KompotEngine;
+    m_logFile.open("log.txt");
+    const std::string time = DateTimeStringFormatter::now(DateTimeStringFormatter::logDateTimeFormat);
+    *this << time << "Log initialized" << std::endl;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Log::vulkanDebugCallback(
