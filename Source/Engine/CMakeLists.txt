@@ -21,13 +21,13 @@ set(ENGINE_SOURCES
 if (WIN32)
     list(APPEND ENGINE_SOURCES
         ClientSubsystem/Window/WindowWindows.cpp
-        )
+    )
 endif()
 
 if (LINUX)
     list(APPEND ENGINE_SOURCES
         ClientSubsystem/Window/WindowLinux.cpp
-        )
+    )
 endif()
 
 add_library(Engine STATIC
@@ -43,5 +43,4 @@ if(LINUX)
     target_link_libraries(Engine ${PKG_X11_XCB_LIBRARIES})
 endif()
 
-#target_link_libraries(Engine user32.lib)
 target_compile_features(Engine PUBLIC cxx_std_17)

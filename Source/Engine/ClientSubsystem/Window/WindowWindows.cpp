@@ -22,13 +22,13 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
 
     m_windowHandlers->windowNameWideCharBufferSize = windowName.size() * 4; // 2?
     m_windowHandlers->windowNameWideCharBuffer = new wchar_t[m_windowHandlers->windowNameWideCharBufferSize]{};
-    MultiByteToWideChar( CP_UTF8,
+
+    checkNotNull(MultiByteToWideChar( CP_UTF8,
                          0_u32t,
-                         windowName.data(), windowName.size(),
+                         windowName.data(), static_cast<int>(windowName.size()),
                          m_windowHandlers->windowNameWideCharBuffer,
                          static_cast<int>(m_windowHandlers->windowNameWideCharBufferSize)
-    );       
-
+    ));
     WNDCLASSEXW windowClass{};
     windowClass.cbSize        = sizeof(WNDCLASSEXW);
     windowClass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -117,6 +117,7 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
 {
     HWND hWnd = reinterpret_cast<HWND>(hwnd);
     Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, 0));
+    (void)window;
     switch (message)
     {
     case WM_DESTROY:

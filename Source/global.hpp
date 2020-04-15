@@ -40,6 +40,7 @@ Details.
 /* Platform and OS macros */
 
 #if defined(_WIN32) || defined(__WIN32__)
+    #define debugBreak() (__debugbreak())
     #define ENGINE_OS_WINDOWS
     #if defined(_WIN64) || defined(WIN64)
         #define ENGINE_PLATFORM_x64
@@ -51,6 +52,7 @@ Details.
 #endif
 
 #if defined(__linux__)
+    #define debugBreak() (__builtin_trap())
     #define ENGINE_OS_LINUX
     #if defined(__x86_64__)
         #define ENGINE_PLATFORM_x64
@@ -60,6 +62,9 @@ Details.
         #define ENGINE_OS_LINUX_x32
     #endif
 #endif
+
+#define check(expression) if(!((expression))) { debugBreak(); }
+#define checkNotNull(expression) check(((expression)) != 0)
 
 /* Default includes and defines */
 
