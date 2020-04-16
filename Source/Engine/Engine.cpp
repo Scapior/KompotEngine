@@ -1,11 +1,11 @@
 /*
-*   Copyright (C) 2019 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  Engine.cpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
 #include "Engine.hpp"
-
+#include <Misc/Log.hpp>
 /*!
     \class Engine
     \brief The Engine class is a root class that contains all subsystems of the engine.

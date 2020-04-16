@@ -1,3 +1,9 @@
+/*
+*  OptionsParser.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
+*/
+
 #include "OptionsParser.hpp"
 
 void OptionsParser::loadFromArguments(int argc, char** argv)

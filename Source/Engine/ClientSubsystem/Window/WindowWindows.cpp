@@ -1,3 +1,9 @@
+/*
+*  WindowWindows.cpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
+*/
+
 #include "Window.hpp"
 #include "Windows.h" // winapi
 

@@ -1,12 +1,12 @@
 /*
-*   Copyright (C) 2019 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  EngineConfig.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
 #pragma once
 
-#include <global.hpp>
+#include <EngineTypes.hpp>
 
 namespace KompotEngine
 {

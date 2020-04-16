@@ -1,7 +1,7 @@
 /*
-*   Copyright (C) 2019 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  IEngineSystem.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
 #pragma once

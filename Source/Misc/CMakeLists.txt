@@ -4,7 +4,6 @@ set(MISC_SOURCES
     Log.cpp
     Guid.cpp
     OptionsParser/OptionsParser.cpp
-    DateTimeStringFormatter.cpp
 )
 
 set(MISC_HEADERS
@@ -12,7 +11,7 @@ set(MISC_HEADERS
     Guid.hpp
     OptionsParser/OptionsParser.hpp
     Templates/Functions.hpp
-    DateTimeStringFormatter.hpp
+    DateTimeFormatter.hpp
 )
 
 add_library(Misc STATIC

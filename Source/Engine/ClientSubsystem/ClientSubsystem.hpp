@@ -1,13 +1,13 @@
 /*
-*   Copyright (C) 2019 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  ClientSubsystem.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
 //#ifdef ENGINE_OS_LINUX
 
 #pragma once
-#include <global.hpp>
+#include <EngineTypes.hpp>
 #include <Engine/EngineConfig.hpp>
 #include <Engine/IEngineSystem.hpp>
 //#include <condition_variable>

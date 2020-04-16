@@ -1,6 +1,12 @@
+/*
+*  Log.cpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
+*/
+
 #include "Log.hpp"
-#include "DateTimeStringFormatter.hpp"
 #include <string>
+#include "Templates/Functions.hpp"
 
 #ifdef ENGINE_DEBUG
 PFN_vkCreateDebugUtilsMessengerEXT  Log::pfn_vkCreateDebugUtilsMessengerEXT = nullptr;
@@ -11,8 +17,25 @@ Log::Log()
 {
     using namespace KompotEngine;
     m_logFile.open("log.txt");
-    const std::string time = DateTimeStringFormatter::now(DateTimeStringFormatter::logDateTimeFormat);
-    *this << time << "Log initialized" << std::endl;
+    *this << '[' << Log::timeNow() << ']' << "Log initialized" << std::endl;
+}
+
+Log& Log::operator<<(const KompotEngine::DateTimeFormat& dateTimeFormat)
+{
+    m_dateTimeFormatter.setFormat(dateTimeFormat);
+    return *this;
+}
+
+Log& Log::operator<<(const std::chrono::system_clock::time_point& time)
+{
+    m_dateTimeFormatter.printTime(*this, time);
+    return *this;
+}
+
+Log& Log::write(const char* text, std::streamsize size)
+{
+    m_logFile.write(text, size);
+    return *this;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Log::vulkanDebugCallback(

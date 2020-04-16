@@ -1,17 +1,20 @@
 /*
-*   Copyright (C) 2019 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  Log.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
 #pragma once
 
-#include "global.hpp"
+#include <EngineTypes.hpp>
+#include <EngineDefines.hpp>
+#include "DateTimeFormatter.hpp"
 #include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <fstream>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 class Log
 {
@@ -33,6 +36,8 @@ public:
     static void setupDebugCallback(VkInstance, VkDevice);
     static void deleteDebugCallback();
 
+    inline static auto timeNow() { return std::chrono::system_clock::now(); }
+
     template <typename T>
 	Log& operator<<(const T& value)
 	{
@@ -47,16 +52,33 @@ public:
 		return operator<< <OstreamManipulator>(pf);
 	}
 
+    Log& operator<<(const KompotEngine::DateTimeFormat& dateTimeFormatter);
+
+    Log& operator<<(const std::chrono::system_clock::time_point& time);
+
     ~Log()
     {
         m_logFile.close();
     }
+
+    /* ostream-like part for templates*/
+    char fill() const { return m_logFile.fill(); }
+    char fill(char fillCharacter) { return m_logFile.fill(fillCharacter); }
+
+    std::streamsize width() const { return m_logFile.width(); }
+    std::streamsize width(std::streamsize newWidthValue) { return m_logFile.width(newWidthValue); }
+
+    Log& write(const char* text, std::streamsize size);
+
+    /* end the ostream-like part */
 
 private:
     Log();
 
     std::ofstream m_logFile;
     std::mutex    m_mutex;
+
+    KompotEngine::DateTimeFormatter m_dateTimeFormatter;
 
 #ifdef ENGINE_DEBUG
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;

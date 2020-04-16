@@ -22,7 +22,8 @@ target_include_directories(Engine
 
 add_executable(
     KompotEngine WIN32
-    global.hpp
+    EngineDefines.hpp
+    EngineTypes.hpp
     main.cpp
 )
 

@@ -1,3 +1,9 @@
+/*
+*  ClientSubsystem.cpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
+*/
+
 #include "ClientSubsystem.hpp"
 
 using namespace KompotEngine;

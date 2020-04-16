@@ -1,10 +1,10 @@
 /*
-*   Copyright (C) 2019 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  main.cpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
-#include "global.hpp"
+#include <EngineTypes.hpp>
 #include "Engine/Engine.hpp"
 #include "Misc/OptionsParser/OptionsParser.hpp"
 #include <fstream>

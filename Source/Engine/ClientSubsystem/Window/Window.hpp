@@ -1,11 +1,12 @@
 /*
-*   Copyright (C) 2020 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  Window.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
 */
 
 #pragma once
-#include <global.hpp>
+#include <EngineTypes.hpp>
+#include <EngineDefines.hpp>
 #include <string>
 #include <string_view>
 #include <Misc/Templates/Functions.hpp>

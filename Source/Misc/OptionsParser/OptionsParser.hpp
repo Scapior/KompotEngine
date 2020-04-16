@@ -1,12 +1,19 @@
+/*
+*  OptionsParser.hpp
+*  Copyright (C) 2020 by Maxim Stoyanov
+*  scapior.github.io
+*/
+
 #pragma once
 
-#include "global.hpp"
+#include <EngineTypes.hpp>
 #include <string>
 #include <variant>
 #include <fstream>
 #include <sstream>
 #include <cctype>
 #include <typeinfo>
+#include <vector>
 
 class OptionsParser
 {

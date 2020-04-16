@@ -2,6 +2,7 @@
 
 KompotEngine
 log.txt
+build-*
 
 # Qt
 CMakeLists.txt.user.*
