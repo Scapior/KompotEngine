@@ -2,6 +2,10 @@
 
 KompotEngine
 log.txt
+build-*
+
+# Qt
+CMakeLists.txt.user.*
 
 # MSVS / Win files
 
@@ -19,6 +23,11 @@ CodeAnalysis
 # Python cache
 
 __pycache__
+
+# Doxygen
+
+Docs/html
+Docs/latex
 
 # SPIR-V byte code
 
