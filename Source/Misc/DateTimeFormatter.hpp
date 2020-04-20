@@ -16,53 +16,52 @@
 namespace KompotEngine
 {
 
-enum class DateTimeFormatSpecifier // also  check ISO 8601
-{
-    Year,
-    Month,
-    MonthShort,
-    Day,
-    DayShort,
-    Hours24,
-    Hours24Short,
-    Hours12,
-    Hours12Short,
-    Minutes,
-    MinutesShort,
-    Seconds,
-    SecondsShort,
-    Milliseconds,
-    MillisecondsShort,
-    WeeklyName,
-    WeeklyNameShort,
-    MonthName,
-    MonthNameShort,
-    DayOfYear,
-    DayOfYearShort,
-    DayOfWeek,
-    DayOfWeekFromNull,
-    DayPartName,
-    WeekNumber,
-    WeekNumberShort,
-
-    Dot,
-    Comma,
-    Colon,
-    Space
-};
-
 struct DateTimeFormat
 {
-    std::vector<DateTimeFormatSpecifier> data;
+    enum FormatSpecifier // also  check ISO 8601
+    {
+        Year,
+        Month,
+        MonthShort,
+        Day,
+        DayShort,
+        Hours24,
+        Hours24Short,
+        Hours12,
+        Hours12Short,
+        Minutes,
+        MinutesShort,
+        Seconds,
+        SecondsShort,
+        Milliseconds,
+        MillisecondsShort,
+        WeeklyName,
+        WeeklyNameShort,
+        MonthName,
+        MonthNameShort,
+        DayOfYear,
+        DayOfYearShort,
+        DayOfWeek,
+        DayOfWeekFromNull,
+        DayPartName,
+        WeekNumber,
+        WeekNumberShort,
+
+        Dot,
+        Comma,
+        Colon,
+        Space
+    };
+    std::vector<FormatSpecifier> data;
 
     template<std::size_t N>
-    DateTimeFormat(const std::array<DateTimeFormatSpecifier, N>& format)
+    DateTimeFormat(const std::array<FormatSpecifier, N>& format)
     {
         data.reserve(N);
         data.insert(data.begin(), format.begin(), format.end());
     }
 
-    DateTimeFormat& operator+(const DateTimeFormatSpecifier& format)
+    DateTimeFormat& operator+(const FormatSpecifier& format)
     {
         data.push_back(format);
         return *this;
@@ -71,12 +70,12 @@ struct DateTimeFormat
 
 } // namespace KompotEngine
 
-inline constexpr auto operator+(const KompotEngine::DateTimeFormatSpecifier valueLeft, const KompotEngine::DateTimeFormatSpecifier valueRight)
+inline constexpr auto operator+(const KompotEngine::DateTimeFormat::FormatSpecifier valueLeft, const KompotEngine::DateTimeFormat::FormatSpecifier valueRight)
 {
-    return std::array<KompotEngine::DateTimeFormatSpecifier, 2> {valueLeft, valueRight};
+    return std::array<KompotEngine::DateTimeFormat::FormatSpecifier, 2> {valueLeft, valueRight};
 }
 
-inline auto operator+(const KompotEngine::DateTimeFormatSpecifier& formatSpecifier, KompotEngine::DateTimeFormat& dateTimeFormat)
+inline auto operator+(const KompotEngine::DateTimeFormat::FormatSpecifier& formatSpecifier, KompotEngine::DateTimeFormat& dateTimeFormat)
 {
     dateTimeFormat.data.insert(dateTimeFormat.data.begin(), formatSpecifier);
     return dateTimeFormat;
@@ -110,13 +109,13 @@ private:
 
 
     DateTimeFormat m_dateTimeFormat =
-            DateTimeFormatSpecifier::Year       + DateTimeFormatSpecifier::Dot +
-            DateTimeFormatSpecifier::Month      + DateTimeFormatSpecifier::Dot +
-            DateTimeFormatSpecifier::Day        + DateTimeFormatSpecifier::Space +
-            DateTimeFormatSpecifier::Hours24    + DateTimeFormatSpecifier::Colon +
-            DateTimeFormatSpecifier::Minutes    + DateTimeFormatSpecifier::Colon +
-            DateTimeFormatSpecifier::Seconds    + DateTimeFormatSpecifier::Dot +
-            DateTimeFormatSpecifier::Milliseconds;
+            DateTimeFormat::Year       + DateTimeFormat::Dot +
+            DateTimeFormat::Month      + DateTimeFormat::Dot +
+            DateTimeFormat::Day        + DateTimeFormat::Space +
+            DateTimeFormat::Hours24    + DateTimeFormat::Colon +
+            DateTimeFormat::Minutes    + DateTimeFormat::Colon +
+            DateTimeFormat::Seconds    + DateTimeFormat::Dot +
+            DateTimeFormat::Milliseconds;
 
     mutable std::tm m_parsedTime;
     mutable std::chrono::milliseconds m_parsedMilliseconds;
@@ -153,135 +152,133 @@ private:
         const char previousCharacter = stream.fill();
         stream.fill('0');
         std::streamsize previousWidth = stream.width();
-        for (const DateTimeFormatSpecifier& formatSpecifier : m_dateTimeFormat.data)
+        for (const DateTimeFormat::FormatSpecifier& formatSpecifier : m_dateTimeFormat.data)
         {
             switch (formatSpecifier)
             {
-            case DateTimeFormatSpecifier::Year:
+            case DateTimeFormat::Year:
             {
                 stream << m_parsedTime.tm_year + 1900;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Month:
+            case DateTimeFormat::Month:
                 stream.width(2);
-            case DateTimeFormatSpecifier::MonthShort:
+            case DateTimeFormat::MonthShort:
             {
                 stream << m_parsedTime.tm_mon + 1;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Day:
+            case DateTimeFormat::Day:
                 stream.width(2);
-            case DateTimeFormatSpecifier::DayShort:
+            case DateTimeFormat::DayShort:
             {
                 stream << m_parsedTime.tm_mday;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Hours24:
+            case DateTimeFormat::Hours24:
                 stream.width(2);
-            case DateTimeFormatSpecifier::Hours24Short:
+            case DateTimeFormat::Hours24Short:
             {
                 stream << m_parsedTime.tm_hour;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Hours12:
+            case DateTimeFormat::Hours12:
                 stream.width(2);
-            case DateTimeFormatSpecifier::Hours12Short:
+            case DateTimeFormat::Hours12Short:
             {
                 stream << getHoursInFormat12();
                 stream.width(previousWidth);
                 break;
             }
 
-
-
-            case DateTimeFormatSpecifier::Minutes:
+            case DateTimeFormat::Minutes:
                 stream.width(2);
-            case DateTimeFormatSpecifier::MinutesShort:
+            case DateTimeFormat::MinutesShort:
             {
                 stream << m_parsedTime.tm_min;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Seconds:
+            case DateTimeFormat::Seconds:
                 stream.width(2);
-            case DateTimeFormatSpecifier::SecondsShort:
+            case DateTimeFormat::SecondsShort:
             {
                 stream << m_parsedTime.tm_sec;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Milliseconds:
+            case DateTimeFormat::Milliseconds:
                 stream.width(3);
-            case DateTimeFormatSpecifier::MillisecondsShort:
+            case DateTimeFormat::MillisecondsShort:
             {
                 stream << m_parsedMilliseconds.count();
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::WeeklyName:
+            case DateTimeFormat::WeeklyName:
                 stream << m_daysNames[m_parsedTime.tm_wday];
                 break;
-            case DateTimeFormatSpecifier::WeeklyNameShort:
+            case DateTimeFormat::WeeklyNameShort:
                 stream.write(m_daysNames[m_parsedTime.tm_wday], 3);
                 break;
 
-            case DateTimeFormatSpecifier::MonthName:
+            case DateTimeFormat::MonthName:
                 stream << m_monthsNames[m_parsedTime.tm_mon];
                 break;
-            case DateTimeFormatSpecifier::MonthNameShort:
+            case DateTimeFormat::MonthNameShort:
                 stream.write(m_monthsNames[m_parsedTime.tm_mon], 3);
                 break;
 
-            case DateTimeFormatSpecifier::DayOfYear:
+            case DateTimeFormat::DayOfYear:
                 stream.width(3);
-            case DateTimeFormatSpecifier::DayOfYearShort:
+            case DateTimeFormat::DayOfYearShort:
             {
                 stream << m_parsedTime.tm_yday + 1;
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::DayOfWeek:
+            case DateTimeFormat::DayOfWeek:
                 stream << (m_parsedTime.tm_yday != 0 ?  m_parsedTime.tm_wday : 7);
                 break;
-            case DateTimeFormatSpecifier::DayOfWeekFromNull:
+            case DateTimeFormat::DayOfWeekFromNull:
                 stream << (m_parsedTime.tm_yday != 0 ?  m_parsedTime.tm_wday - 1 : 6);
                 break;
 
-            case DateTimeFormatSpecifier::DayPartName:
+            case DateTimeFormat::DayPartName:
                 stream <<  (m_parsedTime.tm_hour < 12 ? "AM" : "PM");
                 break;
 
-            case DateTimeFormatSpecifier::WeekNumber:
+            case DateTimeFormat::WeekNumber:
                 stream.width(2);
-            case DateTimeFormatSpecifier::WeekNumberShort:
+            case DateTimeFormat::WeekNumberShort:
             {
                 stream << getWeekNumber();
                 stream.width(previousWidth);
                 break;
             }
 
-            case DateTimeFormatSpecifier::Dot:
+            case DateTimeFormat::Dot:
                 stream << '.';
                 break;
-            case DateTimeFormatSpecifier::Comma:
+            case DateTimeFormat::Comma:
                 stream << ',';
                 break;
-            case DateTimeFormatSpecifier::Colon:
+            case DateTimeFormat::Colon:
                 stream << ':';
                 break;
-            case DateTimeFormatSpecifier::Space:
+            case DateTimeFormat::Space:
                 stream << ' ';
                 break;
             default:
