@@ -5,8 +5,6 @@ project(KompotEngine
         LANGUAGES CXX
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
@@ -23,9 +21,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     endif()
 endif()
 
-
-add_subdirectory(Source)
-
-
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
+
+add_subdirectory(Source)
+add_subdirectory(Tests)

@@ -7,6 +7,7 @@
 #pragma once
 #include <EngineTypes.hpp>
 #include <EngineDefines.hpp>
+#include <atomic>
 #include <string>
 #include <string_view>
 #include <Misc/Templates/Functions.hpp>
@@ -23,15 +24,17 @@ public:
 	~Window();
 
     void run();
+    void closeWindow();
 private:
     std::string      m_windowName;
 
     PlatformHandlers* m_windowHandlers = nullptr;
-    const PlatformHandlers* m_parentWindowHandlers = nullptr;
+    const PlatformHandlers* m_parentWindowHandlers = nullptr;    
 
 /* Platform-specific definitions */
 
 #ifdef ENGINE_OS_WINDOWS
+    std::atomic_bool m_needToClose = false;
     static constexpr auto windowClassName = makeArray(L"KompotEngineWindow");
 #endif
 

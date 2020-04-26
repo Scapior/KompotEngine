@@ -17,7 +17,7 @@ ClientSubsystem::~ClientSubsystem()
 {
     delete m_mainWindow;
 }
-
+#include <thread>
 void ClientSubsystem::run()
 {
     m_mainWindow->run();

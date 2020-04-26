@@ -99,7 +99,6 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
 
 Window::~Window()
 {
-
 }
 
 void Window::run()
@@ -115,20 +114,41 @@ void Window::run()
     }
 }
 
+void Window::closeWindow()
+{
+    m_needToClose = true;
+}
+
 #if defined (ENGINE_OS_WINDOWS_x32)
 int32_t Window::windowProcedure(void* hwnd, uint32_t message, uint32_t wParam, int32_t lParam)
 #elif defined(ENGINE_OS_WINDOWS_x64)
 int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam)
 #endif
-{
+{       
     HWND hWnd = reinterpret_cast<HWND>(hwnd);
     Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, 0));
-    (void)window;
+
+    if (!window)
+    {
+        return DefWindowProcW(hWnd, message, wParam, lParam);
+    }
+
+    if (window->m_needToClose)
+    {
+        PostQuitMessage(0);
+        //DestroyWindow(hWnd);
+    }
+
     switch (message)
     {
-    case WM_DESTROY:
+    //case WM_DESTROY: // https://stackoverflow.com/a/3155883
+    case WM_CLOSE:
         PostQuitMessage(0);
         break;
+    //case WM_SYSCHAR:
+    //case WM_SYSCOMMAND: //A window receives this message when the user chooses a command from the Window menu (formerly known as the system or control menu) or when the user chooses the maximize button, minimize button, restore button, or close button.
+    //case WM_SETCURSOR: //Sent to a window if the mouse causes the cursor to move within a window and mouse input is not captured.
+    //case WM_DEVICECHANGE: // Notifies an application of a change to the hardware configuration of a device or the computer.
     default:
         return DefWindowProcW(hWnd, message, wParam, lParam);
     }
