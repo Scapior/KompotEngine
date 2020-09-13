@@ -36,11 +36,14 @@ add_library(Engine STATIC
     ${GLOBAL_INCLUDES}
 )
 
-
 if(LINUX)
     find_package(PkgConfig)
     pkg_check_modules(PKG_X11_XCB REQUIRED x11-xcb)
     target_link_libraries(Engine ${PKG_X11_XCB_LIBRARIES})
+endif()
+
+if (WIN32)
+    target_link_libraries(Engine Dbghelp)
 endif()
 
 target_compile_features(Engine PUBLIC cxx_std_17)

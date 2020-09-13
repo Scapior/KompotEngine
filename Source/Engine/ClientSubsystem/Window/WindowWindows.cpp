@@ -5,6 +5,7 @@
 */
 
 #include "Window.hpp"
+#include <Misc/DebugUtils/DebugUtils.hpp>
 #include "Windows.h" // winapi
 
 using namespace KompotEngine;
@@ -35,6 +36,7 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
                          m_windowHandlers->windowNameWideCharBuffer,
                          static_cast<int>(m_windowHandlers->windowNameWideCharBufferSize)
     ));
+
     WNDCLASSEXW windowClass{};
     windowClass.cbSize        = sizeof(WNDCLASSEXW);
     windowClass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;

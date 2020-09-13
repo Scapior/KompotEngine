@@ -4,12 +4,14 @@ set(MISC_SOURCES
     Log.cpp
     Guid.cpp
     OptionsParser/OptionsParser.cpp
+    DebugUtils/DebugUtils.cpp
 )
 
 set(MISC_HEADERS
     Log.hpp
     Guid.hpp
     OptionsParser/OptionsParser.hpp
+    DebugUtils/DebugUtils.hpp
     Templates/Functions.hpp
     DateTimeFormatter.hpp
 )

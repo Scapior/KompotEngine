@@ -5,12 +5,16 @@
 */
 
 #include "ClientSubsystem.hpp"
+#include "Misc/DebugUtils/DebugUtils.hpp"
+#include "Misc/Log.hpp"
 
 using namespace KompotEngine;
 
 ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig)
 {
     m_mainWindow = new Window("Game");
+
+    Log::getInstance() << DebugUtils::getCallstack() << std::endl;
 }
 
 ClientSubsystem::~ClientSubsystem()
