@@ -1,5 +1,6 @@
 #include "Window.hpp"
 #include <xcb/xcb.h>
+#include "Misc/Log.hpp"
 
 using namespace KompotEngine;
 

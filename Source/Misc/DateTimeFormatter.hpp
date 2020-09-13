@@ -5,6 +5,7 @@
 */
 
 #pragma once
+#define __STDC_WANT_LIB_EXT1__
 #include <vector>
 #include <chrono>
 #include <ctime>
@@ -99,7 +100,12 @@ public:
         const auto timeValueMs = std::chrono::duration_cast<Ms>(timePoint.time_since_epoch());
         const auto timeValueSec = Sec(timeValue);
         m_parsedMilliseconds = timeValueMs - std::chrono::duration_cast<Ms>(timeValueSec);
-        localtime_s(&m_parsedTime, &timeValue);
+#if defined(ENGINE_OS_WINDOWS)
+        localtime_s(&m_parsedTime, &timeValue); // MSVS version
+#elif defined(ENGINE_OS_LINUX)
+        localtime_r(&timeValue, &m_parsedTime);
+        //gmtime_r(&timeValue, &m_parsedTime);
+#endif
         printTime(stream);
     }
 

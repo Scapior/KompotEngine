@@ -34,12 +34,16 @@ std::string DebugUtils::getLastPlatformError()
     LocalFree(messageBuffer);
 
     return result;
+#elif defined (ENGINE_OS_LINUX)
+    return {};
+#else
+    return {};
 #endif
-
 }
 
 std::string DebugUtils::getCallstack()
 {
+#if defined(ENGINE_OS_WINDOWS)
     static const auto TRACE_MAX_FUNCTION_NAME_LENGTH = 1024;
     constexpr auto unsignedShortMax = std::numeric_limits<unsigned short>::max();
 
@@ -88,12 +92,9 @@ std::string DebugUtils::getCallstack()
     }
 
     return std::string();
-#if defined(ENGINE_OS_WINDOWS)
-
-#endif
-
-#if defined(ENGINE_OS_LINUX)
+#elif defined(ENGINE_OS_LINUX)
     // ToDo
+    return {};
 #endif
 }
 
