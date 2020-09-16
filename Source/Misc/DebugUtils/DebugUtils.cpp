@@ -12,6 +12,8 @@
     #define NOMINMAX
     #include <Windows.h>
     #include <DbgHelp.h>
+#elif defined(ENGINE_OS_LINUX)
+    #include <execinfo.h>
 #endif
 
 std::string DebugUtils::getLastPlatformError()
@@ -88,13 +90,44 @@ std::string DebugUtils::getCallstack()
     else
     {
         Log::getInstance() << "The callstack getting error: " << getLastPlatformError() << std::endl;
-        return std::string();
+        return {};
     }
 
     return std::string();
+
 #elif defined(ENGINE_OS_LINUX)
-    // ToDo
-    return {};
+
+    static constexpr int32_t STACK_MAX_SIZE = 1024;
+    void* stack[STACK_MAX_SIZE];
+
+    const int32_t stackEntriesCount = backtrace(stack, STACK_MAX_SIZE);
+    if (stackEntriesCount < 1)
+    {
+        Log::getInstance() << getLastPlatformError() << std::endl;
+        return {};
+    }
+
+    char** stackRawText = backtrace_symbols(stack, stackEntriesCount);
+    if (stackRawText == nullptr)
+    {
+        Log::getInstance() << getLastPlatformError() << std::endl;
+        return {};
+    }
+
+    std::size_t resultLenght = static_cast<std::size_t>(stackEntriesCount);
+    for (int32_t i = 0; i < stackEntriesCount; ++i)
+    {
+        resultLenght += strlen(stackRawText[i]);
+    }
+
+    std::string result;
+    result.reserve(resultLenght);
+    for (int32_t i = 0; i < stackEntriesCount; ++i)
+    {
+        result.append(stackRawText[i]).append("\n");
+    }
+
+    return result;
 #endif
 }
 
