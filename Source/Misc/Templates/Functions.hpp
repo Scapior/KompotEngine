@@ -37,7 +37,7 @@ constexpr auto operator+(const std::array<T, NA> arrA, const std::array<T, NB> a
     return result;
 }
 
-namespace KompotEngine
+namespace TemplateUtils
 {
 
 // ToDo in the future: in C++20 I can swap the cycle to the std::copy
@@ -52,4 +52,4 @@ constexpr auto makeArray(const T (&array)[N])
     return result;
 }
 
-} //namespace KompotEngine
+} //namespace TemplateUtils

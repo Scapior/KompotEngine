@@ -6,6 +6,7 @@
 
 #include "DebugUtils.hpp"
 #include <Misc/Log.hpp>
+#include <Misc/StringUtils/StringUtils.hpp>
 #include <limits>
 
 #if defined(ENGINE_OS_WINDOWS)
@@ -46,55 +47,66 @@ std::string DebugUtils::getLastPlatformError()
 std::string DebugUtils::getCallstack()
 {
 #if defined(ENGINE_OS_WINDOWS)
+    ::SymInitialize(GetCurrentProcess(), nullptr, true);
+
     static const auto TRACE_MAX_FUNCTION_NAME_LENGTH = 1024;
     constexpr auto unsignedShortMax = std::numeric_limits<unsigned short>::max();
 
     void* stack[unsignedShortMax];
     const auto capturedCallstackFramesCount = ::CaptureStackBackTrace(0, unsignedShortMax, stack, nullptr);
 
-    const HANDLE process = GetCurrentProcess();
+    std::string result;
+    result.reserve(64*1024*1024);
 
-    SYMBOL_INFO *symbol = (SYMBOL_INFO *)malloc(sizeof(SYMBOL_INFO)+(TRACE_MAX_FUNCTION_NAME_LENGTH - 1) * sizeof(TCHAR));
-    symbol->MaxNameLen = TRACE_MAX_FUNCTION_NAME_LENGTH;
-    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-    DWORD displacement;
-    IMAGEHLP_LINE64 *line = (IMAGEHLP_LINE64 *)malloc(sizeof(IMAGEHLP_LINE64));
-    line->SizeOfStruct = sizeof(IMAGEHLP_LINE64);
     for (int i = 0; i < capturedCallstackFramesCount; i++)
     {
-        DWORD64 address = (DWORD64)(stack[i]);
-        SymFromAddr(process, address, NULL, symbol);
-        if (SymGetLineFromAddr64(process, address, &displacement, line))
+        DWORD_PTR frame = reinterpret_cast<DWORD_PTR>(stack[i]);
+
+        const auto bufferSize = (sizeof(SYMBOL_INFO) + TRACE_MAX_FUNCTION_NAME_LENGTH * sizeof(wchar_t) + sizeof(ULONG64) - 1) / sizeof(ULONG64);
+        ULONG64 buffer[bufferSize];
+        memset(buffer, 0, sizeof(buffer));
+
+        DWORD64 displacement = 0;
+
+        PSYMBOL_INFO symbolInfo = reinterpret_cast<PSYMBOL_INFO>(&buffer[0]);
+        symbolInfo->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbolInfo->MaxNameLen = TRACE_MAX_FUNCTION_NAME_LENGTH - 1;
+
+        const auto hasSymbol = SymFromAddr(GetCurrentProcess(), frame, &displacement, symbolInfo);
+
+        // Attempt to retrieve line number information.
+        DWORD line_displacement = 0;
+        IMAGEHLP_LINE64 line = {};
+        line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+        const auto hasLine = SymGetLineFromAddr64(GetCurrentProcess(), frame, &line_displacement, &line);
+
+        if (hasSymbol)
         {
-            char buff[1024];
-            sprintf(buff, "\tat %s in %s: line: %lu: address: 0x%0X\n", symbol->Name, line->FileName, line->LineNumber, symbol->Address);
-            std::string buffstr(buff);
-            Log::getInstance() << buffstr << std::endl;
+            result.append(symbolInfo->Name)
+                    .append(" [0x")
+                    .append(StringUtils::hexAddressFromPointer(stack[i]))
+                    .append("+")
+                    .append(StringUtils::fromIntiger(displacement))
+                    .append("]");
         }
         else
         {
-            char buff[1024];
-            sprintf(buff, "\tSymGetLineFromAddr64 returned error code %lu.\n", GetLastError());
-            std::string buffstr(buff);
-            Log::getInstance() << buffstr << std::endl;
-            sprintf(buff, "\tat %s, address 0x%0X.\n", symbol->Name, symbol->Address);
-            buffstr = std::string(buff);
-            Log::getInstance() << buffstr << std::endl;
+            result.append("(No symbol) [0x")
+                    .append(StringUtils::hexAddressFromPointer(stack[i]))
+                    .append("]");
         }
+        if (hasLine)
+        {
+            result.append(" (")
+                    .append(line.FileName)
+                    .append(":")
+                    .append(StringUtils::fromIntiger(line.LineNumber))
+                    .append(")");
+        }
+        result.append("\n");
     }
 
-    if (capturedCallstackFramesCount)
-    {
-
-    }
-    else
-    {
-        Log::getInstance() << "The callstack getting error: " << getLastPlatformError() << std::endl;
-        return {};
-    }
-
-    return std::string();
-
+    return result;
 #elif defined(ENGINE_OS_LINUX)
 
     static constexpr int32_t STACK_MAX_SIZE = 1024;

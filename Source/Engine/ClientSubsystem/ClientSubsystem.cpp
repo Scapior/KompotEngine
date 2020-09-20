@@ -12,9 +12,11 @@ using namespace KompotEngine;
 
 ClientSubsystem::ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig)
 {
-    m_mainWindow = new Window("Game");
+    static_cast<void>(argc);
+    static_cast<void>(argv);
+    static_cast<void>(engineConfig);
 
-    Log::getInstance() << DebugUtils::getCallstack() << std::endl;
+    m_mainWindow = new Window("Game");
 }
 
 ClientSubsystem::~ClientSubsystem()

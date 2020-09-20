@@ -5,6 +5,7 @@ set(MISC_SOURCES
     Guid.cpp
     OptionsParser/OptionsParser.cpp
     DebugUtils/DebugUtils.cpp
+    StringUtils/StringUtils.cpp
 )
 
 set(MISC_HEADERS
@@ -14,6 +15,7 @@ set(MISC_HEADERS
     DebugUtils/DebugUtils.hpp
     Templates/Functions.hpp
     DateTimeFormatter.hpp
+    StringUtils/StringUtils.hpp
 )
 
 add_library(Misc STATIC

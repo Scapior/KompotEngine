@@ -58,3 +58,14 @@ constexpr uint64_t operator "" _u64t(unsigned long long value)
       return static_cast<uint64_t>(value);
 }
 
+enum class TrimOption : uint8_t
+{
+    Trim,
+    DontTrim
+};
+
+enum class StringCaseOption : uint8_t
+{
+    Lowercase,
+    Uppercase
+};
