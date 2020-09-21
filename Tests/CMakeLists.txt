@@ -5,6 +5,7 @@ find_package(GTest REQUIRED) # requires defined GTEST_ROOT in system variables
 set(TESTS_SOURCES
     main_tests.cpp
     Vector_tests.cpp
+    Misc/StringUtils/StringUtils_tests.cpp
 )
 
 enable_testing()

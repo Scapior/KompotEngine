@@ -20,19 +20,23 @@ namespace StringUtils
         typename T,
         std::size_t hexLenght = sizeof(T*) << 1
         >
-    constexpr auto hexAddressFromPointer(const T * const pointer)
+    auto hexAddressFromPointer(const T * const pointer)
     {
-        constexpr auto hexDigits = stringCaseOption == StringCaseOption::Lowercase ? TemplateUtils::makeArray("0123456789abcdef") : TemplateUtils::makeArray("0123456789ABCDEF");
+        auto hexDigits = stringCaseOption == StringCaseOption::Lowercase ? TemplateUtils::makeArray("0123456789abcdef") : TemplateUtils::makeArray("0123456789ABCDEF");
         charType buff[hexLenght + 1]{};
 
         auto bitIndex = (hexLenght - 1) * 4;
-        if constexpr (trimOption == TrimOption::Trim)
+        if (trimOption == TrimOption::Trim)
         {
-            for (; (reinterpret_cast<uint64_t>(pointer) >> bitIndex) == 0; bitIndex -= 4);
+            for (; (reinterpret_cast<uint64_t>(pointer) >> bitIndex) == 0 && bitIndex < hexLenght * 4; bitIndex -= 4);
         }
         for (std::size_t i = 0; i < hexLenght && bitIndex < hexLenght * 4; ++i,  bitIndex -= 4)
         {
             buff[i] = hexDigits[0x0f & (reinterpret_cast<uint64_t>(pointer) >> bitIndex)];
+        }
+        if (buff[0] == 0)
+        {
+            buff[0] = '0';
         }
         return  std::basic_string<charType>(buff);
     }
