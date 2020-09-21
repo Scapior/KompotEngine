@@ -84,7 +84,7 @@ std::string DebugUtils::getCallstack()
         {
             result.append(symbolInfo->Name)
                     .append(" [0x")
-                    .append(StringUtils::hexAddressFromPointer(stack[i]))
+                    .append(StringUtils::hexFromPointer(stack[i]))
                     .append("+")
                     .append(StringUtils::fromIntiger(displacement))
                     .append("]");
@@ -92,7 +92,7 @@ std::string DebugUtils::getCallstack()
         else
         {
             result.append("(No symbol) [0x")
-                    .append(StringUtils::hexAddressFromPointer(stack[i]))
+                    .append(StringUtils::hexFromPointer(stack[i]))
                     .append("]");
         }
         if (hasLine)

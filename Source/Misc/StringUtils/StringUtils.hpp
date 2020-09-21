@@ -14,15 +14,16 @@
 namespace StringUtils
 {
     template<
-        StringCaseOption stringCaseOption = StringCaseOption::Lowercase,
-        TrimOption trimOption = TrimOption::Trim,
         typename charType = char,
         typename T,
         std::size_t hexLenght = sizeof(T*) << 1
         >
-    auto hexAddressFromPointer(const T * const pointer)
+    auto hexFromPointer(
+            const T * const pointer,
+            StringCaseOption stringCaseOption = StringCaseOption::Lowercase,
+            TrimOption trimOption = TrimOption::Trim)
     {
-        auto hexDigits = stringCaseOption == StringCaseOption::Lowercase ? TemplateUtils::makeArray("0123456789abcdef") : TemplateUtils::makeArray("0123456789ABCDEF");
+        const auto hexDigits = stringCaseOption == StringCaseOption::Lowercase ? "0123456789abcdef"s : "0123456789ABCDEF"s;
         charType buff[hexLenght + 1]{};
 
         auto bitIndex = (hexLenght - 1) * 4;
@@ -38,7 +39,7 @@ namespace StringUtils
         {
             buff[0] = '0';
         }
-        return  std::basic_string<charType>(buff);
+        return std::basic_string<charType>(buff);
     }
 
     // ToDo
