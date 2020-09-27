@@ -5,7 +5,7 @@
 */
 
 #include "DebugUtils.hpp"
-#include <Misc/Log.hpp>
+#include <Engine/Log/Log.hpp>
 #include <Misc/StringUtils/StringUtils.hpp>
 #include <limits>
 

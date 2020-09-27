@@ -5,7 +5,8 @@
 */
 
 #include "Engine.hpp"
-#include <Misc/Log.hpp>
+#include "Log/Log.hpp"
+
 /*!
     \class Engine
     \brief The Engine class is a root class that contains all subsystems of the engine.

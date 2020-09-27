@@ -6,7 +6,7 @@
 
 #include "Log.hpp"
 #include <string>
-#include "Templates/Functions.hpp"
+#include "Misc/Templates/Functions.hpp"
 
 #ifdef ENGINE_DEBUG
 PFN_vkCreateDebugUtilsMessengerEXT  Log::pfn_vkCreateDebugUtilsMessengerEXT = nullptr;

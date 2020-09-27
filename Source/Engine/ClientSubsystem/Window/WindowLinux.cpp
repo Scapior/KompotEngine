@@ -7,7 +7,7 @@
 
 #include "Window.hpp"
 #include <xcb/xcb.h>
-#include "Misc/Log.hpp"
+#include <Engine/Log/Log.hpp>
 
 using namespace KompotEngine;
 

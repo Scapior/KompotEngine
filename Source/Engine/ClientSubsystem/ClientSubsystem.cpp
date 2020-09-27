@@ -5,8 +5,7 @@
 */
 
 #include "ClientSubsystem.hpp"
-#include "Misc/DebugUtils/DebugUtils.hpp"
-#include "Misc/Log.hpp"
+#include <Engine/Log/Log.hpp>
 
 using namespace KompotEngine;
 

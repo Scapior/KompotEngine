@@ -6,6 +6,8 @@ endif()
 
 
 set(ENGINE_HEADERS
+    Log/Log.hpp
+    DebugUtils/DebugUtils.hpp
     EngineConfig.hpp
     Engine.hpp
     IEngineSystem.hpp
@@ -14,6 +16,8 @@ set(ENGINE_HEADERS
 )
 
 set(ENGINE_SOURCES
+    Log/Log.cpp
+    DebugUtils/DebugUtils.cpp
     Engine.cpp
     ClientSubsystem/ClientSubsystem.cpp
 )
