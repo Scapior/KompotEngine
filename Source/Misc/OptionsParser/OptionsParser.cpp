@@ -1,7 +1,7 @@
 /*
 *  OptionsParser.hpp
-*  Copyright (C) 2020 by Maxim Stoyanov
-*  scapior.github.io
+*  Copyright (C) 2020 by Maxim Stoianov
+*  Licensed under the MIT license.
 */
 
 #include "OptionsParser.hpp"

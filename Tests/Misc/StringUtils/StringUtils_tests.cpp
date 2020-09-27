@@ -1,9 +1,7 @@
 /*
-*   StringUtils_tests.cpp
-*   21.9.2020
-*   Copyright (C) 2020 by Maxim Stoyanov
-*
-*   scapior.github.io
+*  StringUtils_tests.cpp
+*  Copyright (C) 2020 by Maxim Stoianov
+*  Licensed under the MIT license.
 */
 
 #include <Misc/StringUtils/StringUtils.hpp>

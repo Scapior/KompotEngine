@@ -1,3 +1,10 @@
+/*
+*  WindowLinux.cpp
+*  Copyright (C) 2020 by Maxim Stoianov
+*  Licensed under the MIT license.
+*/
+
+
 #include "Window.hpp"
 #include <xcb/xcb.h>
 #include "Misc/Log.hpp"
