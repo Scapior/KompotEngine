@@ -20,21 +20,13 @@
 #include <array>
 #include "Window/Window.hpp"
 
-
-/*!
-    \class ClientSubsystem
-    \brief This class contain platform depend code for client case.
-
-    This class controlling a window managment, rendering, player input, audio.
-*/
-
-namespace KompotEngine
+namespace Kompot
 {
 
 class ClientSubsystem : public IEngineSystem
 {
 public:
-    ClientSubsystem(int argc, char** argv, const EngineConfig& engineConfig);
+    ClientSubsystem();
     ~ClientSubsystem();
 
     void run(/*std::condition_variable& conditionVariable*/) override;
@@ -59,6 +51,6 @@ private:
 
 };
 
-} // namespace KompotEngine
+} // namespace Kompot
 
 //#endif

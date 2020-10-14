@@ -2,13 +2,11 @@ cmake_minimum_required(VERSION 3.12)
 
 set(MISC_SOURCES
     Guid.cpp
-    OptionsParser/OptionsParser.cpp
     StringUtils/StringUtils.cpp
 )
 
 set(MISC_HEADERS
     Guid.hpp
-    OptionsParser/OptionsParser.hpp
     Templates/Functions.hpp
     DateTimeFormatter.hpp
     StringUtils/StringUtils.hpp

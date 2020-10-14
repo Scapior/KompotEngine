@@ -8,7 +8,7 @@
 
 #include <EngineTypes.hpp>
 
-namespace KompotEngine
+namespace Kompot
 {
 
 struct EngineConfig

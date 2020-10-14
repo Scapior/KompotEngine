@@ -14,7 +14,7 @@
 #include "Templates/Functions.hpp"
 #include <EngineDefines.hpp>
 
-namespace KompotEngine
+namespace Kompot
 {
 
 struct DateTimeFormat
@@ -69,20 +69,20 @@ struct DateTimeFormat
     }
 };
 
-} // namespace KompotEngine
+} // namespace Kompot
 
-inline constexpr auto operator+(const KompotEngine::DateTimeFormat::FormatSpecifier valueLeft, const KompotEngine::DateTimeFormat::FormatSpecifier valueRight)
+inline constexpr auto operator+(const Kompot::DateTimeFormat::FormatSpecifier valueLeft, const Kompot::DateTimeFormat::FormatSpecifier valueRight)
 {
-    return std::array<KompotEngine::DateTimeFormat::FormatSpecifier, 2> {valueLeft, valueRight};
+    return std::array<Kompot::DateTimeFormat::FormatSpecifier, 2> {valueLeft, valueRight};
 }
 
-inline auto operator+(const KompotEngine::DateTimeFormat::FormatSpecifier& formatSpecifier, KompotEngine::DateTimeFormat& dateTimeFormat)
+inline auto operator+(const Kompot::DateTimeFormat::FormatSpecifier& formatSpecifier, Kompot::DateTimeFormat& dateTimeFormat)
 {
     dateTimeFormat.data.insert(dateTimeFormat.data.begin(), formatSpecifier);
     return dateTimeFormat;
 }
 
-namespace KompotEngine
+namespace Kompot
 {
 
 class DateTimeFormatter
@@ -318,4 +318,4 @@ private:
     }
 };
 
-} // namespace KompotEngine
+} // namespace Kompot

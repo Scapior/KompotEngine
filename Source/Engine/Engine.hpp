@@ -14,13 +14,13 @@
 #include <thread>
 #include <memory>
 
-namespace KompotEngine
+namespace Kompot
 {
 
 class Engine
 {
 public:
-    Engine(int argc, char** argv, const std::string& name, const EngineConfig& config);
+    Engine();
     ~Engine();
 
     void run();

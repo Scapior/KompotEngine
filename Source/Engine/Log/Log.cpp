@@ -15,12 +15,12 @@ PFN_vkDestroyDebugUtilsMessengerEXT Log::pfn_vkDestroyDebugUtilsMessengerEXT = n
 
 Log::Log()
 {
-    using namespace KompotEngine;
+    using namespace Kompot;
     m_logFile.open("log.txt");
     *this << '[' << Log::timeNow() << ']' << "Log initialized" << std::endl;
 }
 
-Log& Log::operator<<(const KompotEngine::DateTimeFormat& dateTimeFormat)
+Log& Log::operator<<(const Kompot::DateTimeFormat& dateTimeFormat)
 {
     m_dateTimeFormatter.setFormat(dateTimeFormat);
     return *this;

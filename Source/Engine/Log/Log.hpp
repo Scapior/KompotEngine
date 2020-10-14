@@ -52,7 +52,7 @@ public:
 		return operator<< <OstreamManipulator>(pf);
 	}
 
-    Log& operator<<(const KompotEngine::DateTimeFormat& dateTimeFormatter);
+    Log& operator<<(const Kompot::DateTimeFormat& dateTimeFormatter);
 
     Log& operator<<(const std::chrono::system_clock::time_point& time);
 
@@ -78,7 +78,7 @@ private:
     std::ofstream m_logFile;
     std::mutex    m_mutex;
 
-    KompotEngine::DateTimeFormatter m_dateTimeFormatter;
+    Kompot::DateTimeFormatter m_dateTimeFormatter;
 
 #ifdef ENGINE_DEBUG
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;

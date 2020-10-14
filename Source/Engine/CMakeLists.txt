@@ -10,6 +10,7 @@ set(ENGINE_HEADERS
     DebugUtils/DebugUtils.hpp
     EngineConfig.hpp
     Engine.hpp
+    Config/ConfigManager.hpp
     IEngineSystem.hpp
     ClientSubsystem/ClientSubsystem.hpp
     ClientSubsystem/Window/Window.hpp
@@ -18,6 +19,7 @@ set(ENGINE_HEADERS
 set(ENGINE_SOURCES
     Log/Log.cpp
     DebugUtils/DebugUtils.cpp
+    Config/ConfigManager.cpp
     Engine.cpp
     ClientSubsystem/ClientSubsystem.cpp
 )

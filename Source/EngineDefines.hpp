@@ -6,28 +6,6 @@
 
 #pragma once
 
-/** \file global.hpp
-\brief The file with often user functions or global macros.
-The file contains
-*/
-
-/*! \def ENGINE_BUILD_SERVER
-\brief A macro that be defined when target build is a server.
-If you need to build a server define this macro.
-If this macro not defined, will be defined ENGINE_BUILD_CLIENT.
-*/
-
-/*! \def ENGINE_BUILD_CLIENT
-\brief A macro that be defined when target build is a client.
-Details.
-*/
-
-/*! \fn int open(const char *pathname,int flags)
-\brief Opens a file descriptor.
-\param pathname The name of the descriptor.
-\param flags Opening flags.
-*/
-
 /* Build mode */
 #ifndef ENGINE_BUILD_SERVER
     #define ENGINE_BUILD_CLIENT

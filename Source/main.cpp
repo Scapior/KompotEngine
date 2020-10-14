@@ -4,35 +4,18 @@
 *  Licensed under the MIT license.
 */
 
-#include <EngineTypes.hpp>
-#include "Engine/Engine.hpp"
-#include "Misc/OptionsParser/OptionsParser.hpp"
-#include <fstream>
-
-using namespace KompotEngine;
+#include <Engine/Engine.hpp>
+#include <Engine/Config/ConfigManager.hpp>
 
 int main(int argc, char** argv)
 {
     std::ios::sync_with_stdio(false);
-    EngineConfig engineConfig;
 
-    OptionsParser options;
-    options.addOptions()
-        ("editmode",   "Run engine as editor",  false,    &engineConfig.isEditMode)
-        ("fullscreen", "Fullscreen mode",       false,    &engineConfig.isFullscreen)
-        ("width",      "Window width",          640_u16t, &engineConfig.windowWidth)
-        ("height",     "Window height",         480_u16t, &engineConfig.windowHeight)
-        ("maximized",  "Maximize window",       false,    &engineConfig.isMaximized);
+    using Kompot::ConfigManager;
+    ConfigManager& configManager = ConfigManager::getInstance();
+    configManager.loadCommandLineArguments(argc, argv);
 
-    std::ifstream configFile("engine.ini");
-    if (configFile.is_open())
-    {
-        options.loadFromFile(configFile);
-    }
-    options.loadFromArguments(argc, argv);
-    options.notify();
-
-    Engine engine(argc, argv, "Test", engineConfig);
+    Kompot::Engine engine;
     engine.run();
 
     return 0;

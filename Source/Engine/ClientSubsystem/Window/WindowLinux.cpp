@@ -9,9 +9,9 @@
 #include <xcb/xcb.h>
 #include <Engine/Log/Log.hpp>
 
-using namespace KompotEngine;
+using namespace Kompot;
 
-struct KompotEngine::PlatformHandlers
+struct Kompot::PlatformHandlers
 {
 	xcb_connection_t* xcbConnection;
 	xcb_screen_t* xcbScreen;

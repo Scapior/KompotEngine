@@ -8,9 +8,9 @@
 #include <Misc/DebugUtils/DebugUtils.hpp>
 #include "Windows.h" // winapi
 
-using namespace KompotEngine;
+using namespace Kompot;
 
-struct KompotEngine::PlatformHandlers
+struct Kompot::PlatformHandlers
 {
     HINSTANCE   instanceHandler;
     HWND        windowHandler;
