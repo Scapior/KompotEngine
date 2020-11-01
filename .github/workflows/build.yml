@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     env:
-      DEBIAN_FRONTEND: "noninteractive" #https://github.com/ansible-community/molecule/issues/2704
+      DEBIAN_FRONTEND: "noninteractive"
     steps:
       - uses: actions/checkout@v2
 
       - name: Install dependecies
         shell: bash
         run: |
-          DEBIAN_FRONTEND=noninteractive apt update && apt install sudo
+          apt update && apt install sudo
           sudo apt install -y \
             clang \
             cmake \
