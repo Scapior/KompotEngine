@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: Build
 
 on:
   push:
@@ -7,13 +7,14 @@ on:
     branches: [ Develop ]
 
 jobs:
-  build:
+  linux:
+    name: "Ubuntu 20.04"
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     steps:
       - uses: actions/checkout@v2
 
-      - name: Update environment
+      - name: Install dependecies
         shell: bash
         run: |
           sudo apt install -y \
@@ -36,7 +37,6 @@ jobs:
             libxcb-xkb-dev \
             libgtest-dev \
             xorg-dev
-
 
       - name: Install Vulkan
         shell: bash
