@@ -20,7 +20,7 @@ jobs:
         run: |
           apt update && apt install -y sudo
           apt install -y \
-            g++-10
+            g++-10 \
             wget \
             gnupg2 \
             clang \
