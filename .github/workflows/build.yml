@@ -18,7 +18,6 @@ jobs:
     - name: Update environment
       shell: bash
       run: |
-          apt update -qq
           apt install -y \
             clang \
             cmake \
