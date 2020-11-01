@@ -1,0 +1,71 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ Develop ]
+  pull_request:
+    branches: [ Develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    # dependencies
+      
+    - name: Update environment
+      shell: bash
+      run: |
+          apt update -qq
+          apt install -y \
+            clang \
+            cmake \
+            curl \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libx11-xcb-dev \
+            libxcb-icccm4-dev \
+            libxcb-image0-dev \
+            libxcb-keysyms1-dev \
+            libxcb-randr0-dev \
+            libxcb-render-util0-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-sync-dev \
+            libxcb-xfixes0-dev \
+            libxcb-xinerama0-dev \
+            libxcb-xkb-dev \
+            libgtest-dev \
+            xorg-dev
+
+    
+    - name: Install Vulkan
+      shell: bash
+      run: |
+        # Download Vulkan SDK
+        curl -LS -o vulkansdk.tar.gz \
+            https://sdk.lunarg.com/sdk/download/${{ env.inexor_vulkan_version }}/linux/vulkansdk-linux-x86_64-${{ env.inexor_vulkan_version }}.tar.gz
+        # Create Vulkan SDK directory and extract
+        mkdir "${{ env.inexor_vulkan_sdk }}"
+        tar xfz vulkansdk.tar.gz -C "${{ env.inexor_vulkan_sdk }}"
+          
+    - name: Configure CMake
+      shell: bash
+      run: |
+          export CC=${{ matrix.config.cc }}
+          export CXX=${{ matrix.config.cxx }}
+          export PATH="${{ env.inexor_conan_path }}":$PATH
+          export VULKAN_SDK="${{ env.inexor_vulkan_sdk }}/${{ env.inexor_vulkan_version }}/x86_64"
+          export PATH=$VULKAN_SDK/bin:$PATH
+          export LD_LIBRARY_PATH=$VULKAN_SDK/lib:$LD_LIBRARY_PATH
+          export VK_LAYER_PATH=$VULKAN_SDK/etc/explicit_layer.d
+          
+    - name: CMake
+      run: cmake -Bbuild
+    - name: Build
+      run: cmake --build build
+      # run tests
+    - name: run
+      run: Tests/Tests
