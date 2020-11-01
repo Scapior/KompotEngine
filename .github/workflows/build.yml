@@ -1,4 +1,4 @@
-name: Build
+name: Build (Ubuntu 20.04)
 
 on:
   push:
@@ -7,8 +7,7 @@ on:
     branches: [ Develop ]
 
 jobs:
-  linux:
-    name: "Ubuntu 20.04"
+  build:
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     env:
