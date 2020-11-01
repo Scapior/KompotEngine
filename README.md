@@ -1,5 +1,8 @@
 # KompotEngine
 
+[![Actions Status](https://github.com/Scapior/KompotEngine/workflows/build/badge.svg)](https://github.com/Scapior/KompotEngine/actions)
+
+
 #### What is it?
 It is my personal project for C++ practice and learning graphic programming, and also cross-platform development.
 
