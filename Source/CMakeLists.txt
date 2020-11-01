@@ -29,6 +29,10 @@ add_executable(
     main.cpp
 )
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    target_link_libraries(KompotEngine PRIVATE pthread)
+endif()
+
 target_link_libraries(KompotEngine PRIVATE Engine Misc Math ${Vulkan_LIBRARY})
 set_target_properties(KompotEngine
     PROPERTIES
