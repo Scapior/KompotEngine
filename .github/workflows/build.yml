@@ -19,7 +19,7 @@ jobs:
       - name: Install dependecies
         shell: bash
         run: |
-          apt update && apt install sudo
+          apt update && apt install -y sudo
           apt install -y \
             wget \
             gnupg2 \
@@ -48,8 +48,7 @@ jobs:
         run: |
           wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
           wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.154-focal.list https://packages.lunarg.com/vulkan/1.2.154/lunarg-vulkan-1.2.154-focal.list
-          sudo apt update
-          sudo apt install vulkan-sdk
+          apt update && apt install -y vulkan-sdk
 
       - name: Configure CMake
         shell: bash
