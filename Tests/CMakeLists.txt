@@ -10,12 +10,14 @@ set(TESTS_SOURCES
 
 enable_testing()
 
+set(LINK_LIST Math)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    list(APPEND LINK_LIST pthread)
+endif()
+
 add_executable(Tests ${TESTS_SOURCES})
 target_include_directories(Tests PUBLIC ${GTEST_INCLUDE_DIRS} "../Source")
-target_link_libraries(Tests Math ${GTEST_BOTH_LIBRARIES})
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_link_libraries(Tests PRIVATE pthread)
-endif()
+target_link_libraries(Tests ${LINK_LIST} ${GTEST_BOTH_LIBRARIES})
 
 message("Libs " + ${GTEST_BOTH_LIBRARIES})
 gtest_discover_tests(Tests)
