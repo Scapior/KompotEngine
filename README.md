@@ -1,6 +1,6 @@
 # KompotEngine
 
-![Ubuntu 18.04 vuild](https://github.com/Scapior/KompotEngine/workflows/build/badge.svg)
+![Build](https://github.com/Scapior/KompotEngine/workflows/Build/badge.svg)
 
 
 #### What is it?
