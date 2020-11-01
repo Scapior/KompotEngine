@@ -19,8 +19,8 @@ jobs:
       - name: Install dependecies
         shell: bash
         run: |
+          apt update && apt install sudo
           apt install -y \
-            sudo \
             wget \
             clang \
             cmake \
