@@ -20,21 +20,21 @@ struct Kompot::PlatformHandlers
 };
 
 Window::Window(std::string_view windowName, const PlatformHandlers* parentWindowHandlers)
-    : m_windowName(windowName),
-      m_parentWindowHandlers(parentWindowHandlers)
+    : mWindowName(windowName),
+      mParentWindowHandlers(parentWindowHandlers)
 {
     static const HINSTANCE currentAppHandlerInstance = GetModuleHandle(nullptr);
 
-    m_windowHandlers = new PlatformHandlers{};
+    mWindowHandlers = new PlatformHandlers{};
 
-    m_windowHandlers->windowNameWideCharBufferSize = windowName.size() * 4; // 2?
-    m_windowHandlers->windowNameWideCharBuffer = new wchar_t[m_windowHandlers->windowNameWideCharBufferSize]{};
+    mWindowHandlers->windowNameWideCharBufferSize = windowName.size() * 4; // 2?
+    mWindowHandlers->windowNameWideCharBuffer = new wchar_t[mWindowHandlers->windowNameWideCharBufferSize]{};
 
     checkNotNull(MultiByteToWideChar( CP_UTF8,
                          0_u32t,
                          windowName.data(), static_cast<int>(windowName.size()),
-                         m_windowHandlers->windowNameWideCharBuffer,
-                         static_cast<int>(m_windowHandlers->windowNameWideCharBufferSize)
+                         mWindowHandlers->windowNameWideCharBuffer,
+                         static_cast<int>(mWindowHandlers->windowNameWideCharBufferSize)
     ));
 
     WNDCLASSEXW windowClass{};
@@ -64,10 +64,10 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
             WS_MINIMIZEBOX |
             WS_SIZEBOX;
 
-    m_windowHandlers->windowHandler = CreateWindowExW(
+    mWindowHandlers->windowHandler = CreateWindowExW(
         0_u32t,
         windowClassName.data(),
-        m_windowHandlers->windowNameWideCharBuffer,
+        mWindowHandlers->windowNameWideCharBuffer,
         windowStyleFlags,
         CW_USEDEFAULT, // X
         CW_USEDEFAULT, // Y
@@ -79,9 +79,9 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
         this
     );
 
-    SetWindowLongPtr(m_windowHandlers->windowHandler, 0, reinterpret_cast<LONG_PTR>(this));
+    SetWindowLongPtr(mWindowHandlers->windowHandler, 0, reinterpret_cast<LONG_PTR>(this));
 
-    if (!m_windowHandlers->windowHandler)
+    if (!mWindowHandlers->windowHandler)
     {
 //        DWORD errorMessageID = ::GetLastError();
 //        if(errorMessageID == 0) return;
@@ -105,7 +105,7 @@ Window::~Window()
 
 void Window::run()
 {
-    ShowWindow(m_windowHandlers->windowHandler, SW_SHOW);
+    ShowWindow(mWindowHandlers->windowHandler, SW_SHOW);
     MSG msg{};
     int iGetOk = 0;
     while ((iGetOk = GetMessage(&msg, NULL, 0, 0 )) != 0)

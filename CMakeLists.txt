@@ -4,7 +4,7 @@ project(KompotEngine
         VERSION 0.0.0.1
         LANGUAGES CXX
 )
-
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_definitions(-DVULKAN_HPP_NO_EXCEPTIONS)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

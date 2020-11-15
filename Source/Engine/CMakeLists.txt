@@ -14,6 +14,8 @@ set(ENGINE_HEADERS
     IEngineSystem.hpp
     ClientSubsystem/ClientSubsystem.hpp
     ClientSubsystem/Window/Window.hpp
+    ClientSubsystem/Renderer/IRenderer.hpp
+    ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
 )
 
 set(ENGINE_SOURCES
@@ -22,6 +24,7 @@ set(ENGINE_SOURCES
     Config/ConfigManager.cpp
     Engine.cpp
     ClientSubsystem/ClientSubsystem.cpp
+    ClientSubsystem/Renderer/Vulkan/VulkanRenderer.cpp
 )
 
 if (WIN32)

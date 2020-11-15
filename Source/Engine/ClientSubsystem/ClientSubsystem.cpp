@@ -6,12 +6,15 @@
 
 #include "ClientSubsystem.hpp"
 #include <Engine/Log/Log.hpp>
+#include "Renderer/IRenderer.hpp"
+#include "Renderer/Vulkan/VulkanRenderer.hpp"
 
 using namespace Kompot;
 
 ClientSubsystem::ClientSubsystem()
 {
-    m_mainWindow = new Window("Game");
+    IRenderer* renderer = new VulkanRenderer();
+    m_mainWindow = new Window("Game", renderer);
 }
 
 ClientSubsystem::~ClientSubsystem()

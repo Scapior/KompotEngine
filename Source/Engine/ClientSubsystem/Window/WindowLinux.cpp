@@ -20,22 +20,23 @@ struct Kompot::PlatformHandlers
 
 xcb_intern_atom_reply_t* reply2;
 
-Window::Window(std::string_view windowName, const PlatformHandlers* parentWindowHandlers)
-    : m_windowName(windowName),
-      m_parentWindowHandlers(parentWindowHandlers)
+Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers)
+    : mWindowName(windowName),
+      mRenderer(renderer),
+      mParentWindowHandlers(parentWindowHandlers)
 {
 	Log& log = Log::getInstance();
-	m_windowHandlers = new PlatformHandlers{};
-	m_windowHandlers->xcbConnection = xcb_connect(nullptr, nullptr);
-	assert(m_windowHandlers->xcbConnection);
-	auto setup = xcb_get_setup(m_windowHandlers->xcbConnection);
+    mWindowHandlers = new PlatformHandlers{};
+    mWindowHandlers->xcbConnection = xcb_connect(nullptr, nullptr);
+    assert(mWindowHandlers->xcbConnection);
+    auto setup = xcb_get_setup(mWindowHandlers->xcbConnection);
 	auto xcbScreenIteratior = xcb_setup_roots_iterator(setup);
 	for (uint32_t i = 1; xcbScreenIteratior.rem; xcb_screen_next(&xcbScreenIteratior), ++i)
 	{
-		m_windowHandlers->xcbScreen = xcbScreenIteratior.data;
-		log << "Founded screen #" << i << " (" << m_windowHandlers->xcbScreen->width_in_pixels << '*' << m_windowHandlers->xcbScreen->height_in_pixels << ")" << std::endl;
+        mWindowHandlers->xcbScreen = xcbScreenIteratior.data;
+        log << "Founded screen #" << i << " (" << mWindowHandlers->xcbScreen->width_in_pixels << '*' << mWindowHandlers->xcbScreen->height_in_pixels << ")" << std::endl;
 	}
-	m_windowHandlers->xcbWindow = xcb_generate_id(m_windowHandlers->xcbConnection);
+    mWindowHandlers->xcbWindow = xcb_generate_id(mWindowHandlers->xcbConnection);
 
 	uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 	std::array<uint32_t, 2> flagValues{
@@ -83,47 +84,47 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
 				XCB_EVENT_MASK_OWNER_GRAB_BUTTON
 	};
 	xcb_create_window(
-				m_windowHandlers->xcbConnection,
+                mWindowHandlers->xcbConnection,
 				XCB_COPY_FROM_PARENT,
-				m_windowHandlers->xcbWindow,
-				m_windowHandlers->xcbScreen->root,
+                mWindowHandlers->xcbWindow,
+                mWindowHandlers->xcbScreen->root,
 				0, 0,
-				100,//engineConfig.windowWidth,
-				100,//engineConfig.windowHeight,
-				10,
+                500,//engineConfig.windowWidth,
+                500,//engineConfig.windowHeight,
+                10,
 				XCB_WINDOW_CLASS_INPUT_OUTPUT,
-				m_windowHandlers->xcbScreen->root_visual,
+                mWindowHandlers->xcbScreen->root_visual,
 				mask,
 				flagValues.data());
 
 
-	xcb_intern_atom_cookie_t cookie = xcb_intern_atom(m_windowHandlers->xcbConnection, 1, 12, "WM_PROTOCOLS");
-	xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(m_windowHandlers->xcbConnection, cookie, 0);
+    xcb_intern_atom_cookie_t cookie = xcb_intern_atom(mWindowHandlers->xcbConnection, 1, 12, "WM_PROTOCOLS");
+    xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(mWindowHandlers->xcbConnection, cookie, 0);
 
-	xcb_intern_atom_cookie_t cookie2 = xcb_intern_atom(m_windowHandlers->xcbConnection, 0, 16, "WM_DELETE_WINDOW");
-	reply2 = xcb_intern_atom_reply(m_windowHandlers->xcbConnection, cookie2, 0);
+    xcb_intern_atom_cookie_t cookie2 = xcb_intern_atom(mWindowHandlers->xcbConnection, 0, 16, "WM_DELETE_WINDOW");
+    reply2 = xcb_intern_atom_reply(mWindowHandlers->xcbConnection, cookie2, 0);
 
-	xcb_change_property(m_windowHandlers->xcbConnection, XCB_PROP_MODE_REPLACE, m_windowHandlers->xcbWindow, (*reply).atom, 4, 32, 1, &(*reply2).atom);
+    xcb_change_property(mWindowHandlers->xcbConnection, XCB_PROP_MODE_REPLACE, mWindowHandlers->xcbWindow, (*reply).atom, 4, 32, 1, &(*reply2).atom);
 
 
-	xcb_map_window(m_windowHandlers->xcbConnection, m_windowHandlers->xcbWindow);
-	xcb_flush(m_windowHandlers->xcbConnection);
+    xcb_map_window(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
+    xcb_flush(mWindowHandlers->xcbConnection);
 
 }
 
 Window::~Window()
 {
-	xcb_disconnect(m_windowHandlers->xcbConnection);
+    xcb_disconnect(mWindowHandlers->xcbConnection);
 }
 
 void Window::run()
 {
 	Log& log = Log::getInstance();
 	bool needToExit = false;
-	xcb_generic_event_t* xcbEvent = xcb_wait_for_event(m_windowHandlers->xcbConnection);
+    xcb_generic_event_t* xcbEvent = xcb_wait_for_event(mWindowHandlers->xcbConnection);
 	while (!needToExit)
 	{
-		xcbEvent = xcb_poll_for_event(m_windowHandlers->xcbConnection);
+        xcbEvent = xcb_poll_for_event(mWindowHandlers->xcbConnection);
 		if (xcbEvent == nullptr)
 		{
 			//m_needToExit = true;

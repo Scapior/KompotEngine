@@ -10,6 +10,7 @@
 #include <atomic>
 #include <string>
 #include <string_view>
+#include "../Renderer/IRenderer.hpp"
 #include <Misc/Templates/Functions.hpp>
 
 namespace Kompot
@@ -20,16 +21,17 @@ struct PlatformHandlers;
 class Window
 {
 public:
-    Window(std::string_view windowName, const PlatformHandlers* parentWindowHandlers = nullptr);
+    Window(std::string_view windowName, Kompot::IRenderer* renderer = nullptr, const PlatformHandlers* parentWindowHandlers = nullptr);
 	~Window();
 
     void run();
     void closeWindow();
 private:
-    std::string      m_windowName;
+    std::string      mWindowName;
+    Kompot::IRenderer* mRenderer;
 
-    PlatformHandlers* m_windowHandlers = nullptr;
-    const PlatformHandlers* m_parentWindowHandlers = nullptr;    
+    PlatformHandlers* mWindowHandlers = nullptr;
+    const PlatformHandlers* mParentWindowHandlers = nullptr;
 
 /* Platform-specific definitions */
 
