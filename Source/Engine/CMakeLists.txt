@@ -16,6 +16,8 @@ set(ENGINE_HEADERS
     ClientSubsystem/Window/Window.hpp
     ClientSubsystem/Renderer/IRenderer.hpp
     ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
+    ClientSubsystem/Renderer/Vulkan/VulkanDevice.hpp
+    ClientSubsystem/Renderer/Vulkan/VulkanUtils.hpp
 )
 
 set(ENGINE_SOURCES
@@ -25,6 +27,8 @@ set(ENGINE_SOURCES
     Engine.cpp
     ClientSubsystem/ClientSubsystem.cpp
     ClientSubsystem/Renderer/Vulkan/VulkanRenderer.cpp
+    ClientSubsystem/Renderer/Vulkan/VulkanDevice.cpp
+    ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp
 )
 
 if (WIN32)

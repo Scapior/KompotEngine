@@ -7,6 +7,9 @@
 //#ifdef ENGINE_OS_LINUX
 
 #pragma once
+
+#include "Window/Window.hpp"
+#include "Renderer/IRenderer.hpp"
 #include <EngineTypes.hpp>
 #include <Engine/EngineConfig.hpp>
 #include <Engine/IEngineSystem.hpp>
@@ -18,7 +21,6 @@
 //#endif
 
 #include <array>
-#include "Window/Window.hpp"
 
 namespace Kompot
 {
@@ -32,13 +34,13 @@ public:
     void run(/*std::condition_variable& conditionVariable*/) override;
 
 private:
-    /*std::atomic_flag*/ bool m_needToExit = false;
+    /*std::atomic_flag*/ bool mNeedToExit = false;
 public:
-    bool isNeedToExit() const { return m_needToExit; }
+    bool isNeedToExit() const { return mNeedToExit; }
 
 private:
-    Window* m_mainWindow = nullptr;
-
+    Window* mMainWindow = nullptr;
+    IRenderer* mRenderer = nullptr;
 //#ifdef ENGINE_OS_LINUX
 //    xcb_connection_t* m_xcbConnection;
 //    xcb_screen_t* m_xcbScreen;

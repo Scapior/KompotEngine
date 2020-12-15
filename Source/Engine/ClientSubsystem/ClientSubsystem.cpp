@@ -5,24 +5,30 @@
 */
 
 #include "ClientSubsystem.hpp"
-#include <Engine/Log/Log.hpp>
-#include "Renderer/IRenderer.hpp"
 #include "Renderer/Vulkan/VulkanRenderer.hpp"
+#include <Engine/Log/Log.hpp>
 
 using namespace Kompot;
 
 ClientSubsystem::ClientSubsystem()
 {
-    IRenderer* renderer = new VulkanRenderer();
-    m_mainWindow = new Window("Game", renderer);
+    mRenderer = new VulkanRenderer();
+    mMainWindow = new Window("Game", mRenderer);
 }
 
 ClientSubsystem::~ClientSubsystem()
 {
-    delete m_mainWindow;
+    if (mMainWindow)
+    {
+        delete mMainWindow;
+    }
+    if (mRenderer)
+    {
+        delete mRenderer;
+    }
 }
-#include <thread>
+
 void ClientSubsystem::run()
 {
-    m_mainWindow->run();
+    mMainWindow->run();
 }

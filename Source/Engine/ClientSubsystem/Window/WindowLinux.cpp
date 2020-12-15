@@ -127,7 +127,7 @@ void Window::run()
         xcbEvent = xcb_poll_for_event(mWindowHandlers->xcbConnection);
 		if (xcbEvent == nullptr)
 		{
-			//m_needToExit = true;
+			//mNeedToExit = true;
 			continue;
 		}
 

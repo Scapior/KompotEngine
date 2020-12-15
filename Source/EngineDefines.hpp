@@ -6,6 +6,13 @@
 
 #pragma once
 
+#include <EngineTypes.hpp>
+
+static const int8_t ENGINE_VESRION_MAJOR = 0;
+static const int8_t ENGINE_VESRION_MINOR = 0;
+static const int8_t ENGINE_VESRION_PATCH = 1;
+static const char * ENGINE_NAME = "KompotEngine";
+
 /* Build mode */
 #ifndef ENGINE_BUILD_SERVER
     #define ENGINE_BUILD_CLIENT
@@ -49,4 +56,4 @@
 
 #define breakPoint(expression) debugBreak()
 #define check(expression) if(!((expression))) { debugBreak(); }
-#define checkNotNull(expression) check(((expression)) != 0)
+#define checkNotNull(expression) check(((expression)) != nullptr)
