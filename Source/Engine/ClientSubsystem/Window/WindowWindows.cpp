@@ -5,7 +5,7 @@
 */
 
 #include "Window.hpp"
-#include <Misc/DebugUtils/DebugUtils.hpp>
+#include <Engine/DebugUtils/DebugUtils.hpp>
 #include "Windows.h" // winapi
 
 using namespace Kompot;
@@ -19,8 +19,9 @@ struct Kompot::PlatformHandlers
     std::size_t windowNameWideCharBufferSize;
 };
 
-Window::Window(std::string_view windowName, const PlatformHandlers* parentWindowHandlers)
+Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers)
     : mWindowName(windowName),
+      mRenderer(renderer),
       mParentWindowHandlers(parentWindowHandlers)
 {
     static const HINSTANCE currentAppHandlerInstance = GetModuleHandle(nullptr);
@@ -30,7 +31,7 @@ Window::Window(std::string_view windowName, const PlatformHandlers* parentWindow
     mWindowHandlers->windowNameWideCharBufferSize = windowName.size() * 4; // 2?
     mWindowHandlers->windowNameWideCharBuffer = new wchar_t[mWindowHandlers->windowNameWideCharBufferSize]{};
 
-    checkNotNull(MultiByteToWideChar( CP_UTF8,
+    check(MultiByteToWideChar( CP_UTF8,
                          0_u32t,
                          windowName.data(), static_cast<int>(windowName.size()),
                          mWindowHandlers->windowNameWideCharBuffer,

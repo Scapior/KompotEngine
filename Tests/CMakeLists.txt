@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.12)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(GTest REQUIRED) # requires defined GTEST_ROOT in system variables
-
+# if you use win and "build shared libs" flag then add
+# GTEST_ROOT/bin to PATH system variable (i.g. C:\Program Files (x86)\googletest\bin)
 
 set(TESTS_SOURCES
     main_tests.cpp
@@ -20,7 +21,6 @@ endif()
 
 add_executable(Tests ${TESTS_SOURCES})
 target_include_directories(Tests PUBLIC ${GTEST_INCLUDE_DIRS} "../Source")
-target_link_libraries(Tests PRIVATE ${LINK_LIST} ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(Tests PRIVATE ${LINK_LIST} GTest::Main)
 
-message("Libs " + ${GTEST_BOTH_LIBRARIES})
 gtest_discover_tests(Tests)

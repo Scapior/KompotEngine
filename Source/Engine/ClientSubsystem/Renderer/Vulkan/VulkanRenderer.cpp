@@ -69,7 +69,7 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
     }
 
     uint32_t selectedDeviceIndex = 0;
-    VulkanUtils::DeviceComparsionAttributes selectedDeviceAttributes;
+    VulkanUtils::DeviceComparsionAttributes selectedDeviceAttributes{};
     bool hasDiscreteDeviceWasFound = false;
     for (auto i = 0u; i < physicalDevices.size(); ++i)
     {
