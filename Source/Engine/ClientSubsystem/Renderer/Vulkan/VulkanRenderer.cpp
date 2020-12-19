@@ -28,15 +28,20 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
-    vk::InstanceCreateInfo vkInstanceCreateInfo{};
     vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, VK_MAKE_VERSION(1,2,0) };
-    vkInstanceCreateInfo.setPApplicationInfo(&vkApplicationInfo);
-    vkInstanceCreateInfo.setEnabledLayerCount(0);
-    vkInstanceCreateInfo.setEnabledExtensionCount(0);
 
-    if (const auto createInstanceResult = vk::createInstance(&vkInstanceCreateInfo, nullptr, &mVkInstance); createInstanceResult != vk::Result::eSuccess)
+    const auto instanceExtensions = VulkanUtils::getRequiredInstanceExtensions();
+    auto vkInstanceCreateInfo = vk::InstanceCreateInfo{}
+        .setPApplicationInfo(&vkApplicationInfo)
+        .setPEnabledExtensionNames(instanceExtensions);
+
+    if (const auto result = vk::createInstance(vkInstanceCreateInfo); result.result == vk::Result::eSuccess)
     {
-         Log::getInstance() << "Failed to create vkCreateInstance, result code \"" <<  vk::to_string(createInstanceResult) << "\"" << std::endl;
+        mVkInstance = result.value;
+    }
+    else
+    {
+         Log::getInstance() << "Failed to create vkCreateInstance, result code \""<<  vk::to_string(result.result) << "\"" << std::endl;
          std::exit(-1);
     }
 }
