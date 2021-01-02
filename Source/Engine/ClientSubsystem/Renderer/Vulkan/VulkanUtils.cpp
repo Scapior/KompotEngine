@@ -1,8 +1,8 @@
 /*
-*  VulkanUtils.cpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  VulkanUtils.cpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #include "VulkanUtils.hpp"
 #include <EngineDefines.hpp>
@@ -10,7 +10,9 @@
 
 using namespace Kompot;
 
-VulkanUtils::DeviceComparsionAttributes VulkanUtils::getDeviceComparsionAttributes(const vk::PhysicalDevice& vkPhysicalDevice, const vk::MemoryPropertyFlagBits memoryFlags)
+VulkanUtils::DeviceComparsionAttributes VulkanUtils::getDeviceComparsionAttributes(
+    const vk::PhysicalDevice& vkPhysicalDevice,
+    const vk::MemoryPropertyFlagBits memoryFlags)
 {
     DeviceComparsionAttributes deviceComparsionAttributes{};
     uint64_t deviceMemoryCount = 0;
@@ -60,9 +62,9 @@ VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalD
     {
         const auto& queueFamily = queueFamilyProperties[i];
 
-        const bool isHaveGraphicsFlag { queueFamily.queueFlags & vk::QueueFlagBits::eGraphics};
-        const bool isHaveComputeFlag { queueFamily.queueFlags & vk::QueueFlagBits::eCompute};
-        const bool isHaveTransferFlag { queueFamily.queueFlags & vk::QueueFlagBits::eTransfer};
+        const bool isHaveGraphicsFlag{queueFamily.queueFlags & vk::QueueFlagBits::eGraphics};
+        const bool isHaveComputeFlag{queueFamily.queueFlags & vk::QueueFlagBits::eCompute};
+        const bool isHaveTransferFlag{queueFamily.queueFlags & vk::QueueFlagBits::eTransfer};
 
         if (isHaveGraphicsFlag && !result.graphicsIndex.has_value())
         {
@@ -90,13 +92,12 @@ VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalD
     return result;
 }
 
-std::vector<const char *> VulkanUtils::getRequiredInstanceExtensions()
+std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
 {
-    return { VK_KHR_SURFACE_EXTENSION_NAME };
+    return {VK_KHR_SURFACE_EXTENSION_NAME};
 }
 
 bool VulkanUtils::QueueFamilies::hasAllIndicies() const
 {
     return graphicsIndex.has_value() && computeIndex.has_value() && transferIndex.has_value();
 }
-

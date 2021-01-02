@@ -1,8 +1,8 @@
 /*
-*  DebugUtils.cpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  DebugUtils.cpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #include "DebugUtils.hpp"
 #include <Engine/Log/Log.hpp>
@@ -19,7 +19,6 @@
 
 std::string DebugUtils::getLastPlatformError()
 {
-
 #if defined(ENGINE_OS_WINDOWS)
     const auto errorMessageID = ::GetLastError();
     if (errorMessageID == 0)
@@ -28,16 +27,20 @@ std::string DebugUtils::getLastPlatformError()
     }
 
     LPSTR messageBuffer = nullptr;
-    std::size_t size = FormatMessageA(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL
-    );
+    std::size_t size    = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        errorMessageID,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&messageBuffer,
+        0,
+        NULL);
 
     const std::string result(messageBuffer, size);
     LocalFree(messageBuffer);
 
     return result;
-#elif defined (ENGINE_OS_LINUX)
+#elif defined(ENGINE_OS_LINUX)
     return {};
 #else
     return {};
@@ -50,13 +53,13 @@ std::string DebugUtils::getCallstack()
     ::SymInitialize(GetCurrentProcess(), nullptr, true);
 
     static const auto TRACE_MAX_FUNCTION_NAME_LENGTH = 1024;
-    constexpr auto unsignedShortMax = std::numeric_limits<unsigned short>::max();
+    constexpr auto unsignedShortMax                  = std::numeric_limits<unsigned short>::max();
 
     void* stack[unsignedShortMax];
     const auto capturedCallstackFramesCount = ::CaptureStackBackTrace(0, unsignedShortMax, stack, nullptr);
 
     std::string result;
-    result.reserve(64*1024*1024);
+    result.reserve(64 * 1024 * 1024);
 
     for (int i = 0; i < capturedCallstackFramesCount; i++)
     {
@@ -68,40 +71,34 @@ std::string DebugUtils::getCallstack()
 
         DWORD64 displacement = 0;
 
-        PSYMBOL_INFO symbolInfo = reinterpret_cast<PSYMBOL_INFO>(&buffer[0]);
+        PSYMBOL_INFO symbolInfo  = reinterpret_cast<PSYMBOL_INFO>(&buffer[0]);
         symbolInfo->SizeOfStruct = sizeof(SYMBOL_INFO);
-        symbolInfo->MaxNameLen = TRACE_MAX_FUNCTION_NAME_LENGTH - 1;
+        symbolInfo->MaxNameLen   = TRACE_MAX_FUNCTION_NAME_LENGTH - 1;
 
         const auto hasSymbol = SymFromAddr(GetCurrentProcess(), frame, &displacement, symbolInfo);
 
         // Attempt to retrieve line number information.
         DWORD line_displacement = 0;
-        IMAGEHLP_LINE64 line = {};
-        line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-        const auto hasLine = SymGetLineFromAddr64(GetCurrentProcess(), frame, &line_displacement, &line);
+        IMAGEHLP_LINE64 line    = {};
+        line.SizeOfStruct       = sizeof(IMAGEHLP_LINE64);
+        const auto hasLine      = SymGetLineFromAddr64(GetCurrentProcess(), frame, &line_displacement, &line);
 
         if (hasSymbol)
         {
             result.append(symbolInfo->Name)
-                    .append(" [0x")
-                    .append(StringUtils::hexFromPointer(stack[i]))
-                    .append("+")
-                    .append(StringUtils::fromIntiger(displacement))
-                    .append("]");
+                .append(" [0x")
+                .append(StringUtils::hexFromPointer(stack[i]))
+                .append("+")
+                .append(StringUtils::fromIntiger(displacement))
+                .append("]");
         }
         else
         {
-            result.append("(No symbol) [0x")
-                    .append(StringUtils::hexFromPointer(stack[i]))
-                    .append("]");
+            result.append("(No symbol) [0x").append(StringUtils::hexFromPointer(stack[i])).append("]");
         }
         if (hasLine)
         {
-            result.append(" (")
-                    .append(line.FileName)
-                    .append(":")
-                    .append(StringUtils::fromIntiger(line.LineNumber))
-                    .append(")");
+            result.append(" (").append(line.FileName).append(":").append(StringUtils::fromIntiger(line.LineNumber)).append(")");
         }
         result.append("\n");
     }
@@ -142,5 +139,3 @@ std::string DebugUtils::getCallstack()
     return result;
 #endif
 }
-
-

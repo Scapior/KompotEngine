@@ -1,8 +1,8 @@
 /*
-*  ClientSubsystem.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  ClientSubsystem.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 //#ifdef ENGINE_OS_LINUX
 
@@ -24,33 +24,35 @@
 
 namespace Kompot
 {
-
 class ClientSubsystem : public IEngineSystem
 {
-public:
+        public:
     ClientSubsystem();
     ~ClientSubsystem();
 
     void run(/*std::condition_variable& conditionVariable*/) override;
 
-private:
+        private:
     /*std::atomic_flag*/ bool mNeedToExit = false;
-public:
-    bool isNeedToExit() const { return mNeedToExit; }
 
-private:
-    Window* mMainWindow = nullptr;
+        public:
+    bool isNeedToExit() const
+    {
+        return mNeedToExit;
+    }
+
+        private:
+    Window* mMainWindow  = nullptr;
     IRenderer* mRenderer = nullptr;
-//#ifdef ENGINE_OS_LINUX
-//    xcb_connection_t* m_xcbConnection;
-//    xcb_screen_t* m_xcbScreen;
-//    xcb_window_t m_xcbWindow;
-//#endif
+    //#ifdef ENGINE_OS_LINUX
+    //    xcb_connection_t* m_xcbConnection;
+    //    xcb_screen_t* m_xcbScreen;
+    //    xcb_window_t m_xcbWindow;
+    //#endif
 
-//#ifdef ENGINE_OS_WIN32
+    //#ifdef ENGINE_OS_WIN32
 
-//#endif
-
+    //#endif
 };
 
 } // namespace Kompot

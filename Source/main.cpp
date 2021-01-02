@@ -1,8 +1,8 @@
 /*
-*  main.cpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  main.cpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #include <Engine/Engine.hpp>
 #include <Engine/Config/ConfigManager.hpp>

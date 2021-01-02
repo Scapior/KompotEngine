@@ -1,8 +1,8 @@
 /*
-*  Engine.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  Engine.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 
@@ -16,19 +16,19 @@
 
 namespace Kompot
 {
-
 class Engine
 {
-public:
+        public:
     Engine();
     ~Engine();
 
     void run();
-private:
-    std::string         m_instanceName;
-    EngineConfig        m_engineSettings;
+
+        private:
+    std::string m_instanceName;
+    EngineConfig m_engineSettings;
 
     ClientSubsystem* m_clientSubsystem = nullptr;
 };
 
-}
+} // namespace Kompot

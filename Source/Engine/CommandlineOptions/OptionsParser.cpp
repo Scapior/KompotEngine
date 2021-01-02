@@ -1,8 +1,8 @@
 /*
-*  OptionsParser.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  OptionsParser.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #include "OptionsParser.hpp"
 
@@ -11,8 +11,8 @@ void OptionsParser::loadFromArguments(int argc, char** argv)
     std::stringstream argumentStream;
     for (int i = 1; i < argc; ++i)
     {
-        const bool isLastArgument = i+1 >= argc;
-        const bool nextArgumentIsKey = isLastArgument ? false : std::string(argv[i+1]).find("--") == 0;
+        const bool isLastArgument    = i + 1 >= argc;
+        const bool nextArgumentIsKey = isLastArgument ? false : std::string(argv[i + 1]).find("--") == 0;
 
         std::string argument(argv[i]);
         if (argument.find("--") != 0)
@@ -62,12 +62,12 @@ void OptionsParser::loadFromFile(std::ifstream& inputStream)
     {
         std::string buffer;
         std::getline(inputStream, buffer);
-        const  auto equalsSignPosition = buffer.find_first_of("=");
+        const auto equalsSignPosition = buffer.find_first_of("=");
         if (equalsSignPosition == std::string::npos)
         {
             continue;
         }
-        const std::string key = trim(buffer.substr(0u, equalsSignPosition));
+        const std::string key   = trim(buffer.substr(0u, equalsSignPosition));
         const std::string value = trim(buffer.substr(equalsSignPosition + 1u));
 
         if (!m_options.contains(key))
@@ -113,16 +113,15 @@ bool OptionsParser::compareChar(char c1, char c2)
 
 bool OptionsParser::caseInsensitiveStringEquals(const std::string& stringLeft, const std::string& stringRight)
 {
-    return ( (stringLeft.size() == stringRight.size() ) &&
-             std::equal(stringLeft.begin(), stringLeft.end(), stringRight.begin(), &compareChar) );
+    return ((stringLeft.size() == stringRight.size()) && std::equal(stringLeft.begin(), stringLeft.end(), stringRight.begin(), &compareChar));
 }
 
 std::string OptionsParser::trim(const std::string& text)
 {
-    const auto leftSpacePosition = text.find_first_not_of(' ');
-    auto result = text.substr(leftSpacePosition);
+    const auto leftSpacePosition  = text.find_first_not_of(' ');
+    auto result                   = text.substr(leftSpacePosition);
     const auto rightSpacePosition = text.find_last_not_of(' ');
-    result = text.substr(0_u64t, rightSpacePosition + 1_u64t);
+    result                        = text.substr(0_u64t, rightSpacePosition + 1_u64t);
     return result;
 }
 
@@ -164,7 +163,7 @@ bool OptionsParser::Options::keyIsBoolean(const std::string& key) const
     return false;
 }
 
-void  OptionsParser::Options::setByKeyFromStream(const std::string& key, std::stringstream& optionsStream)
+void OptionsParser::Options::setByKeyFromStream(const std::string& key, std::stringstream& optionsStream)
 {
     for (auto& option : m_options)
     {
@@ -180,7 +179,6 @@ void OptionsParser::Options::notify() const
 {
     for (const auto& option : m_options)
     {
-
         option.notify();
     }
 }
@@ -198,8 +196,8 @@ void OptionsParser::Options::Option::set(std::stringstream& optionsStream)
 template<typename T>
 void OptionsParser::Options::Option::setByPointer(const Variant& variant, PointerVariant& pointerVariant)
 {
-    T &reference = *std::get<T*>(pointerVariant);
-    reference = std::get<T>(variant);
+    T& reference = *std::get<T*>(pointerVariant);
+    reference    = std::get<T>(variant);
 }
 
 template<typename T>

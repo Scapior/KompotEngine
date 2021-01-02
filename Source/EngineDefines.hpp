@@ -1,8 +1,8 @@
 /*
-*  EngineDefines.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  EngineDefines.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 
@@ -11,7 +11,7 @@
 static const int8_t ENGINE_VESRION_MAJOR = 0;
 static const int8_t ENGINE_VESRION_MINOR = 0;
 static const int8_t ENGINE_VESRION_PATCH = 1;
-static const char * ENGINE_NAME = "KompotEngine";
+static const char* ENGINE_NAME           = "KompotEngine";
 
 /* Build mode */
 #ifndef ENGINE_BUILD_SERVER
@@ -55,5 +55,9 @@ static const char * ENGINE_NAME = "KompotEngine";
 #endif
 
 #define breakPoint(expression) debugBreak()
-#define check(expression) if(!((expression))) { debugBreak(); }
+#define check(expression) \
+    if (!((expression)))  \
+    {                     \
+        debugBreak();     \
+    }
 #define checkNotNull(expression) check(((expression)) != nullptr)

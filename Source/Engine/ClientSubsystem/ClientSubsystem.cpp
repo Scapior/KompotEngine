@@ -1,8 +1,8 @@
 /*
-*  ClientSubsystem.cpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  ClientSubsystem.cpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #include "ClientSubsystem.hpp"
 #include "Renderer/Vulkan/VulkanRenderer.hpp"
@@ -12,7 +12,7 @@ using namespace Kompot;
 
 ClientSubsystem::ClientSubsystem()
 {
-    mRenderer = new VulkanRenderer();
+    mRenderer   = new VulkanRenderer();
     mMainWindow = new Window("Game", mRenderer);
 }
 

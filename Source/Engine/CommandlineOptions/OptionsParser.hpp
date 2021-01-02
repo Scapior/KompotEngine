@@ -1,8 +1,8 @@
 /*
-*  OptionsParser.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  OptionsParser.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 
@@ -17,9 +17,10 @@
 
 class OptionsParser
 {
-private:
+        private:
     class Options;
-public:
+
+        public:
     Options& addOptions()
     {
         return m_options;
@@ -34,19 +35,15 @@ public:
     static bool caseInsensitiveStringEquals(const std::string&, const std::string&);
     static std::string trim(const std::string&);
 
-private:
-    typedef std::variant<std::string, bool,
-                        int8_t, int16_t, int32_t, int64_t,
-                        uint8_t, uint16_t, uint32_t, uint64_t> Variant;
+        private:
+    typedef std::variant<std::string, bool, int8_t, int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t> Variant;
 
-    typedef std::variant<std::string*, bool*,
-                        int8_t*, int16_t*, int32_t*, int64_t*,
-                        uint8_t*, uint16_t*, uint32_t*, uint64_t*> PointerVariant;
+    typedef std::variant<std::string*, bool*, int8_t*, int16_t*, int32_t*, int64_t*, uint8_t*, uint16_t*, uint32_t*, uint64_t*> PointerVariant;
     class Options
     {
-    public:
+            public:
         template<typename T>
-        Options& operator() (const std::string& key, const std::string& description, const T& value, T* pointer)
+        Options& operator()(const std::string& key, const std::string& description, const T& value, T* pointer)
         {
             m_options.push_back(Option{key, description, Variant(value), PointerVariant(pointer)});
             return *this;
@@ -56,54 +53,57 @@ private:
         bool keyIsBoolean(const std::string&) const;
         void setByKeyFromStream(const std::string&, std::stringstream&);
         void notify() const;
-    private:
-        struct Option {
-             std::string   key;
-             std::string   description;
-             Variant       value;
-             mutable PointerVariant pointer;
 
-             void notify() const;
-             void set(std::stringstream&);
+            private:
+        struct Option
+        {
+            std::string key;
+            std::string description;
+            Variant value;
+            mutable PointerVariant pointer;
 
-        private:
-             template<typename T>
-             static void setByPointer(const Variant& variant, PointerVariant& pointerVariant);
+            void notify() const;
+            void set(std::stringstream&);
 
-             template<typename T>
-             static void setFromStream(Variant& , const T&);
+                private:
+            template<typename T>
+            static void setByPointer(const Variant& variant, PointerVariant& pointerVariant);
 
-             struct visitorPointer
-             {
-                 template< typename T >
-                 void operator() ( const T &value, PointerVariant pointer) const
-                 {
-                     setByPointer<T>(value, pointer);
-                 }
-             };
+            template<typename T>
+            static void setFromStream(Variant&, const T&);
 
-             struct visitorStream
-             {
-                 visitorStream(std::stringstream &stream, Variant &var)
-                     : optionsStream(stream), variant(var) { }
+            struct visitorPointer
+            {
+                template<typename T>
+                void operator()(const T& value, PointerVariant pointer) const
+                {
+                    setByPointer<T>(value, pointer);
+                }
+            };
 
-                 template<typename T>
-                 void operator() (const T&) const
-                 {
-                     T value;
-                     optionsStream >> value;
-                     if (optionsStream.fail())
-                     {
-                         optionsStream.clear();
-                         return;
-                     }
-                     setFromStream<T>(variant, value);
-                 }
-             private:
-                 std::stringstream &optionsStream;
-                 Variant &variant;
-             };
+            struct visitorStream
+            {
+                visitorStream(std::stringstream& stream, Variant& var) : optionsStream(stream), variant(var)
+                {
+                }
 
+                template<typename T>
+                void operator()(const T&) const
+                {
+                    T value;
+                    optionsStream >> value;
+                    if (optionsStream.fail())
+                    {
+                        optionsStream.clear();
+                        return;
+                    }
+                    setFromStream<T>(variant, value);
+                }
+
+                    private:
+                std::stringstream& optionsStream;
+                Variant& variant;
+            };
         };
         std::vector<Option> m_options;
     };

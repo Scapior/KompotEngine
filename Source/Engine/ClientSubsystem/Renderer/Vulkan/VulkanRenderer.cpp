@@ -1,8 +1,8 @@
 /*
-*  VulkanRenderer.cpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  VulkanRenderer.cpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #include "VulkanRenderer.hpp"
 #include "VulkanUtils.hpp"
@@ -11,8 +11,7 @@
 
 using namespace Kompot;
 
-VulkanRenderer::VulkanRenderer() :
-    mVkInstance(nullptr)
+VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 {
     createInstance();
     mVulkanDevice.reset(new VulkanDevice(mVkInstance, selectPhysicalDevice()));
@@ -28,12 +27,10 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
-    vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, VK_MAKE_VERSION(1,2,0) };
+    vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, VK_MAKE_VERSION(1, 2, 0)};
 
     const auto instanceExtensions = VulkanUtils::getRequiredInstanceExtensions();
-    auto vkInstanceCreateInfo = vk::InstanceCreateInfo{}
-        .setPApplicationInfo(&vkApplicationInfo)
-        .setPEnabledExtensionNames(instanceExtensions);
+    auto vkInstanceCreateInfo     = vk::InstanceCreateInfo{}.setPApplicationInfo(&vkApplicationInfo).setPEnabledExtensionNames(instanceExtensions);
 
     if (const auto result = vk::createInstance(vkInstanceCreateInfo); result.result == vk::Result::eSuccess)
     {
@@ -41,24 +38,25 @@ void VulkanRenderer::createInstance()
     }
     else
     {
-         Log::getInstance() << "Failed to create vkCreateInstance, result code \""<<  vk::to_string(result.result) << "\"" << std::endl;
-         std::exit(-1);
+        Log::getInstance() << "Failed to create vkCreateInstance, result code \"" << vk::to_string(result.result) << "\"" << std::endl;
+        std::exit(-1);
     }
 }
 
 vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
 {
     uint32_t physicalDevicesCount = 0;
-    if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, nullptr); enumerateCountResult != vk::Result::eSuccess)
+    if (const auto enumerateCountResult = enumerateCountResult != vk::Result::eSuccess)
     {
-         Log::getInstance() << "Failed to get physical devices count, result code \"" <<  vk::to_string(enumerateCountResult) << "\"" << std::endl;
-         std::exit(-1);
+        Log::getInstance() << "Failed to get physical devices count, result code \"" << vk::to_string(enumerateCountResult) << "\"" << std::endl;
+        std::exit(-1);
     }
 
     std::vector<vk::PhysicalDevice> physicalDevices(physicalDevicesCount);
-    if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, physicalDevices.data()); enumerateCountResult != vk::Result::eSuccess)
+    if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, physicalDevices.data());
+        enumerateCountResult != vk::Result::eSuccess)
     {
-        Log::getInstance() << "Failed to enumerate physical devices, result code \"" <<  vk::to_string(enumerateCountResult) << "\"" << std::endl;
+        Log::getInstance() << "Failed to enumerate physical devices, result code \"" << vk::to_string(enumerateCountResult) << "\"" << std::endl;
         std::exit(-1);
     }
 
@@ -73,11 +71,11 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
     bool hasDiscreteDeviceWasFound = false;
     for (auto i = 0u; i < physicalDevices.size(); ++i)
     {
-        const auto& physicalDevice = physicalDevices[i];
+        const auto& physicalDevice   = physicalDevices[i];
         const auto& deviceAttributes = VulkanUtils::getDeviceComparsionAttributes(physicalDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-        const bool isHaveMoreMemory = deviceAttributes.memorySize > selectedDeviceAttributes.memorySize;
-        const bool isMoreBetterDevice = (deviceAttributes.isDiscreteDevice == hasDiscreteDeviceWasFound) && isHaveMoreMemory;
+        const bool isHaveMoreMemory             = deviceAttributes.memorySize > selectedDeviceAttributes.memorySize;
+        const bool isMoreBetterDevice           = (deviceAttributes.isDiscreteDevice == hasDiscreteDeviceWasFound) && isHaveMoreMemory;
         const bool isFirstFoundedDiscreteDevice = deviceAttributes.isDiscreteDevice && !hasDiscreteDeviceWasFound;
 
         const bool isNeedToSelectThisDevice = isMoreBetterDevice || isFirstFoundedDiscreteDevice;
@@ -85,8 +83,8 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
         if (isNeedToSelectThisDevice)
         {
             hasDiscreteDeviceWasFound = hasDiscreteDeviceWasFound | deviceAttributes.isDiscreteDevice;
-            selectedDeviceIndex = i;
-            selectedDeviceAttributes = deviceAttributes;
+            selectedDeviceIndex       = i;
+            selectedDeviceAttributes  = deviceAttributes;
         }
     }
 

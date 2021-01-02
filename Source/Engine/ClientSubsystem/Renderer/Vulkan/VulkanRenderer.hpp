@@ -1,8 +1,8 @@
 /*
-*  VulkanRenderer.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  VulkanRenderer.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 
@@ -12,14 +12,13 @@
 
 namespace Kompot
 {
-
 class VulkanRenderer : public Kompot::IRenderer
 {
-public:
+        public:
     VulkanRenderer();
     ~VulkanRenderer();
 
-private:
+        private:
     vk::Instance mVkInstance;
     std::unique_ptr<VulkanDevice> mVulkanDevice;
 

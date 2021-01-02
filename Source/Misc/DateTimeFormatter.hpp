@@ -1,8 +1,8 @@
 /*
-*  DateTimeFormatter.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  DateTimeFormatter.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 #define __STDC_WANT_LIB_EXT1__
@@ -16,7 +16,6 @@
 
 namespace Kompot
 {
-
 struct DateTimeFormat
 {
     enum FormatSpecifier // also  check ISO 8601
@@ -73,7 +72,7 @@ struct DateTimeFormat
 
 inline constexpr auto operator+(const Kompot::DateTimeFormat::FormatSpecifier valueLeft, const Kompot::DateTimeFormat::FormatSpecifier valueRight)
 {
-    return std::array<Kompot::DateTimeFormat::FormatSpecifier, 2> {valueLeft, valueRight};
+    return std::array<Kompot::DateTimeFormat::FormatSpecifier, 2>{valueLeft, valueRight};
 }
 
 inline auto operator+(const Kompot::DateTimeFormat::FormatSpecifier& formatSpecifier, Kompot::DateTimeFormat& dateTimeFormat)
@@ -84,48 +83,45 @@ inline auto operator+(const Kompot::DateTimeFormat::FormatSpecifier& formatSpeci
 
 namespace Kompot
 {
-
 class DateTimeFormatter
 {
-public:
+        public:
     template<class T>
     void printTime(T& stream, const std::chrono::system_clock::time_point& timePoint) const
     {
-        using Ms = std::chrono::milliseconds;
-        using Sec = std::chrono::seconds;
+        using Ms    = std::chrono::milliseconds;
+        using Sec   = std::chrono::seconds;
         using Clock = std::chrono::system_clock;
 
-        const auto timeValue = Clock::to_time_t(timePoint);
-        const auto timeValueMs = std::chrono::duration_cast<Ms>(timePoint.time_since_epoch());
+        const auto timeValue    = Clock::to_time_t(timePoint);
+        const auto timeValueMs  = std::chrono::duration_cast<Ms>(timePoint.time_since_epoch());
         const auto timeValueSec = Sec(timeValue);
-        m_parsedMilliseconds = timeValueMs - std::chrono::duration_cast<Ms>(timeValueSec);
+        m_parsedMilliseconds    = timeValueMs - std::chrono::duration_cast<Ms>(timeValueSec);
 #if defined(ENGINE_OS_WINDOWS)
         localtime_s(&m_parsedTime, &timeValue); // MSVS version
 #elif defined(ENGINE_OS_LINUX)
         localtime_r(&timeValue, &m_parsedTime);
-        //gmtime_r(&timeValue, &m_parsedTime);
+        // gmtime_r(&timeValue, &m_parsedTime);
 #endif
         printTime(stream);
     }
 
-    void setFormat(const DateTimeFormat& format) { m_dateTimeFormat = format; }
-    const DateTimeFormat& getFormat() const { return m_dateTimeFormat; }
+    void setFormat(const DateTimeFormat& format)
+    {
+        m_dateTimeFormat = format;
+    }
+    const DateTimeFormat& getFormat() const
+    {
+        return m_dateTimeFormat;
+    }
 
-private:
-
-
-    DateTimeFormat m_dateTimeFormat =
-            DateTimeFormat::Year       + DateTimeFormat::Dot +
-            DateTimeFormat::Month      + DateTimeFormat::Dot +
-            DateTimeFormat::Day        + DateTimeFormat::Space +
-            DateTimeFormat::Hours24    + DateTimeFormat::Colon +
-            DateTimeFormat::Minutes    + DateTimeFormat::Colon +
-            DateTimeFormat::Seconds    + DateTimeFormat::Dot +
-            DateTimeFormat::Milliseconds;
+        private:
+    DateTimeFormat m_dateTimeFormat = DateTimeFormat::Year + DateTimeFormat::Dot + DateTimeFormat::Month + DateTimeFormat::Dot + DateTimeFormat::Day +
+                                      DateTimeFormat::Space + DateTimeFormat::Hours24 + DateTimeFormat::Colon + DateTimeFormat::Minutes +
+                                      DateTimeFormat::Colon + DateTimeFormat::Seconds + DateTimeFormat::Dot + DateTimeFormat::Milliseconds;
 
     mutable std::tm m_parsedTime;
     mutable std::chrono::milliseconds m_parsedMilliseconds;
-
 
 
     static constexpr std::array<const char*, 7> m_daysNames = {
@@ -135,23 +131,10 @@ private:
         "Wednesday",
         "Thursday",
         "Friday",
-        "Saturday"
-    };
+        "Saturday"};
 
-    static constexpr std::array<const char*, 12> m_monthsNames = {
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December"
-    };
+    static constexpr std::array<const char*, 12> m_monthsNames =
+        {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
     template<class T>
     void printTime(T& stream) const
     {
@@ -256,14 +239,14 @@ private:
             }
 
             case DateTimeFormat::DayOfWeek:
-                stream << (m_parsedTime.tm_yday != 0 ?  m_parsedTime.tm_wday : 7);
+                stream << (m_parsedTime.tm_yday != 0 ? m_parsedTime.tm_wday : 7);
                 break;
             case DateTimeFormat::DayOfWeekFromNull:
-                stream << (m_parsedTime.tm_yday != 0 ?  m_parsedTime.tm_wday - 1 : 6);
+                stream << (m_parsedTime.tm_yday != 0 ? m_parsedTime.tm_wday - 1 : 6);
                 break;
 
             case DateTimeFormat::DayPartName:
-                stream <<  (m_parsedTime.tm_hour < 12 ? "AM" : "PM");
+                stream << (m_parsedTime.tm_hour < 12 ? "AM" : "PM");
                 break;
 
             case DateTimeFormat::WeekNumber:
@@ -299,9 +282,9 @@ private:
     {
         constexpr int daysPerWeek = 7;
 
-        const int wday = m_parsedTime.tm_wday ;
-        const int delta = wday ? wday-1 : daysPerWeek-1 ;
-        return ((m_parsedTime.tm_yday + daysPerWeek - delta) / daysPerWeek)+1;
+        const int wday  = m_parsedTime.tm_wday;
+        const int delta = wday ? wday - 1 : daysPerWeek - 1;
+        return ((m_parsedTime.tm_yday + daysPerWeek - delta) / daysPerWeek) + 1;
     }
 
     int getHoursInFormat12() const

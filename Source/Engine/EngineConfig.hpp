@@ -1,8 +1,8 @@
 /*
-*  EngineConfig.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  EngineConfig.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 
@@ -10,7 +10,6 @@
 
 namespace Kompot
 {
-
 struct EngineConfig
 {
     bool isEditMode;
@@ -20,4 +19,4 @@ struct EngineConfig
     bool isMaximized;
 };
 
-}
+} // namespace Kompot

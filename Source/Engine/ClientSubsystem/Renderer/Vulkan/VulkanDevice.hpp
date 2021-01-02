@@ -1,8 +1,8 @@
 /*
-*  VulkanDevice.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  VulkanDevice.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 #pragma once
 
@@ -10,21 +10,18 @@
 
 namespace Kompot
 {
-
 class VulkanDevice
 {
-public:
+        public:
     VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDevice& vkPhysicalDevice);
     ~VulkanDevice();
 
-private:
-
-
-private:
+        private:
+        private:
     vk::Instance mVkInstance;
 
     vk::PhysicalDevice mVkPhysicalDevice;
     vk::Device mVkDevice;
 };
 
-}
+} // namespace Kompot

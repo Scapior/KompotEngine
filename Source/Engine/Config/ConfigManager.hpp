@@ -1,8 +1,8 @@
 /*
-*  ConfigManager.hpp
-*  Copyright (C) 2020 by Maxim Stoianov
-*  Licensed under the MIT license.
-*/
+ *  ConfigManager.hpp
+ *  Copyright (C) 2020 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
 
 
 #pragma once
@@ -11,10 +11,9 @@
 
 namespace Kompot
 {
-
 class ConfigManager
 {
-public:
+        public:
     static ConfigManager& getInstance()
     {
         static ConfigManager configManagerSingltone;
@@ -24,8 +23,9 @@ public:
     void loadCommandLineArguments(int argc, char** argv);
     void loadConfig(const std::string_view& fileName);
     void loadConfig(const std::filesystem::path& filePath);
-private:
+
+        private:
     ConfigManager();
 };
 
-}
+} // namespace Kompot
