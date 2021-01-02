@@ -9,6 +9,7 @@
 
 #include <EngineTypes.hpp>
 #include <vulkan/vulkan.hpp>
+#include <optional>
 
 namespace Kompot::VulkanUtils
 {
@@ -30,13 +31,13 @@ namespace Kompot::VulkanUtils
     struct QueueFamilies
     {
         std::optional<uint32_t> graphicsIndex;
-        std::size_t graphicsCount;
+        std::uint32_t graphicsCount;
 
         std::optional<uint32_t> computeIndex;
-        std::size_t computeCount;
+        std::uint32_t computeCount;
 
         std::optional<uint32_t> transferIndex;
-        std::size_t transferCount;
+        std::uint32_t transferCount;
 
         bool hasAllIndicies() const;
     };

@@ -41,11 +41,7 @@ private:
 #endif
 
 #ifdef ENGINE_OS_WINDOWS_x64
-    static int64_t _KompotEngine_stdcall windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam);
-#endif
-
-#ifdef ENGINE_OS_WINDOWS_x32
-    static int32_t __stdcall windowProcedure(void* hwnd, uint32_t message, uint32_t wParam, int32_t lParam);
+    static int64_t __stdcall windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam);
 #endif
 
 };
