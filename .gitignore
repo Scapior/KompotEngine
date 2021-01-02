@@ -78,3 +78,8 @@ CTestTestfile.cmake
 # linux
 
 .directory
+
+
+# CLion
+.idea
+cmake-*
