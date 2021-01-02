@@ -46,7 +46,7 @@ void VulkanRenderer::createInstance()
 vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
 {
     uint32_t physicalDevicesCount = 0;
-    if (const auto enumerateCountResult = enumerateCountResult != vk::Result::eSuccess)
+    if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, nullptr); enumerateCountResult != vk::Result::eSuccess)
     {
         Log::getInstance() << "Failed to get physical devices count, result code \"" << vk::to_string(enumerateCountResult) << "\"" << std::endl;
         std::exit(-1);
