@@ -41,8 +41,8 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     std::vector<float> transferQueuePriorities(selectedQueueFamilies.transferCount);
     queuesCreateInfos[0].pQueuePriorities = transferQueuePriorities.data();
 
-    const auto extensions       = VulkanUtils::getRequiredExtensions();
-    const auto validationLayers = VulkanUtils::getRequiredValidationLayers();
+    const auto extensions       = VulkanUtils::getRequiredDeviceExtensions();
+    const auto validationLayers = VulkanUtils::getRequiredDeviceValidationLayers();
 
     auto vkDeviceCreateInfo =
         vk::DeviceCreateInfo().setQueueCreateInfos(queuesCreateInfos).setPEnabledExtensionNames(extensions).setPEnabledLayerNames(validationLayers);
@@ -55,6 +55,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     {
         Kompot::ErrorHandling::exit("Failed to create vkDevice, result code \"" + vk::to_string(result.result) + "\"");
     }
+
 }
 
 Kompot::VulkanDevice::~VulkanDevice()

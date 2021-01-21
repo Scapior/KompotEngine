@@ -40,12 +40,14 @@ VulkanUtils::DeviceComparsionAttributes VulkanUtils::getDeviceComparsionAttribut
     return deviceComparsionAttributes;
 }
 
-std::vector<const char*> VulkanUtils::getRequiredExtensions()
+std::vector<const char*> VulkanUtils::getRequiredDeviceExtensions()
 {
-    return {}; // ToDo
+    return {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    }; // ToDo
 }
 
-std::vector<const char*> VulkanUtils::getRequiredValidationLayers()
+std::vector<const char*> VulkanUtils::getRequiredDeviceValidationLayers()
 {
 #ifdef ENGINE_DEBUG
     return {}; // ToDo

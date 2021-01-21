@@ -74,6 +74,8 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
 
     SetWindowLongPtr(mWindowHandlers->windowHandler, 0, reinterpret_cast<LONG_PTR>(this));
 
+    mWindowRendererAttributes = renderer->updateWindowAttributes(this);
+
     if (!mWindowHandlers->windowHandler)
     {
         //        DWORD errorMessageID = ::GetLastError();

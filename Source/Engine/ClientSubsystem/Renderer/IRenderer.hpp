@@ -9,8 +9,19 @@
 
 namespace Kompot
 {
+class Window;
+
+struct WindowRendererAttributes
+{
+    virtual ~WindowRendererAttributes()
+    {
+    }
+};
+
 class IRenderer
 {
+    public:
+    virtual WindowRendererAttributes* updateWindowAttributes(Window* window) = 0;
 };
 
 } // namespace Kompot

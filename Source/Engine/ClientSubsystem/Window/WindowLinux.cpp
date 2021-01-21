@@ -94,6 +94,8 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
 
     xcb_map_window(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
     xcb_flush(mWindowHandlers->xcbConnection);
+
+    mWindowRendererAttributes = renderer->updateWindowAttributes(this);
 }
 
 Window::~Window()

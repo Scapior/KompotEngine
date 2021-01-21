@@ -19,19 +19,31 @@ struct PlatformHandlers;
 
 class Window
 {
-        public:
+    public:
     Window(std::string_view windowName, Kompot::IRenderer* renderer = nullptr, const PlatformHandlers* parentWindowHandlers = nullptr);
     ~Window();
 
     void run();
     void closeWindow();
 
-        private:
+    WindowRendererAttributes* getWindowRendererAttributes() const
+    {
+        return mWindowRendererAttributes;
+    }
+
+    void setWindowRendererAttributes(WindowRendererAttributes* windowRendererAttributes)
+    {
+        mWindowRendererAttributes = windowRendererAttributes;
+    }
+
+    private:
     std::string mWindowName;
     Kompot::IRenderer* mRenderer;
 
     PlatformHandlers* mWindowHandlers             = nullptr;
     const PlatformHandlers* mParentWindowHandlers = nullptr;
+
+    WindowRendererAttributes* mWindowRendererAttributes = nullptr;
 
     /* Platform-specific definitions */
 

@@ -25,8 +25,8 @@ struct DeviceComparsionAttributes
 DeviceComparsionAttributes getDeviceComparsionAttributes(const vk::PhysicalDevice& vkPhysicalDevice, const vk::MemoryPropertyFlagBits memoryFlags);
 
 // logical device selection
-std::vector<const char*> getRequiredExtensions();
-std::vector<const char*> getRequiredValidationLayers();
+std::vector<const char*> getRequiredDeviceExtensions();
+std::vector<const char*> getRequiredDeviceValidationLayers();
 
 struct QueueFamilies
 {

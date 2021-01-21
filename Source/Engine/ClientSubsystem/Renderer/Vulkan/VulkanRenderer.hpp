@@ -12,11 +12,19 @@
 
 namespace Kompot
 {
+struct VulkanWindowRendererAttributes : WindowRendererAttributes
+{
+    vk::SurfaceKHR surface;
+    vk::Rect2D scissor;
+};
+
 class VulkanRenderer : public Kompot::IRenderer
 {
         public:
     VulkanRenderer();
     ~VulkanRenderer();
+
+    WindowRendererAttributes* updateWindowAttributes(Window *window) override;
 
         private:
     vk::Instance mVkInstance;

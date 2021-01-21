@@ -6,6 +6,7 @@
 
 #include "VulkanRenderer.hpp"
 #include "VulkanUtils.hpp"
+#include <Engine/ClientSubsystem/Window/Window.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
 #include <Engine/ErrorHandling.hpp>
@@ -87,4 +88,30 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
     }
 
     return physicalDevices[selectedDeviceIndex];
+}
+WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
+{
+    if (!window)
+    {
+        return nullptr;
+    }
+
+    VulkanWindowRendererAttributes* result;
+    auto windowAttributes = window->getWindowRendererAttributes();
+    if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(windowAttributes))
+    {
+        result = vulkanWindowAttributes;
+    }
+    else
+    {
+        if(windowAttributes)
+        {
+            delete windowAttributes;
+        }
+        result = new VulkanWindowRendererAttributes;
+    }
+
+    // TODO
+
+    return result;
 }
