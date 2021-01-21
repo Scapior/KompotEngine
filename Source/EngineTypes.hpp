@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include <chrono>
 #include <cstdint> // for uint64_t, etc
 #include <string>
-#include <chrono>
 
 using namespace std::string_literals; // "foo"s
 using namespace std::chrono_literals; // 2s, 5 ms

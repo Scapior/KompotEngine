@@ -4,16 +4,15 @@
  *  Licensed under the MIT license.
  */
 
-
 #pragma once
-#include <string_view>
 #include <filesystem>
+#include <string_view>
 
 namespace Kompot
 {
 class ConfigManager
 {
-        public:
+public:
     static ConfigManager& getInstance()
     {
         static ConfigManager configManagerSingltone;
@@ -24,7 +23,7 @@ class ConfigManager
     void loadConfig(const std::string_view& fileName);
     void loadConfig(const std::filesystem::path& filePath);
 
-        private:
+private:
     ConfigManager();
 };
 

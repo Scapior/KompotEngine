@@ -5,8 +5,9 @@
  */
 
 #include "Window.hpp"
-#include <Engine/DebugUtils/DebugUtils.hpp>
 #include "Windows.h" // winapi
+#include <Engine/DebugUtils/DebugUtils.hpp>
+#include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
 
@@ -22,14 +23,14 @@ struct Kompot::PlatformHandlers
 Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers) :
     mWindowName(windowName), mRenderer(renderer), mParentWindowHandlers(parentWindowHandlers)
 {
-    static const HINSTANCE currentAppHandlerInstance = GetModuleHandle(nullptr);
+    static const HINSTANCE currentAppHandlerInstance = ::GetModuleHandle(nullptr);
 
     mWindowHandlers = new PlatformHandlers{};
 
     mWindowHandlers->windowNameWideCharBufferSize = windowName.size() * 4; // 2?
     mWindowHandlers->windowNameWideCharBuffer     = new wchar_t[mWindowHandlers->windowNameWideCharBufferSize]{};
 
-    check(MultiByteToWideChar(
+    check(::MultiByteToWideChar(
         CP_UTF8,
         0_u32t,
         windowName.data(),
@@ -51,14 +52,14 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
     windowClass.lpszClassName = windowClassName.data();
     windowClass.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
 
-    if (!RegisterClassExW(&windowClass))
+    if (!::RegisterClassExW(&windowClass))
     {
-        // std::terminate();
+        Kompot::ErrorHandling::exit("Failed to register window class, result code \"" + std::to_string(::GetLastError()) + "\"");
     }
 
     constexpr uint32_t windowStyleFlags = WS_SYSMENU | WS_BORDER | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX;
 
-    mWindowHandlers->windowHandler = CreateWindowExW(
+    mWindowHandlers->windowHandler = ::CreateWindowExW(
         0_u32t,
         windowClassName.data(),
         mWindowHandlers->windowNameWideCharBuffer,
@@ -72,39 +73,34 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
         currentAppHandlerInstance,
         this);
 
-    SetWindowLongPtr(mWindowHandlers->windowHandler, 0, reinterpret_cast<LONG_PTR>(this));
-
-    mWindowRendererAttributes = renderer->updateWindowAttributes(this);
-
     if (!mWindowHandlers->windowHandler)
     {
-        //        DWORD errorMessageID = ::GetLastError();
-        //        if(errorMessageID == 0) return;
-
-        //        LPSTR messageBuffer = nullptr;
-        //        std::size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        //        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        //                         NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        //                         (LPSTR)&messageBuffer, 0, NULL);
-
-        //        std::string message(messageBuffer, size);
-        //        Log::getInstance() << message << std::endl;
-        //        //Free the buffer.
-        //        LocalFree(messageBuffer);
-        //        std::terminate();
+        Kompot::ErrorHandling::exit("Failed to create window, result code \"" + std::to_string(::GetLastError()) + "\"");
     }
+    ::SetWindowLongPtr(mWindowHandlers->windowHandler, 0, reinterpret_cast<LONG_PTR>(this));
+
+    mWindowRendererAttributes = renderer->updateWindowAttributes(this);
 }
 
 Window::~Window()
 {
+    if (mRenderer)
+    {
+        mRenderer->unregisterWindow(this);
+    }
+    if (mWindowRendererAttributes)
+    {
+        delete mWindowRendererAttributes;
+        mWindowRendererAttributes = nullptr;
+    }
 }
 
 void Window::run()
 {
-    ShowWindow(mWindowHandlers->windowHandler, SW_SHOW);
+    ::ShowWindow(mWindowHandlers->windowHandler, SW_SHOW);
     MSG msg{};
     int iGetOk = 0;
-    while ((iGetOk = GetMessage(&msg, NULL, 0, 0)) != 0)
+    while ((iGetOk = ::GetMessage(&msg, NULL, 0, 0)) != 0)
     {
         if (iGetOk == -1)
             return;
@@ -115,26 +111,22 @@ void Window::run()
 
 void Window::closeWindow()
 {
-    m_needToClose = true;
+    mNeedToClose = true;
 }
 
-#if defined(ENGINE_OS_WINDOWS_x32)
-int32_t Window::windowProcedure(void* hwnd, uint32_t message, uint32_t wParam, int32_t lParam)
-#elif defined(ENGINE_OS_WINDOWS_x64)
 int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam)
-#endif
 {
     HWND hWnd      = reinterpret_cast<HWND>(hwnd);
-    Window* window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, 0));
+    Window* window = reinterpret_cast<Window*>(::GetWindowLongPtr(hWnd, 0));
 
     if (!window)
     {
-        return DefWindowProcW(hWnd, message, wParam, lParam);
+        return ::DefWindowProcW(hWnd, message, wParam, lParam);
     }
 
-    if (window->m_needToClose)
+    if (window->mNeedToClose)
     {
-        PostQuitMessage(0);
+        ::PostQuitMessage(0);
         // DestroyWindow(hWnd);
     }
 
@@ -142,7 +134,7 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
     {
     // case WM_DESTROY: // https://stackoverflow.com/a/3155883
     case WM_CLOSE:
-        PostQuitMessage(0);
+        ::PostQuitMessage(0);
         break;
     // case WM_SYSCHAR:
     // case WM_SYSCOMMAND: //A window receives this message when the user chooses a command from the
@@ -152,7 +144,7 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
     // captured. case WM_DEVICECHANGE: // Notifies an application of a change to the hardware
     // configuration of a device or the computer.
     default:
-        return DefWindowProcW(hWnd, message, wParam, lParam);
+        return ::DefWindowProcW(hWnd, message, wParam, lParam);
     }
     return 0;
 }

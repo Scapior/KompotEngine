@@ -10,7 +10,7 @@ namespace Kompot
 {
 class IEngineSystem
 {
-        public:
+public:
     virtual void run() = 0;
 
     virtual ~IEngineSystem()

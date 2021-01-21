@@ -6,21 +6,21 @@
 
 #pragma once
 
-#include <EngineTypes.hpp>
 #include <EngineDefines.hpp>
+#include <EngineTypes.hpp>
 #include <Misc/DateTimeFormatter.hpp>
-#include <vulkan/vulkan.hpp>
-#include <iostream>
-#include <fstream>
-#include <thread>
-#include <mutex>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <vulkan/vulkan.hpp>
 
 class Log
 {
     typedef std::ostream& (*OstreamManipulator)(std::ostream&);
 
-        public:
+public:
     static Log& getInstance()
     {
         static Log logSingltone;
@@ -84,7 +84,7 @@ class Log
 
     /* end the ostream-like part */
 
-        private:
+private:
     Log();
 
     std::ofstream m_logFile;

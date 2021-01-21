@@ -27,7 +27,7 @@ std::string DebugUtils::getLastPlatformError()
     }
 
     LPSTR messageBuffer = nullptr;
-    std::size_t size    = FormatMessageA(
+    std::size_t size    = ::FormatMessageA(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         errorMessageID,
@@ -37,7 +37,7 @@ std::string DebugUtils::getLastPlatformError()
         NULL);
 
     const std::string result(messageBuffer, size);
-    LocalFree(messageBuffer);
+    ::LocalFree(messageBuffer);
 
     return result;
 #elif defined(ENGINE_OS_LINUX)
@@ -75,13 +75,13 @@ std::string DebugUtils::getCallstack()
         symbolInfo->SizeOfStruct = sizeof(SYMBOL_INFO);
         symbolInfo->MaxNameLen   = TRACE_MAX_FUNCTION_NAME_LENGTH - 1;
 
-        const auto hasSymbol = SymFromAddr(GetCurrentProcess(), frame, &displacement, symbolInfo);
+        const auto hasSymbol = ::SymFromAddr(GetCurrentProcess(), frame, &displacement, symbolInfo);
 
         // Attempt to retrieve line number information.
         DWORD line_displacement = 0;
         IMAGEHLP_LINE64 line    = {};
         line.SizeOfStruct       = sizeof(IMAGEHLP_LINE64);
-        const auto hasLine      = SymGetLineFromAddr64(GetCurrentProcess(), frame, &line_displacement, &line);
+        const auto hasLine      = ::SymGetLineFromAddr64(GetCurrentProcess(), frame, &line_displacement, &line);
 
         if (hasSymbol)
         {

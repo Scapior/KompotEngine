@@ -6,9 +6,9 @@
 
 #include "VulkanDevice.hpp"
 #include "VulkanUtils.hpp"
-#include <EngineDefines.hpp>
-#include <Engine/Log/Log.hpp>
 #include <Engine/ErrorHandling.hpp>
+#include <Engine/Log/Log.hpp>
+#include <EngineDefines.hpp>
 
 using namespace Kompot;
 
@@ -55,7 +55,6 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     {
         Kompot::ErrorHandling::exit("Failed to create vkDevice, result code \"" + vk::to_string(result.result) + "\"");
     }
-
 }
 
 Kompot::VulkanDevice::~VulkanDevice()

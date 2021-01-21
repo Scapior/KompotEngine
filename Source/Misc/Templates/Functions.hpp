@@ -6,8 +6,8 @@
 
 #pragma once
 #include <array>
-#include <utility>
 #include <type_traits>
+#include <utility>
 
 template<typename T, std::size_t N>
 constexpr auto operator+(const T element, const std::array<T, N> array)

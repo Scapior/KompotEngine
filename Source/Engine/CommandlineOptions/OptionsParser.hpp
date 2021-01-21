@@ -7,20 +7,20 @@
 #pragma once
 
 #include <EngineTypes.hpp>
-#include <string>
-#include <variant>
+#include <cctype>
 #include <fstream>
 #include <sstream>
-#include <cctype>
+#include <string>
 #include <typeinfo>
+#include <variant>
 #include <vector>
 
 class OptionsParser
 {
-        private:
+private:
     class Options;
 
-        public:
+public:
     Options& addOptions()
     {
         return m_options;
@@ -35,13 +35,13 @@ class OptionsParser
     static bool caseInsensitiveStringEquals(const std::string&, const std::string&);
     static std::string trim(const std::string&);
 
-        private:
+private:
     typedef std::variant<std::string, bool, int8_t, int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t> Variant;
 
     typedef std::variant<std::string*, bool*, int8_t*, int16_t*, int32_t*, int64_t*, uint8_t*, uint16_t*, uint32_t*, uint64_t*> PointerVariant;
     class Options
     {
-            public:
+    public:
         template<typename T>
         Options& operator()(const std::string& key, const std::string& description, const T& value, T* pointer)
         {
@@ -54,7 +54,7 @@ class OptionsParser
         void setByKeyFromStream(const std::string&, std::stringstream&);
         void notify() const;
 
-            private:
+    private:
         struct Option
         {
             std::string key;
@@ -65,7 +65,7 @@ class OptionsParser
             void notify() const;
             void set(std::stringstream&);
 
-                private:
+        private:
             template<typename T>
             static void setByPointer(const Variant& variant, PointerVariant& pointerVariant);
 
@@ -100,7 +100,7 @@ class OptionsParser
                     setFromStream<T>(variant, value);
                 }
 
-                    private:
+            private:
                 std::stringstream& optionsStream;
                 Variant& variant;
             };

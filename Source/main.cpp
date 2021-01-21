@@ -4,8 +4,8 @@
  *  Licensed under the MIT license.
  */
 
-#include <Engine/Engine.hpp>
 #include <Engine/Config/ConfigManager.hpp>
+#include <Engine/Engine.hpp>
 
 int main(int argc, char** argv)
 {

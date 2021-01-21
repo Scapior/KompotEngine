@@ -4,12 +4,11 @@
  *  Licensed under the MIT license.
  */
 
-#include <string>
 #include <EngineDefines.hpp>
+#include <string>
 
 namespace DebugUtils
 {
-
 std::string getLastPlatformError();
 
 std::string getCallstack();

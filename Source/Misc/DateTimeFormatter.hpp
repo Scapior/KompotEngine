@@ -6,13 +6,13 @@
 
 #pragma once
 #define __STDC_WANT_LIB_EXT1__
-#include <vector>
-#include <chrono>
-#include <ctime>
-#include <ostream>
-#include <iomanip>
 #include "Templates/Functions.hpp"
 #include <EngineDefines.hpp>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <ostream>
+#include <vector>
 
 namespace Kompot
 {
@@ -85,7 +85,7 @@ namespace Kompot
 {
 class DateTimeFormatter
 {
-        public:
+public:
     template<class T>
     void printTime(T& stream, const std::chrono::system_clock::time_point& timePoint) const
     {
@@ -115,14 +115,13 @@ class DateTimeFormatter
         return m_dateTimeFormat;
     }
 
-        private:
+private:
     DateTimeFormat m_dateTimeFormat = DateTimeFormat::Year + DateTimeFormat::Dot + DateTimeFormat::Month + DateTimeFormat::Dot + DateTimeFormat::Day +
                                       DateTimeFormat::Space + DateTimeFormat::Hours24 + DateTimeFormat::Colon + DateTimeFormat::Minutes +
                                       DateTimeFormat::Colon + DateTimeFormat::Seconds + DateTimeFormat::Dot + DateTimeFormat::Milliseconds;
 
     mutable std::tm m_parsedTime;
     mutable std::chrono::milliseconds m_parsedMilliseconds;
-
 
     static constexpr std::array<const char*, 7> m_daysNames = {
         "Sunday", // tm::tm_wday with value 0 means Sunday. Fuck the Bible for this

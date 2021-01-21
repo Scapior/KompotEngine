@@ -4,12 +4,11 @@
  *  Licensed under the MIT license.
  */
 
-
 #pragma once
 
 #include <EngineTypes.hpp>
-#include <vulkan/vulkan.hpp>
 #include <optional>
+#include <vulkan/vulkan.hpp>
 
 namespace Kompot::VulkanUtils
 {

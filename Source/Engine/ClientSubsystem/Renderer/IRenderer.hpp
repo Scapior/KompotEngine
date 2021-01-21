@@ -4,7 +4,6 @@
  *  Licensed under the MIT license.
  */
 
-
 #pragma once
 
 namespace Kompot
@@ -20,8 +19,9 @@ struct WindowRendererAttributes
 
 class IRenderer
 {
-    public:
+public:
     virtual WindowRendererAttributes* updateWindowAttributes(Window* window) = 0;
+    virtual void unregisterWindow(Window* window)                            = 0;
 };
 
 } // namespace Kompot

@@ -6,25 +6,25 @@
 
 #pragma once
 
-#include <EngineTypes.hpp>
-#include "EngineConfig.hpp"
 #include "ClientSubsystem/ClientSubsystem.hpp"
-#include <string>
-#include <sstream>
-#include <thread>
+#include "EngineConfig.hpp"
+#include <EngineTypes.hpp>
 #include <memory>
+#include <sstream>
+#include <string>
+#include <thread>
 
 namespace Kompot
 {
 class Engine
 {
-        public:
+public:
     Engine();
     ~Engine();
 
     void run();
 
-        private:
+private:
     std::string m_instanceName;
     EngineConfig m_engineSettings;
 

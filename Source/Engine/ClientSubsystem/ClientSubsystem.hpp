@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "Window/Window.hpp"
 #include "Renderer/IRenderer.hpp"
-#include <EngineTypes.hpp>
+#include "Window/Window.hpp"
 #include <Engine/EngineConfig.hpp>
 #include <Engine/IEngineSystem.hpp>
+#include <EngineTypes.hpp>
 //#include <condition_variable>
 //#include <atomic>
 
@@ -26,22 +26,22 @@ namespace Kompot
 {
 class ClientSubsystem : public IEngineSystem
 {
-        public:
+public:
     ClientSubsystem();
     ~ClientSubsystem();
 
     void run(/*std::condition_variable& conditionVariable*/) override;
 
-        private:
+private:
     /*std::atomic_flag*/ bool mNeedToExit = false;
 
-        public:
+public:
     bool isNeedToExit() const
     {
         return mNeedToExit;
     }
 
-        private:
+private:
     Window* mMainWindow  = nullptr;
     IRenderer* mRenderer = nullptr;
     //#ifdef ENGINE_OS_LINUX

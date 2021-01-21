@@ -12,12 +12,11 @@ namespace Kompot
 {
 class VulkanDevice
 {
-        public:
+public:
     VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDevice& vkPhysicalDevice);
     ~VulkanDevice();
 
-        private:
-        private:
+private:
     vk::Instance mVkInstance;
 
     vk::PhysicalDevice mVkPhysicalDevice;

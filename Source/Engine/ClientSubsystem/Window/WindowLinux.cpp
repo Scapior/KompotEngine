@@ -4,10 +4,9 @@
  *  Licensed under the MIT license.
  */
 
-
 #include "Window.hpp"
-#include <xcb/xcb.h>
 #include <Engine/Log/Log.hpp>
+#include <xcb/xcb.h>
 
 using namespace Kompot;
 
@@ -82,7 +81,6 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
         mask,
         flagValues.data());
 
-
     xcb_intern_atom_cookie_t cookie = xcb_intern_atom(mWindowHandlers->xcbConnection, 1, 12, "WM_PROTOCOLS");
     xcb_intern_atom_reply_t* reply  = xcb_intern_atom_reply(mWindowHandlers->xcbConnection, cookie, 0);
 
@@ -90,7 +88,6 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
     reply2                           = xcb_intern_atom_reply(mWindowHandlers->xcbConnection, cookie2, 0);
 
     xcb_change_property(mWindowHandlers->xcbConnection, XCB_PROP_MODE_REPLACE, mWindowHandlers->xcbWindow, (*reply).atom, 4, 32, 1, &(*reply2).atom);
-
 
     xcb_map_window(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
     xcb_flush(mWindowHandlers->xcbConnection);

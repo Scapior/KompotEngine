@@ -4,7 +4,6 @@
  *  Licensed under the MIT license.
  */
 
-
 #include "ConfigManager.hpp"
 
 using namespace Kompot;

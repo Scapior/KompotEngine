@@ -5,13 +5,13 @@
  */
 
 #pragma once
-#include <EngineTypes.hpp>
+#include "../Renderer/IRenderer.hpp"
 #include <EngineDefines.hpp>
+#include <EngineTypes.hpp>
+#include <Misc/Templates/Functions.hpp>
 #include <atomic>
 #include <string>
 #include <string_view>
-#include "../Renderer/IRenderer.hpp"
-#include <Misc/Templates/Functions.hpp>
 
 namespace Kompot
 {
@@ -19,7 +19,7 @@ struct PlatformHandlers;
 
 class Window
 {
-    public:
+public:
     Window(std::string_view windowName, Kompot::IRenderer* renderer = nullptr, const PlatformHandlers* parentWindowHandlers = nullptr);
     ~Window();
 
@@ -36,7 +36,7 @@ class Window
         mWindowRendererAttributes = windowRendererAttributes;
     }
 
-    private:
+private:
     std::string mWindowName;
     Kompot::IRenderer* mRenderer;
 
@@ -48,11 +48,8 @@ class Window
     /* Platform-specific definitions */
 
 #ifdef ENGINE_OS_WINDOWS
-    std::atomic_bool m_needToClose        = false;
+    std::atomic_bool mNeedToClose        = false;
     static constexpr auto windowClassName = TemplateUtils::makeArray(L"KompotEngineWindow");
-#endif
-
-#ifdef ENGINE_OS_WINDOWS_x64
     static int64_t __stdcall windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam);
 #endif
 };

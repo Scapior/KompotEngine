@@ -6,9 +6,8 @@
 
 #pragma once
 
-
 class Guid
 {
-        public:
+public:
     Guid();
 };

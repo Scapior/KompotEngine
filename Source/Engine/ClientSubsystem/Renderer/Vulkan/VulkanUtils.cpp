@@ -42,9 +42,7 @@ VulkanUtils::DeviceComparsionAttributes VulkanUtils::getDeviceComparsionAttribut
 
 std::vector<const char*> VulkanUtils::getRequiredDeviceExtensions()
 {
-    return {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    }; // ToDo
+    return {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 }
 
 std::vector<const char*> VulkanUtils::getRequiredDeviceValidationLayers()
@@ -70,19 +68,19 @@ VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalD
 
         if (isHaveGraphicsFlag && !result.graphicsIndex.has_value())
         {
-            result.graphicsIndex = i;
+            result.graphicsIndex = static_cast<uint32_t>(i);
             result.graphicsCount = queueFamily.queueCount;
         }
 
         if (isHaveComputeFlag && (!result.computeIndex.has_value() || result.graphicsIndex.value() != i))
         {
-            result.computeIndex = i;
+            result.computeIndex = static_cast<uint32_t>(i);
             result.computeCount = queueFamily.queueCount;
         }
 
         if (isHaveTransferFlag && !result.transferIndex.has_value())
         {
-            result.transferIndex = i;
+            result.transferIndex = static_cast<uint32_t>(i);
             result.transferCount = queueFamily.queueCount;
         }
 

@@ -7,9 +7,9 @@
 #include "VulkanRenderer.hpp"
 #include "VulkanUtils.hpp"
 #include <Engine/ClientSubsystem/Window/Window.hpp>
+#include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
-#include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
 
@@ -47,7 +47,8 @@ void VulkanRenderer::createInstance()
 vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
 {
     uint32_t physicalDevicesCount = 0;
-    if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, nullptr); enumerateCountResult != vk::Result::eSuccess)
+    if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, nullptr);
+        enumerateCountResult != vk::Result::eSuccess)
     {
         Kompot::ErrorHandling::exit("Failed to get physical devices count, result code \"" + vk::to_string(enumerateCountResult) + "\"");
     }
@@ -56,8 +57,7 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
     if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, physicalDevices.data());
         enumerateCountResult != vk::Result::eSuccess)
     {
-        Log::getInstance() << "Failed to enumerate physical devices, result code \"" << vk::to_string(enumerateCountResult) << "\"" << std::endl;
-        std::exit(-1);
+        Kompot::ErrorHandling::exit("Failed to enumerate physical devices, result code \"" + vk::to_string(enumerateCountResult) + "\"");
     }
 
     if (physicalDevices.empty())
@@ -96,6 +96,8 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
         return nullptr;
     }
 
+    mWindows.emplace(window);
+
     VulkanWindowRendererAttributes* result;
     auto windowAttributes = window->getWindowRendererAttributes();
     if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(windowAttributes))
@@ -104,7 +106,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     }
     else
     {
-        if(windowAttributes)
+        if (windowAttributes)
         {
             delete windowAttributes;
         }
@@ -114,4 +116,9 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     // TODO
 
     return result;
+}
+
+void VulkanRenderer::unregisterWindow(Window* window)
+{
+    mWindows.erase(window);
 }
