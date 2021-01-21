@@ -9,6 +9,7 @@
 
 namespace DebugUtils
 {
+
 std::string getLastPlatformError();
 
 std::string getCallstack();

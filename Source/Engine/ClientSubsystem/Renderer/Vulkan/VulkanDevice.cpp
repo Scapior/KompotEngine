@@ -8,6 +8,7 @@
 #include "VulkanUtils.hpp"
 #include <EngineDefines.hpp>
 #include <Engine/Log/Log.hpp>
+#include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
 
@@ -20,8 +21,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     const auto selectedQueueFamilies = VulkanUtils::selectQueuesFamilies(mVkPhysicalDevice);
     if (!selectedQueueFamilies.hasAllIndicies())
     {
-        Log::getInstance() << "Not all queue families was found" << std::endl;
-        std::exit(-1);
+        Kompot::ErrorHandling::exit("Not all queue families was found");
     }
 
     std::array<vk::DeviceQueueCreateInfo, 3> queuesCreateInfos{};
@@ -53,8 +53,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     }
     else
     {
-        Log::getInstance() << "Failed to create vkDevice, result code \"" << vk::to_string(result.result) << "\"" << std::endl;
-        std::exit(-1);
+        Kompot::ErrorHandling::exit("Failed to create vkDevice, result code \"" + vk::to_string(result.result) + "\"");
     }
 }
 

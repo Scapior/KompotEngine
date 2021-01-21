@@ -8,6 +8,7 @@
 #include "VulkanUtils.hpp"
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
+#include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
 
@@ -38,8 +39,7 @@ void VulkanRenderer::createInstance()
     }
     else
     {
-        Log::getInstance() << "Failed to create vkCreateInstance, result code \"" << vk::to_string(result.result) << "\"" << std::endl;
-        std::exit(-1);
+        Kompot::ErrorHandling::exit("Failed to create vkCreateInstance, result code \"" + vk::to_string(result.result) + "\"");
     }
 }
 
@@ -48,8 +48,7 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
     uint32_t physicalDevicesCount = 0;
     if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, nullptr); enumerateCountResult != vk::Result::eSuccess)
     {
-        Log::getInstance() << "Failed to get physical devices count, result code \"" << vk::to_string(enumerateCountResult) << "\"" << std::endl;
-        std::exit(-1);
+        Kompot::ErrorHandling::exit("Failed to get physical devices count, result code \"" + vk::to_string(enumerateCountResult) + "\"");
     }
 
     std::vector<vk::PhysicalDevice> physicalDevices(physicalDevicesCount);
@@ -62,8 +61,7 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
 
     if (physicalDevices.empty())
     {
-        Log::getInstance() << "No one GPU has founded" << std::endl;
-        std::exit(-1);
+        Kompot::ErrorHandling::exit("\"No one GPU has founded\"");
     }
 
     uint32_t selectedDeviceIndex = 0;

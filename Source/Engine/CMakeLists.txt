@@ -18,7 +18,7 @@ set(ENGINE_HEADERS
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.hpp
-        )
+        ErrorHandling.hpp)
 
 set(ENGINE_SOURCES
         Log/Log.cpp
@@ -29,7 +29,7 @@ set(ENGINE_SOURCES
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp
-        )
+        ErrorHandling.cpp)
 
 if (WIN32)
     list(APPEND ENGINE_SOURCES
