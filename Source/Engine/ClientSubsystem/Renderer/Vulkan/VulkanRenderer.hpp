@@ -5,21 +5,14 @@
  */
 
 #pragma once
-
 #include "../IRenderer.hpp"
+#include "VulkanTypes.h"
 #include "VulkanDevice.hpp"
 #include <set>
 #include <vulkan/vulkan.hpp>
 
 namespace Kompot
 {
-
-struct VulkanWindowRendererAttributes : WindowRendererAttributes
-{
-    vk::SurfaceKHR surface;
-    vk::Rect2D scissor;
-};
-
 class VulkanRenderer : public Kompot::IRenderer
 {
 public:
@@ -28,6 +21,32 @@ public:
 
     WindowRendererAttributes* updateWindowAttributes(Window* window) override;
     void unregisterWindow(Window* window) override;
+    std::string_view getName() const override
+    {
+        return "Vulkan";
+    }
+
+    const vk::Instance getVkInstance() const
+    {
+        return mVkInstance;
+    };
+
+protected:
+    void cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes);
+    void recreateSwapchain(VulkanWindowRendererAttributes* windowAttributes);
+
+private:
+    void setupDebugCallback();
+    void deleteDebugCallback();
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL
+    vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT*, void*);
+
+    static VkBool32 vulkanDebugCallbackImpl(
+        vk::DebugUtilsMessageSeverityFlagsEXT messageSeverite,
+        vk::DebugUtilsMessageTypeFlagsEXT messageType,
+        const vk::DebugUtilsMessengerCallbackDataEXT& callbackData,
+        [[maybe_unused]] void* userData);
 
 private:
     vk::Instance mVkInstance;
@@ -38,6 +57,10 @@ private:
     void createDevice();
 
     std::set<Window*> mWindows;
+
+#if 1 // ENGINE_DEBUG
+    vk::DebugUtilsMessengerEXT mVkDebugUtilsMessenger;
+#endif
 };
 
 } // namespace Kompot

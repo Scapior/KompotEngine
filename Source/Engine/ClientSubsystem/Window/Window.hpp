@@ -12,6 +12,7 @@
 #include <atomic>
 #include <string>
 #include <string_view>
+#include <vulkan/vulkan.hpp>
 
 namespace Kompot
 {
@@ -26,10 +27,22 @@ public:
     void run();
     void closeWindow();
 
+    uint32_t getWidth() const
+    {
+        return mWidth;
+    };
+
+    uint32_t getHeight() const
+    {
+        return mHeight;
+    };
+
     WindowRendererAttributes* getWindowRendererAttributes() const
     {
         return mWindowRendererAttributes;
     }
+
+    vk::SurfaceKHR createVulkanSurface() const;
 
     void setWindowRendererAttributes(WindowRendererAttributes* windowRendererAttributes)
     {
@@ -40,6 +53,9 @@ private:
     std::string mWindowName;
     Kompot::IRenderer* mRenderer;
 
+    uint32_t mWidth  = 400;
+    uint32_t mHeight = 400;
+
     PlatformHandlers* mWindowHandlers             = nullptr;
     const PlatformHandlers* mParentWindowHandlers = nullptr;
 
@@ -48,7 +64,7 @@ private:
     /* Platform-specific definitions */
 
 #ifdef ENGINE_OS_WINDOWS
-    std::atomic_bool mNeedToClose        = false;
+    std::atomic_bool mNeedToClose         = false;
     static constexpr auto windowClassName = TemplateUtils::makeArray(L"KompotEngineWindow");
     static int64_t __stdcall windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam);
 #endif

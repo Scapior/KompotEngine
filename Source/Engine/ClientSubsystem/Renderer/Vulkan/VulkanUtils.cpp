@@ -94,7 +94,13 @@ VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalD
 
 std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
 {
-    return {VK_KHR_SURFACE_EXTENSION_NAME};
+    return {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#ifdef ENGINE_DEBUG
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif
+    };
 }
 
 bool VulkanUtils::QueueFamilies::hasAllIndicies() const

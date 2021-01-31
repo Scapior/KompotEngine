@@ -10,7 +10,7 @@
 #include <limits>
 
 #if defined(ENGINE_OS_WINDOWS)
-    #define NOMINMAX
+
     #include <Windows.h>
     #include <DbgHelp.h>
 #elif defined(ENGINE_OS_LINUX)

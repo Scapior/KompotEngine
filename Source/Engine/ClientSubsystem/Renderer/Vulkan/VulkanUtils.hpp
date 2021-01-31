@@ -40,6 +40,7 @@ struct QueueFamilies
 
     bool hasAllIndicies() const;
 };
+
 QueueFamilies selectQueuesFamilies(const vk::PhysicalDevice& vkPhysicalDevice);
 
 } // namespace Kompot::VulkanUtils

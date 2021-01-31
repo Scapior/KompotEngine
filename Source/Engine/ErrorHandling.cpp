@@ -13,11 +13,11 @@ void KompotEngine::ErrorHandling::exit(std::string_view exitMessage, const std::
 void Kompot::ErrorHandling::exit(std::string_view exitMessage, std::string_view stack)
 #endif
 {
-    Log::getInstance() << '[' << Log::timeNow() << ']' <<
+    Log::getInstance() << Log::DateTimeBlock << ' '
 #if __GNUC__ > 10
-        location.file_name() << ':' << location.line() << ':' << location.column() << ' ' <<
+                       << location.file_name() << ':' << location.line() << ':' << location.column() << ' '
 #endif
-        exitMessage << "\nStack:\n"
+                       << exitMessage << "\nStack:\n"
                        << stack << std::endl;
     std::exit(1);
 }

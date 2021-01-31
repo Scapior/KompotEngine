@@ -19,19 +19,18 @@
 class Log
 {
     typedef std::ostream& (*OstreamManipulator)(std::ostream&);
-
 public:
+    struct DateTimeBlock_t
+    {
+    };
+
+    const static DateTimeBlock_t DateTimeBlock;
+
     static Log& getInstance()
     {
         static Log logSingltone;
         return logSingltone;
     }
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL
-    vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT*, void*);
-
-    static void setupDebugCallback(VkInstance, VkDevice);
-    static void deleteDebugCallback();
 
     inline static auto timeNow()
     {
@@ -47,6 +46,7 @@ public:
         return *this;
     }
 
+    Log& operator<<(const DateTimeBlock_t& value);
     Log& operator<<(OstreamManipulator pf)
     {
         return operator<<<OstreamManipulator>(pf);
@@ -91,11 +91,4 @@ private:
     std::mutex m_mutex;
 
     Kompot::DateTimeFormatter m_dateTimeFormatter;
-
-#ifdef ENGINE_DEBUG
-    VkDebugUtilsMessengerEXT m_vkDebugMessenger;
-    VkInstance m_vkDebugMessengerInstance;
-    static PFN_vkCreateDebugUtilsMessengerEXT pfn_vkCreateDebugUtilsMessengerEXT;
-    static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
-#endif
 };

@@ -1,0 +1,32 @@
+/*
+ *  VulkanTypes.hpp
+ *  Copyright (C) 2021 by Maxim Stoianov
+ *  Licensed under the MIT license.
+ */
+
+#pragma once
+
+#include <Engine/ClientSubsystem/Renderer/IRenderer.hpp>
+#include <vulkan/vulkan.hpp>
+#include <vector>
+
+namespace Kompot
+{
+struct VulkanSwapchain
+{
+    vk::SwapchainKHR handler;
+    vk::Format format;
+
+    std::vector<vk::Image> images;
+    std::vector<vk::ImageView> imageViews;
+};
+
+struct VulkanWindowRendererAttributes : public WindowRendererAttributes
+{
+    vk::SurfaceKHR surface;
+    VulkanSwapchain swapchain;
+    vk::Rect2D scissor;
+    vk::Queue presentQueue;
+};
+
+} // namespace Kompot

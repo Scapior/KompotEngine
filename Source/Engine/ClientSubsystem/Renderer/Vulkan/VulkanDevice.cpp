@@ -5,7 +5,6 @@
  */
 
 #include "VulkanDevice.hpp"
-#include "VulkanUtils.hpp"
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
@@ -18,28 +17,31 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     check(mVkInstance);
     check(mVkPhysicalDevice);
 
-    const auto selectedQueueFamilies = VulkanUtils::selectQueuesFamilies(mVkPhysicalDevice);
-    if (!selectedQueueFamilies.hasAllIndicies())
+    queueFamilies = VulkanUtils::selectQueuesFamilies(mVkPhysicalDevice);
+    if (!queueFamilies.hasAllIndicies())
     {
         Kompot::ErrorHandling::exit("Not all queue families was found");
     }
 
     std::array<vk::DeviceQueueCreateInfo, 3> queuesCreateInfos{};
 
-    queuesCreateInfos[0].queueFamilyIndex = selectedQueueFamilies.graphicsIndex.value();
-    queuesCreateInfos[0].queueCount       = selectedQueueFamilies.graphicsCount;
-    std::vector<float> graphicsQueuePriorities(selectedQueueFamilies.graphicsCount);
-    queuesCreateInfos[0].pQueuePriorities = graphicsQueuePriorities.data();
+    std::vector<float> graphicsQueuePriorities(queueFamilies.graphicsCount);
+    queuesCreateInfos[0]
+        .setQueueFamilyIndex(queueFamilies.graphicsIndex.value())
+        .setQueueCount(queueFamilies.graphicsCount)
+        .setQueuePriorities(graphicsQueuePriorities);
 
-    queuesCreateInfos[1].queueFamilyIndex = selectedQueueFamilies.computeIndex.value();
-    queuesCreateInfos[1].queueCount       = selectedQueueFamilies.computeCount;
-    std::vector<float> computeQueuePriorities(selectedQueueFamilies.computeCount);
-    queuesCreateInfos[0].pQueuePriorities = computeQueuePriorities.data();
+    std::vector<float> computeQueuePriorities(queueFamilies.computeCount);
+    queuesCreateInfos[1]
+        .setQueueFamilyIndex(queueFamilies.computeIndex.value())
+        .setQueueCount(queueFamilies.computeCount)
+        .setQueuePriorities(computeQueuePriorities);
 
-    queuesCreateInfos[2].queueFamilyIndex = selectedQueueFamilies.transferIndex.value();
-    queuesCreateInfos[2].queueCount       = selectedQueueFamilies.transferCount;
-    std::vector<float> transferQueuePriorities(selectedQueueFamilies.transferCount);
-    queuesCreateInfos[0].pQueuePriorities = transferQueuePriorities.data();
+    std::vector<float> transferQueuePriorities(queueFamilies.transferCount);
+    queuesCreateInfos[2]
+        .setQueueFamilyIndex(queueFamilies.transferIndex.value())
+        .setQueueCount(queueFamilies.transferCount)
+        .setQueuePriorities(transferQueuePriorities);
 
     const auto extensions       = VulkanUtils::getRequiredDeviceExtensions();
     const auto validationLayers = VulkanUtils::getRequiredDeviceValidationLayers();
@@ -50,6 +52,10 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     if (const auto result = mVkPhysicalDevice.createDevice(vkDeviceCreateInfo); result.result == vk::Result::eSuccess)
     {
         mVkDevice = result.value;
+        // ToDo: only one queue? maybe we need a queue manager
+        mGraphicsQueue = mVkDevice.getQueue(queueFamilies.graphicsIndex.value(), 0);
+        mComputeQueue  = mVkDevice.getQueue(queueFamilies.computeIndex.value(), 0);
+        mTransferQueue = mVkDevice.getQueue(queueFamilies.transferIndex.value(), 0);
     }
     else
     {
@@ -64,4 +70,35 @@ Kompot::VulkanDevice::~VulkanDevice()
     }
     mVkDevice.destroy(nullptr);
     mVkDevice = nullptr;
+}
+
+std::pair<vk::Queue, uint32_t> VulkanDevice::findPresentQueue(const VulkanWindowRendererAttributes* windowAttributes) const
+{
+    std::pair<vk::Queue, uint32_t> foundQueue = {};
+    if (windowAttributes)
+    {
+        std::optional<uint32_t> presentQueueFamilyIndex;
+
+        const auto queueFamilyProperties = mVkPhysicalDevice.getQueueFamilyProperties();
+        for (std::size_t i = 0; i < queueFamilyProperties.size(); ++i)
+        {
+            const auto& queueFamily    = queueFamilyProperties[i];
+            uint32_t currentQueueIndex = static_cast<uint32_t>(i);
+            if (auto result = mVkPhysicalDevice.getSurfaceSupportKHR(currentQueueIndex, windowAttributes->surface);
+                result.result == vk::Result::eSuccess)
+            {
+                if (result.value == VK_TRUE)
+                {
+                    presentQueueFamilyIndex = currentQueueIndex;
+                    break;
+                }
+            }
+        }
+
+        if (presentQueueFamilyIndex)
+        {
+            foundQueue = {mVkDevice.getQueue(presentQueueFamilyIndex.value(), 0), presentQueueFamilyIndex.value()};
+        }
+    }
+    return foundQueue;
 }

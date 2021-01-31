@@ -5,7 +5,6 @@
  */
 
 #include "VulkanRenderer.hpp"
-#include "VulkanUtils.hpp"
 #include <Engine/ClientSubsystem/Window/Window.hpp>
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
@@ -16,15 +15,15 @@ using namespace Kompot;
 VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 {
     createInstance();
+    setupDebugCallback();
     mVulkanDevice.reset(new VulkanDevice(mVkInstance, selectPhysicalDevice()));
-}
+};
 
 VulkanRenderer::~VulkanRenderer()
 {
     mVulkanDevice.release();
-    vkDestroyInstance(mVkInstance, nullptr);
+    deleteDebugCallback();
     mVkInstance.destroy(nullptr);
-    mVkInstance = nullptr;
 }
 
 void VulkanRenderer::createInstance()
@@ -95,8 +94,9 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     {
         return nullptr;
     }
-
     mWindows.emplace(window);
+
+    check(mVulkanDevice->logicDevice().waitIdle() == vk::Result::eSuccess);
 
     VulkanWindowRendererAttributes* result;
     auto windowAttributes = window->getWindowRendererAttributes();
@@ -112,13 +112,168 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
         }
         result = new VulkanWindowRendererAttributes;
     }
+    cleanupWindowSwapchain(result);
+    result->scissor.extent = vk::Extent2D{window->getWidth(), window->getHeight()};
+    if (result && !result->surface)
+    {
+        result->surface = window->createVulkanSurface();
+    }
+    recreateSwapchain(result);
 
-    // TODO
+    //    createImageViews();
+    //    createRenderPass();
+    //    createGraphicsPipeline();
+    //    createFramebuffers();
+    //    createCommandBuffers();
 
     return result;
 }
 
 void VulkanRenderer::unregisterWindow(Window* window)
 {
+    if (!window)
+    {
+        return;
+    }
+    auto windowAttributes = window->getWindowRendererAttributes();
+    if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(windowAttributes))
+    {
+        cleanupWindowSwapchain(vulkanWindowAttributes);
+        mVkInstance.destroySurfaceKHR(vulkanWindowAttributes->surface);
+    }
+
     mWindows.erase(window);
+}
+
+void VulkanRenderer::recreateSwapchain(VulkanWindowRendererAttributes* windowAttributes)
+{
+    if (!windowAttributes)
+    {
+        return;
+    }
+
+    if (auto surfaceCapabilitiesResult = mVulkanDevice->physicalDevice().getSurfaceCapabilitiesKHR(windowAttributes->surface);
+        surfaceCapabilitiesResult.result == vk::Result::eSuccess)
+    {
+        auto& vkSurfaceCapabilities = surfaceCapabilitiesResult.value;
+
+        const auto foundPresentQueue = mVulkanDevice->findPresentQueue(windowAttributes);
+        const auto graphicQueueIndex = mVulkanDevice->getGraphicsQueueIndex();
+
+        const std::array<uint32_t, 2> queueFamilyIndices = {foundPresentQueue.second, graphicQueueIndex};
+        const bool bQueuesAreSame                        = graphicQueueIndex == foundPresentQueue.second;
+
+        const auto swapchainFormat = vk::Format::eB8G8R8A8Srgb; // ToDo: add selection based on GPU capabilities
+        // VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR  ?
+        auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
+                                       .setSurface(windowAttributes->surface)
+                                       .setMinImageCount(vkSurfaceCapabilities.maxImageCount)
+                                       .setImageFormat(swapchainFormat)
+                                       .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
+                                       .setImageExtent(windowAttributes->scissor.extent)
+                                       .setImageArrayLayers(1)
+                                       .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+                                       .setImageSharingMode(bQueuesAreSame ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
+                                       .setQueueFamilyIndices(queueFamilyIndices)
+                                       .setPreTransform(vkSurfaceCapabilities.currentTransform)
+                                       .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+                                       .setPresentMode(vk::PresentModeKHR::eMailbox)
+                                       .setClipped(VK_TRUE)
+                                       .setOldSwapchain(windowAttributes->swapchain.handler);
+
+        if (auto result = mVulkanDevice->logicDevice().createSwapchainKHR(swapchainCreateInfo); result.result == vk::Result::eSuccess)
+        {
+            windowAttributes->swapchain.handler = result.value;
+            windowAttributes->swapchain.format  = swapchainFormat;
+        }
+    }
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::vulkanDebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+    void* userData)
+{
+    return vulkanDebugCallbackImpl(
+        vk::DebugUtilsMessageSeverityFlagsEXT(messageSeverity),
+        vk::DebugUtilsMessageTypeFlagsEXT(messageType),
+        vk::DebugUtilsMessengerCallbackDataEXT(*callbackData),
+        userData);
+}
+
+VkBool32 VulkanRenderer::vulkanDebugCallbackImpl(
+    vk::DebugUtilsMessageSeverityFlagsEXT messageSeverite,
+    vk::DebugUtilsMessageTypeFlagsEXT messageType,
+    const vk::DebugUtilsMessengerCallbackDataEXT& callbackData,
+    void* userData)
+{
+    Log::getInstance() << Log::DateTimeBlock << "[Validation layer " << vk::to_string(messageType) << vk::to_string(messageSeverite) << "] "
+                       << callbackData.pMessage << std::endl;
+    return VK_SUCCESS;
+}
+
+void VulkanRenderer::setupDebugCallback()
+{
+#ifdef ENGINE_DEBUG
+    auto createDebugUtilsMessengerEXT =
+        reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(mVkInstance, "vkCreateDebugUtilsMessengerEXT"));
+    if (!mVkInstance || !createDebugUtilsMessengerEXT)
+    {
+        return;
+    }
+
+    using SaverityFlagBits = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+    using TypeFlagBits     = vk::DebugUtilsMessageTypeFlagBitsEXT;
+    const VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo =
+        vk::DebugUtilsMessengerCreateInfoEXT{}
+            .setMessageSeverity(SaverityFlagBits::eError | SaverityFlagBits::eInfo | SaverityFlagBits::eVerbose | SaverityFlagBits::eWarning)
+            .setMessageType(TypeFlagBits::ePerformance | TypeFlagBits::eValidation)
+            .setPfnUserCallback(&VulkanRenderer::vulkanDebugCallback);
+
+    VkDebugUtilsMessengerEXT DebugUtilsMessengerHandler{};
+    if (vk::Result result{createDebugUtilsMessengerEXT(mVkInstance, &debugUtilsMessengerCreateInfo, nullptr, &DebugUtilsMessengerHandler)};
+        result == vk::Result::eSuccess)
+    {
+        mVkDebugUtilsMessenger = DebugUtilsMessengerHandler;
+    }
+    else
+    {
+        Log::getInstance() << "Failed to createDebugUtilsMessengerEXT, result code \"" << vk::to_string(result) << "\"" << std::endl;
+    }
+#endif
+}
+
+void VulkanRenderer::deleteDebugCallback()
+{
+#ifdef ENGINE_DEBUG
+    auto destroyDebugUtilsMessengerEXT =
+        reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(mVkInstance, "vkDestroyDebugUtilsMessengerEXT"));
+    if (destroyDebugUtilsMessengerEXT && mVkInstance && mVkDebugUtilsMessenger)
+    {
+        destroyDebugUtilsMessengerEXT(mVkInstance, mVkDebugUtilsMessenger, nullptr);
+    }
+#endif
+}
+void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes)
+{
+    if (windowAttributes->swapchain.handler)
+    {
+        mVulkanDevice->logicDevice().destroy(windowAttributes->swapchain.handler);
+    }
+    //    for (auto framebuffer : swapChainFramebuffers) {
+    //        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    //    }
+    //
+    //    vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+    //
+    //    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    //    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    //    vkDestroyRenderPass(device, renderPass, nullptr);
+    //
+    //    for (auto imageView : swapChainImageViews) {
+    //        vkDestroyImageView(device, imageView, nullptr);
+    //    }
+    //
+    //    vkDestroySwapchainKHR(device, swapChain, nullptr);
 }

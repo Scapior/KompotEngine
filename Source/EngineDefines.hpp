@@ -24,28 +24,6 @@ static const char* ENGINE_NAME           = "KompotEngine";
 
 /* Platform and OS macros */
 
-#if defined(_WIN32) || defined(__WIN32__)
-    #define ENGINE_OS_WINDOWS
-    #if defined(_WIN64) || defined(WIN64)
-        #define ENGINE_PLATFORM_x64
-        #define ENGINE_OS_WINDOWS_x64
-    #else
-        #define ENGINE_PLATFORM_x86
-        #define ENGINE_OS_WINDOWS_x32
-    #endif
-#endif
-
-#if defined(__linux__)
-    #define ENGINE_OS_LINUX
-    #if defined(__x86_64__)
-        #define ENGINE_PLATFORM_x64
-        #define ENGINE_OS_LINUX_x64
-    #elif defined(__i386__)
-        #define ENGINE_PLATFORM_x86
-        #define ENGINE_OS_LINUX_x32
-    #endif
-#endif
-
 #if defined(ENGINE_OS_WINDOWS)
     #define debugBreak() (__debugbreak())
 #endif

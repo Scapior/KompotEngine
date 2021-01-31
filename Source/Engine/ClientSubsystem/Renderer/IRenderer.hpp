@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <string_view>
+
 namespace Kompot
 {
 class Window;
@@ -20,8 +22,10 @@ struct WindowRendererAttributes
 class IRenderer
 {
 public:
+    virtual ~IRenderer(){};
     virtual WindowRendererAttributes* updateWindowAttributes(Window* window) = 0;
     virtual void unregisterWindow(Window* window)                            = 0;
+    virtual std::string_view getName() const                                 = 0;
 };
 
 } // namespace Kompot

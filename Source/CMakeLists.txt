@@ -6,6 +6,16 @@ set(GLOBAL_INCLUDE_PATH
 
 find_package(Vulkan REQUIRED)
 
+if (WIN32)
+    add_compile_definitions(ENGINE_OS_WINDOWS)
+    add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
+    add_compile_definitions(NOMINMAX) # to avoid winapi's trash macros in global space
+endif ()
+
+if (UNIX AND NOT APPLE)
+    add_compile_definitions(ENGINE_OS_LINUX)
+endif ()
+
 add_subdirectory(Misc)
 target_include_directories(Misc
         PRIVATE

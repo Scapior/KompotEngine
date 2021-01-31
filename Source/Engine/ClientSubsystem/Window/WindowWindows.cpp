@@ -8,6 +8,8 @@
 #include "Windows.h" // winapi
 #include <Engine/DebugUtils/DebugUtils.hpp>
 #include <Engine/ErrorHandling.hpp>
+#include <Engine/ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp>
+#include <Engine/Log/Log.hpp>
 
 using namespace Kompot;
 
@@ -66,8 +68,8 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
         windowStyleFlags,
         CW_USEDEFAULT, // X
         CW_USEDEFAULT, // Y
-        300,
-        300,
+        mWidth,
+        mHeight,
         nullptr,
         nullptr,
         currentAppHandlerInstance,
@@ -107,6 +109,36 @@ void Window::run()
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+}
+
+vk::SurfaceKHR Window::createVulkanSurface() const
+{
+    VulkanRenderer* vulkanRenderer = dynamic_cast<VulkanRenderer*>(mRenderer);
+    if (!vulkanRenderer)
+    {
+        check(!mRenderer) if (mRenderer)
+        {
+            Log::getInstance() << "Trying to create VkSurface with non-Vulkan renderer (" << mRenderer->getName() << ')' << std::endl;
+        }
+        else
+        {
+            Log::getInstance() << "Trying to create VkSurface with not setted renderer" << std::endl;
+        }
+        return nullptr;
+    }
+
+    const auto surfaceInfo = vk::Win32SurfaceCreateInfoKHR{}.setHinstance(::GetModuleHandle(nullptr)).setHwnd(mWindowHandlers->windowHandler);
+    if (const auto createSurfaceResult = vulkanRenderer->getVkInstance().createWin32SurfaceKHR(surfaceInfo);
+        createSurfaceResult.result == vk::Result::eSuccess)
+    {
+        return createSurfaceResult.value;
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to create VkSurface, result code \"" + vk::to_string(createSurfaceResult.result) + "\"");
+    }
+
+    return nullptr;
 }
 
 void Window::closeWindow()

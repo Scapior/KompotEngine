@@ -6,6 +6,7 @@ endif ()
 
 
 set(ENGINE_HEADERS
+        ErrorHandling.hpp
         Log/Log.hpp
         DebugUtils/DebugUtils.hpp
         EngineConfig.hpp
@@ -18,7 +19,7 @@ set(ENGINE_HEADERS
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.hpp
-        ErrorHandling.hpp)
+        ClientSubsystem/Renderer/Vulkan/VulkanTypes.h)
 
 set(ENGINE_SOURCES
         Log/Log.cpp
