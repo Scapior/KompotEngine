@@ -14,6 +14,7 @@ endif ()
 
 if (UNIX AND NOT APPLE)
     add_compile_definitions(ENGINE_OS_LINUX)
+    add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
 endif ()
 
 add_subdirectory(Misc)

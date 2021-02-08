@@ -6,7 +6,9 @@
 
 #include "Window.hpp"
 #include <Engine/Log/Log.hpp>
+#include <Engine/ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp>
 #include <xcb/xcb.h>
+#include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
 
@@ -164,4 +166,35 @@ void Window::run()
         free(xcbEvent);
     }
     // conditionVariable.wait()
+}
+
+vk::SurfaceKHR Window::createVulkanSurface() const
+{
+    VulkanRenderer* vulkanRenderer = dynamic_cast<VulkanRenderer*>(mRenderer);
+    if (!vulkanRenderer)
+    {
+        check(!mRenderer);
+        if (mRenderer)
+        {
+            Log::getInstance() << "Trying to create VkSurface with non-Vulkan renderer (" << mRenderer->getName() << ')' << std::endl;
+        }
+        else
+        {
+            Log::getInstance() << "Trying to create VkSurface with not setted renderer" << std::endl;
+        }
+        return nullptr;
+    }
+
+    const auto surfaceInfo = vk::XcbSurfaceCreateInfoKHR{}.setConnection(mWindowHandlers->xcbConnection).setWindow(mWindowHandlers->xcbWindow);
+    if (const auto createSurfaceResult = vulkanRenderer->getVkInstance().createXcbSurfaceKHR(surfaceInfo);
+        createSurfaceResult.result == vk::Result::eSuccess)
+    {
+        return createSurfaceResult.value;
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to create VkSurface, result code \"" + vk::to_string(createSurfaceResult.result) + "\"");
+    }
+
+    return nullptr;
 }

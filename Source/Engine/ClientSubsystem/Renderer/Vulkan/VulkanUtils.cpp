@@ -96,7 +96,13 @@ std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
 {
     return {
         VK_KHR_SURFACE_EXTENSION_NAME,
+
+#if defined(ENGINE_OS_WINDOWS)
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined (ENGINE_OS_LINUX)
+        VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+#endif
+
 #ifdef ENGINE_DEBUG
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #endif
