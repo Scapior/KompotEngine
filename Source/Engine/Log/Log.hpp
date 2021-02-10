@@ -9,12 +9,13 @@
 #include <EngineDefines.hpp>
 #include <EngineTypes.hpp>
 #include <Misc/DateTimeFormatter.hpp>
+#include <vulkan/vulkan.hpp>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <mutex>
 #include <thread>
-#include <vulkan/vulkan.hpp>
+#include <iostream>
 
 class Log
 {
@@ -41,8 +42,10 @@ public:
     Log& operator<<(const T& value)
     {
         std::lock_guard<std::mutex> scopeLock(m_mutex);
-        m_logFile << value;
-        m_logFile.flush();
+        m_logFile << value << std::flush;
+#if defined(ENGINE_DEBUG)
+        std::cout << value << std::flush;
+#endif
         return *this;
     }
 

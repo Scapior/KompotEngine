@@ -9,6 +9,7 @@
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
+#include <vector>
 
 using namespace Kompot;
 
@@ -181,10 +182,34 @@ void VulkanRenderer::recreateSwapchain(VulkanWindowRendererAttributes* windowAtt
                                        .setClipped(VK_TRUE)
                                        .setOldSwapchain(windowAttributes->swapchain.handler);
 
-        if (auto result = mVulkanDevice->logicDevice().createSwapchainKHR(swapchainCreateInfo); result.result == vk::Result::eSuccess)
+        const auto& logicalDevice = mVulkanDevice->logicDevice();
+        auto& swapchain = windowAttributes->swapchain;
+        if (const auto result = logicalDevice.createSwapchainKHR(swapchainCreateInfo); result.result == vk::Result::eSuccess)
         {
-            windowAttributes->swapchain.handler = result.value;
+            swapchain.handler = result.value;
             windowAttributes->swapchain.format  = swapchainFormat;
+        }
+        if (const auto result = logicalDevice.getSwapchainImagesKHR(swapchain.handler); result.result == vk::Result::eSuccess)
+        {
+            swapchain.images = result.value;
+        }
+        swapchain.imageViews.resize(swapchain.images.size());
+        for (std::size_t i = 0; i < swapchain.imageViews.size(); ++i)
+        {
+            const auto imageViewCreateInfo = vk::ImageViewCreateInfo{}
+            .setImage(swapchain.images[i])
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(swapchain.format)
+            .setComponents(vk::ComponentMapping{})
+            .setSubresourceRange(vk::ImageSubresourceRange{}.setAspectMask(vk::ImageAspectFlagBits::eColor).setLevelCount(1).setLayerCount(1));
+            if (const auto result = logicalDevice.createImageView(imageViewCreateInfo); result.result == vk::Result::eSuccess)
+            {
+                swapchain.imageViews[i] = result.value;
+            }
+            else
+            {
+                Kompot::ErrorHandling::exit("Failed to create an image view for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
+            }
         }
     }
 }
@@ -257,9 +282,17 @@ void VulkanRenderer::deleteDebugCallback()
 }
 void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes)
 {
+    auto& logicDevice = mVulkanDevice->logicDevice();
+    auto& swapchain = windowAttributes->swapchain;
+    for (auto& imageView : swapchain.imageViews)
+    {
+        logicDevice.destroy(imageView);
+    }
+    swapchain.images.resize(0);
+    swapchain.imageViews.resize(0);
     if (windowAttributes->swapchain.handler)
     {
-        mVulkanDevice->logicDevice().destroy(windowAttributes->swapchain.handler);
+        logicDevice.destroy(swapchain.handler);
     }
     //    for (auto framebuffer : swapChainFramebuffers) {
     //        vkDestroyFramebuffer(device, framebuffer, nullptr);

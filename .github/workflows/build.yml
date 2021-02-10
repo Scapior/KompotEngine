@@ -62,5 +62,4 @@ jobs:
       - name: Build
         run: cmake --build build
 
-      - name: Tests
-        run: build/Tests/Tests
+
