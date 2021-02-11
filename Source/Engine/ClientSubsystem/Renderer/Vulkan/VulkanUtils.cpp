@@ -48,7 +48,19 @@ std::vector<const char*> VulkanUtils::getRequiredDeviceExtensions()
 std::vector<const char*> VulkanUtils::getRequiredDeviceValidationLayers()
 {
 #ifdef ENGINE_DEBUG
-    return {}; // ToDo
+    return {
+        "VK_LAYER_GOOGLE_threading",
+        "VK_LAYER_GOOGLE_unique_objects",
+        "VK_LAYER_LUNARG_api_dump",
+        "VK_LAYER_LUNARG_device_limits",
+        "VK_LAYER_LUNARG_draw_state",
+        "VK_LAYER_LUNARG_image",
+        "VK_LAYER_LUNARG_mem_tracker",
+        "VK_LAYER_LUNARG_object_tracker",
+        "VK_LAYER_LUNARG_param_checker",
+        "VK_LAYER_LUNARG_screenshot",
+        "VK_LAYER_LUNARG_swapchain",
+    };
 #else
     return {};
 #endif
@@ -94,17 +106,18 @@ VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalD
 
 std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
 {
-    return {
+    return
+    {
         VK_KHR_SURFACE_EXTENSION_NAME,
 
 #if defined(ENGINE_OS_WINDOWS)
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-#elif defined (ENGINE_OS_LINUX)
-        VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined(ENGINE_OS_LINUX)
+            VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #endif
 
 #ifdef ENGINE_DEBUG
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+            VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #endif
     };
 }

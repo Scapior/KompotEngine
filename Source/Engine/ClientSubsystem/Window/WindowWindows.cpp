@@ -165,6 +165,14 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
     switch (message)
     {
     // case WM_DESTROY: // https://stackoverflow.com/a/3155883
+    case WM_PAINT:
+    {
+        if (window->mRenderer)
+        {
+            window->mRenderer->draw(window);
+        }
+        break;
+    }
     case WM_CLOSE:
         ::PostQuitMessage(0);
         break;

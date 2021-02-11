@@ -19,6 +19,8 @@ public:
     VulkanRenderer();
     ~VulkanRenderer();
 
+    void draw(Window* window) override;
+
     WindowRendererAttributes* updateWindowAttributes(Window* window) override;
     void unregisterWindow(Window* window) override;
     std::string_view getName() const override
@@ -33,7 +35,7 @@ public:
 
 protected:
     void cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes);
-    void recreateSwapchain(VulkanWindowRendererAttributes* windowAttributes);
+    void recreateWindowHandlers(VulkanWindowRendererAttributes* windowAttributes);
 
 private:
     void setupDebugCallback();
@@ -49,18 +51,35 @@ private:
         [[maybe_unused]] void* userData);
 
 private:
+    std::size_t mFrameNumber = 0;
+
     vk::Instance mVkInstance;
     std::unique_ptr<VulkanDevice> mVulkanDevice;
 
-    void createInstance();
-    vk::PhysicalDevice selectPhysicalDevice();
-    void createDevice();
+    vk::CommandPool mVkCommandPool;
+    vk::CommandBuffer mMainCommandBuffer;
+
+    vk::Format mVkSwapchainFormat;
+    vk::RenderPass mVkRenderPass;
+    std::vector<vk::Framebuffer> mVkFramebuffers;
+
+    vk::Semaphore mVkPresentSemaphore;
+    vk::Semaphore mVkRenderSemaphore;
+    vk::Fence mVkRenderFence;
 
     std::set<Window*> mWindows;
 
 #if 1 // ENGINE_DEBUG
     vk::DebugUtilsMessengerEXT mVkDebugUtilsMessenger;
 #endif
+
+private:
+    void createInstance();
+    vk::PhysicalDevice selectPhysicalDevice();
+    void createDevice();
+    void createCommands();
+    void createRenderpass();
+    void createSyncStructure();
 };
 
 } // namespace Kompot

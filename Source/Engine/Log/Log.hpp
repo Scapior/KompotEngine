@@ -20,6 +20,7 @@
 class Log
 {
     typedef std::ostream& (*OstreamManipulator)(std::ostream&);
+
 public:
     struct DateTimeBlock_t
     {

@@ -15,10 +15,10 @@ namespace Kompot
 struct VulkanSwapchain
 {
     vk::SwapchainKHR handler;
-    vk::Format format;
 
     std::vector<vk::Image> images;
     std::vector<vk::ImageView> imageViews;
+    std::vector<vk::Framebuffer> framebuffers;
 };
 
 struct VulkanWindowRendererAttributes : public WindowRendererAttributes

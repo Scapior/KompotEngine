@@ -18,10 +18,17 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
     createInstance();
     setupDebugCallback();
     mVulkanDevice.reset(new VulkanDevice(mVkInstance, selectPhysicalDevice()));
+
+    createCommands();
+    createRenderpass();
+    createSyncStructure();
 };
 
 VulkanRenderer::~VulkanRenderer()
 {
+    mVulkanDevice->logicDevice().destroy(mVkRenderPass);
+    mVulkanDevice->logicDevice().destroy(mVkCommandPool);
+    mMainCommandBuffer = nullptr;
     mVulkanDevice.release();
     deleteDebugCallback();
     mVkInstance.destroy(nullptr);
@@ -99,27 +106,27 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
 
     check(mVulkanDevice->logicDevice().waitIdle() == vk::Result::eSuccess);
 
-    VulkanWindowRendererAttributes* result;
-    auto windowAttributes = window->getWindowRendererAttributes();
-    if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(windowAttributes))
+    VulkanWindowRendererAttributes* windowAttributes;
+    auto abstractWindowAttributes = window->getWindowRendererAttributes();
+    if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(abstractWindowAttributes))
     {
-        result = vulkanWindowAttributes;
+        windowAttributes = vulkanWindowAttributes;
     }
     else
     {
-        if (windowAttributes)
+        if (abstractWindowAttributes)
         {
-            delete windowAttributes;
+            delete abstractWindowAttributes;
         }
-        result = new VulkanWindowRendererAttributes;
+        windowAttributes = new VulkanWindowRendererAttributes;
     }
-    cleanupWindowSwapchain(result);
-    result->scissor.extent = vk::Extent2D{window->getWidth(), window->getHeight()};
-    if (result && !result->surface)
+    cleanupWindowSwapchain(windowAttributes);
+    windowAttributes->scissor.extent = vk::Extent2D{window->getWidth(), window->getHeight()};
+    if (windowAttributes && !windowAttributes->surface)
     {
-        result->surface = window->createVulkanSurface();
+        windowAttributes->surface = window->createVulkanSurface();
     }
-    recreateSwapchain(result);
+    recreateWindowHandlers(windowAttributes);
 
     //    createImageViews();
     //    createRenderPass();
@@ -127,7 +134,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     //    createFramebuffers();
     //    createCommandBuffers();
 
-    return result;
+    return windowAttributes;
 }
 
 void VulkanRenderer::unregisterWindow(Window* window)
@@ -146,7 +153,7 @@ void VulkanRenderer::unregisterWindow(Window* window)
     mWindows.erase(window);
 }
 
-void VulkanRenderer::recreateSwapchain(VulkanWindowRendererAttributes* windowAttributes)
+void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* windowAttributes)
 {
     if (!windowAttributes)
     {
@@ -164,12 +171,12 @@ void VulkanRenderer::recreateSwapchain(VulkanWindowRendererAttributes* windowAtt
         const std::array<uint32_t, 2> queueFamilyIndices = {foundPresentQueue.second, graphicQueueIndex};
         const bool bQueuesAreSame                        = graphicQueueIndex == foundPresentQueue.second;
 
-        const auto swapchainFormat = vk::Format::eB8G8R8A8Srgb; // ToDo: add selection based on GPU capabilities
+        mVkSwapchainFormat = vk::Format::eB8G8R8A8Srgb; // ToDo: add selection based on GPU capabilities
         // VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR  ?
         auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
                                        .setSurface(windowAttributes->surface)
                                        .setMinImageCount(vkSurfaceCapabilities.maxImageCount)
-                                       .setImageFormat(swapchainFormat)
+                                       .setImageFormat(mVkSwapchainFormat)
                                        .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
                                        .setImageExtent(windowAttributes->scissor.extent)
                                        .setImageArrayLayers(1)
@@ -183,32 +190,54 @@ void VulkanRenderer::recreateSwapchain(VulkanWindowRendererAttributes* windowAtt
                                        .setOldSwapchain(windowAttributes->swapchain.handler);
 
         const auto& logicalDevice = mVulkanDevice->logicDevice();
-        auto& swapchain = windowAttributes->swapchain;
+        auto& swapchain           = windowAttributes->swapchain;
         if (const auto result = logicalDevice.createSwapchainKHR(swapchainCreateInfo); result.result == vk::Result::eSuccess)
         {
             swapchain.handler = result.value;
-            windowAttributes->swapchain.format  = swapchainFormat;
         }
         if (const auto result = logicalDevice.getSwapchainImagesKHR(swapchain.handler); result.result == vk::Result::eSuccess)
         {
             swapchain.images = result.value;
         }
         swapchain.imageViews.resize(swapchain.images.size());
+
+        swapchain.framebuffers.resize(swapchain.images.size());
+        auto framebufferCreateInfo = vk::FramebufferCreateInfo{}
+                                         .setRenderPass(mVkRenderPass)
+                                         .setHeight(windowAttributes->scissor.extent.height)
+                                         .setWidth(windowAttributes->scissor.extent.width)
+                                         .setLayers(1)
+                                         .setAttachmentCount(1);
+
         for (std::size_t i = 0; i < swapchain.imageViews.size(); ++i)
         {
-            const auto imageViewCreateInfo = vk::ImageViewCreateInfo{}
-            .setImage(swapchain.images[i])
-            .setViewType(vk::ImageViewType::e2D)
-            .setFormat(swapchain.format)
-            .setComponents(vk::ComponentMapping{})
-            .setSubresourceRange(vk::ImageSubresourceRange{}.setAspectMask(vk::ImageAspectFlagBits::eColor).setLevelCount(1).setLayerCount(1));
+            const auto imageViewCreateInfo =
+                vk::ImageViewCreateInfo{}
+                    .setImage(swapchain.images[i])
+                    .setViewType(vk::ImageViewType::e2D)
+                    .setFormat(mVkSwapchainFormat)
+                    .setComponents(vk::ComponentMapping{})
+                    .setSubresourceRange(
+                        vk::ImageSubresourceRange{}.setAspectMask(vk::ImageAspectFlagBits::eColor).setLevelCount(1).setLayerCount(1));
             if (const auto result = logicalDevice.createImageView(imageViewCreateInfo); result.result == vk::Result::eSuccess)
             {
                 swapchain.imageViews[i] = result.value;
             }
             else
             {
-                Kompot::ErrorHandling::exit("Failed to create an image view for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
+                Kompot::ErrorHandling::exit(
+                    "Failed to create an image view for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
+            }
+
+            framebufferCreateInfo.setPAttachments(&swapchain.imageViews[i]);
+            if (const auto result = logicalDevice.createFramebuffer(framebufferCreateInfo); result.result == vk::Result::eSuccess)
+            {
+                swapchain.framebuffers[i] = result.value;
+            }
+            else
+            {
+                Kompot::ErrorHandling::exit(
+                    "Failed to create an framebuffer for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
             }
         }
     }
@@ -280,14 +309,20 @@ void VulkanRenderer::deleteDebugCallback()
     }
 #endif
 }
+
 void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes)
 {
     auto& logicDevice = mVulkanDevice->logicDevice();
-    auto& swapchain = windowAttributes->swapchain;
+    auto& swapchain   = windowAttributes->swapchain;
+    for (auto& framebuffer : swapchain.framebuffers)
+    {
+        logicDevice.destroy(framebuffer);
+    }
     for (auto& imageView : swapchain.imageViews)
     {
         logicDevice.destroy(imageView);
     }
+    swapchain.framebuffers.resize(0);
     swapchain.images.resize(0);
     swapchain.imageViews.resize(0);
     if (windowAttributes->swapchain.handler)
@@ -309,4 +344,155 @@ void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* wind
     //    }
     //
     //    vkDestroySwapchainKHR(device, swapChain, nullptr);
+}
+
+void VulkanRenderer::createCommands()
+{
+    const auto commandPoolCreateInfo = vk::CommandPoolCreateInfo{}
+                                           .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                                           .setQueueFamilyIndex(mVulkanDevice->getGraphicsQueueIndex());
+
+    if (const auto result = mVulkanDevice->logicDevice().createCommandPool(commandPoolCreateInfo); result.result == vk::Result::eSuccess)
+    {
+        mVkCommandPool = result.value;
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to create an CommandPool, result code \"" + vk::to_string(result.result) + "\"");
+    }
+
+    const auto commandBufferAllocateInfo =
+        vk::CommandBufferAllocateInfo{}.setCommandPool(mVkCommandPool).setCommandBufferCount(1).setLevel(vk::CommandBufferLevel::ePrimary);
+
+    if (const auto result = mVulkanDevice->logicDevice().allocateCommandBuffers(commandBufferAllocateInfo);
+        result.result == vk::Result::eSuccess && result.value.size() == 1)
+    {
+        mMainCommandBuffer = result.value[0];
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to create an CommandBuffer, result code \"" + vk::to_string(result.result) + "\"");
+    }
+}
+
+void VulkanRenderer::createRenderpass()
+{
+    auto renderpassAttachmentDescription = vk::AttachmentDescription{}
+                                               .setFormat(mVkSwapchainFormat)
+                                               .setSamples(vk::SampleCountFlagBits::e1)
+                                               .setLoadOp(vk::AttachmentLoadOp::eClear)
+                                               .setStoreOp(vk::AttachmentStoreOp::eStore)
+                                               .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                                               .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                                               .setInitialLayout(vk::ImageLayout::eUndefined)
+                                               .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+    std::array renderpassAttachmentDescriptionArray = {renderpassAttachmentDescription};
+
+    const auto attachmentReference      = vk::AttachmentReference{}.setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+    std::array attachmentReferenceArray = {attachmentReference};
+
+    const auto subpassDescription =
+        vk::SubpassDescription{}.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics).setColorAttachments(attachmentReferenceArray);
+    std::array subpassDescriptionArray = {subpassDescription};
+
+    const auto renderpassCreateInfo =
+        vk::RenderPassCreateInfo{}.setAttachments(renderpassAttachmentDescriptionArray).setSubpasses(subpassDescriptionArray);
+
+
+    if (const auto result = mVulkanDevice->logicDevice().createRenderPass(renderpassCreateInfo); result.result == vk::Result::eSuccess)
+    {
+        mVkRenderPass = result.value;
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to create an RenderPass, result code \"" + vk::to_string(result.result) + "\"");
+    }
+}
+
+void VulkanRenderer::createSyncStructure()
+{
+    const auto fenceCreateInfo = vk::FenceCreateInfo{}.setFlags(vk::FenceCreateFlagBits::eSignaled);
+    if (const auto result = mVulkanDevice->logicDevice().createFence(fenceCreateInfo); result.result == vk::Result::eSuccess)
+    {
+        mVkRenderFence = result.value;
+    }
+
+    if (const auto result = mVulkanDevice->logicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+    {
+        mVkRenderSemaphore = result.value;
+    }
+
+    if (const auto result = mVulkanDevice->logicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+    {
+        mVkPresentSemaphore = result.value;
+    }
+
+    if (!mVkRenderFence || !mVkRenderSemaphore || !mVkPresentSemaphore)
+    {
+        Kompot::ErrorHandling::exit("Failed to create sync structures");
+    }
+}
+void VulkanRenderer::draw(Window* window)
+{
+    auto windowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(window ? window->getWindowRendererAttributes() : nullptr);
+    if (!windowAttributes)
+    {
+        return;
+    }
+
+    // wait until the GPU has finished rendering the last frame. Timeout of 1 second
+    std::array fencesArray = {mVkRenderFence};
+    const auto timeout     = std::chrono::microseconds(1).count();
+    check(mVulkanDevice->logicDevice().waitForFences(fencesArray, true, timeout) == vk::Result::eSuccess);
+    mVulkanDevice->logicDevice().resetFences(fencesArray);
+
+    uint32_t swapchainImageIndex = 0;
+    if (const auto result =
+            mVulkanDevice->logicDevice().acquireNextImageKHR(windowAttributes->swapchain.handler, timeout, mVkPresentSemaphore, nullptr);
+        result.result == vk::Result::eSuccess)
+    {
+        swapchainImageIndex = result.value;
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to acquire next framebuffer image");
+    }
+
+    check(mMainCommandBuffer.reset(vk::CommandBufferResetFlagBits{}) == vk::Result::eSuccess);
+    check(mMainCommandBuffer.begin(vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)) == vk::Result::eSuccess);
+
+    const float flash              = abs(sin(mFrameNumber / 120.f));
+    const auto clearValue          = vk::ClearValue{}.setColor(vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f}));
+    const auto renderPassBeginInfo = vk::RenderPassBeginInfo{}
+                                         .setRenderPass(mVkRenderPass)
+                                         .setFramebuffer(windowAttributes->swapchain.framebuffers[swapchainImageIndex])
+                                         .setRenderArea(vk::Rect2D{}.setExtent(windowAttributes->scissor.extent))
+                                         .setClearValueCount(1)
+                                         .setPClearValues(&clearValue);
+
+    mMainCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    mMainCommandBuffer.endRenderPass();
+
+    check(mMainCommandBuffer.end() == vk::Result::eSuccess);
+
+    const std::array renderSemaphoreArray    = {mVkRenderSemaphore};
+    const std::array pipelineStageFlagsArray = {vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput}};
+    const std::array commandBufferArray      = {mMainCommandBuffer};
+    const std::array presentSemaphoreArray   = {mVkPresentSemaphore};
+    const std::array submitInfoArray         = {vk::SubmitInfo{}
+                                            .setWaitSemaphores(renderSemaphoreArray)
+                                            .setWaitDstStageMask(pipelineStageFlagsArray)
+                                            .setCommandBuffers(commandBufferArray)
+                                            .setSignalSemaphores(presentSemaphoreArray)};
+
+    check(mVulkanDevice->getGraphicsQueue().submit(submitInfoArray, mVkRenderFence) == vk::Result::eSuccess);
+
+    const std::array swapchainArray    = {windowAttributes->swapchain.handler};
+    const std::array ImageIndicesArray = {swapchainImageIndex};
+    const auto presentInfo =
+        vk::PresentInfoKHR{}.setWaitSemaphores(renderSemaphoreArray).setSwapchains(swapchainArray).setImageIndices(ImageIndicesArray);
+
+    check(windowAttributes->presentQueue.presentKHR(presentInfo) == vk::Result::eSuccess);
+
+    ++mFrameNumber;
 }
