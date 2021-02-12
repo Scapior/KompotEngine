@@ -59,7 +59,7 @@ private:
     vk::CommandPool mVkCommandPool;
     vk::CommandBuffer mMainCommandBuffer;
 
-    vk::Format mVkSwapchainFormat;
+    vk::Format mVkSwapchainFormat = vk::Format::eB8G8R8A8Srgb; // ToDo: add selection based on GPU capabilities
     vk::RenderPass mVkRenderPass;
     std::vector<vk::Framebuffer> mVkFramebuffers;
 

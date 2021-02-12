@@ -14,6 +14,7 @@ namespace Kompot::VulkanUtils
 {
 // instance
 std::vector<const char*> getRequiredInstanceExtensions();
+std::vector<const char*> getRequiredInstanceValidationLayers();
 
 // physical device selection
 struct DeviceComparsionAttributes

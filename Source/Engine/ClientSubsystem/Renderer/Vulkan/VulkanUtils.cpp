@@ -48,19 +48,7 @@ std::vector<const char*> VulkanUtils::getRequiredDeviceExtensions()
 std::vector<const char*> VulkanUtils::getRequiredDeviceValidationLayers()
 {
 #ifdef ENGINE_DEBUG
-    return {
-        "VK_LAYER_GOOGLE_threading",
-        "VK_LAYER_GOOGLE_unique_objects",
-        "VK_LAYER_LUNARG_api_dump",
-        "VK_LAYER_LUNARG_device_limits",
-        "VK_LAYER_LUNARG_draw_state",
-        "VK_LAYER_LUNARG_image",
-        "VK_LAYER_LUNARG_mem_tracker",
-        "VK_LAYER_LUNARG_object_tracker",
-        "VK_LAYER_LUNARG_param_checker",
-        "VK_LAYER_LUNARG_screenshot",
-        "VK_LAYER_LUNARG_swapchain",
-    };
+    return {};
 #else
     return {};
 #endif
@@ -117,9 +105,21 @@ std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
 #endif
 
 #ifdef ENGINE_DEBUG
-            VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+            VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 #endif
     };
+}
+std::vector<const char*> VulkanUtils::getRequiredInstanceValidationLayers()
+{
+#ifdef ENGINE_DEBUG
+    return {
+        //"VK_LAYER_LUNARG_api_dump",
+        //"VK_LAYER_LUNARG_monitor",
+        "VK_LAYER_KHRONOS_validation",
+    };
+#else
+    return {};
+#endif
 }
 
 bool VulkanUtils::QueueFamilies::hasAllIndicies() const

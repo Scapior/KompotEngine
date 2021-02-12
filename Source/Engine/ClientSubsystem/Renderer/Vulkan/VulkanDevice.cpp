@@ -23,7 +23,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
         Kompot::ErrorHandling::exit("Not all queue families was found");
     }
 
-    std::array<vk::DeviceQueueCreateInfo, 3> queuesCreateInfos{};
+    std::array<vk::DeviceQueueCreateInfo, 1 /*3*/> queuesCreateInfos{};
 
     std::vector<float> graphicsQueuePriorities(queueFamilies.graphicsCount);
     queuesCreateInfos[0]
@@ -31,17 +31,17 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
         .setQueueCount(queueFamilies.graphicsCount)
         .setQueuePriorities(graphicsQueuePriorities);
 
-    std::vector<float> computeQueuePriorities(queueFamilies.computeCount);
-    queuesCreateInfos[1]
-        .setQueueFamilyIndex(queueFamilies.computeIndex.value())
-        .setQueueCount(queueFamilies.computeCount)
-        .setQueuePriorities(computeQueuePriorities);
-
-    std::vector<float> transferQueuePriorities(queueFamilies.transferCount);
-    queuesCreateInfos[2]
-        .setQueueFamilyIndex(queueFamilies.transferIndex.value())
-        .setQueueCount(queueFamilies.transferCount)
-        .setQueuePriorities(transferQueuePriorities);
+    //    std::vector<float> computeQueuePriorities(queueFamilies.computeCount);
+    //    queuesCreateInfos[1]
+    //        .setQueueFamilyIndex(queueFamilies.computeIndex.value())
+    //        .setQueueCount(queueFamilies.computeCount)
+    //        .setQueuePriorities(computeQueuePriorities);
+    //
+    //    std::vector<float> transferQueuePriorities(queueFamilies.transferCount);
+    //    queuesCreateInfos[2]
+    //        .setQueueFamilyIndex(queueFamilies.transferIndex.value())
+    //        .setQueueCount(queueFamilies.transferCount)
+    //        .setQueuePriorities(transferQueuePriorities);
 
     const auto extensions       = VulkanUtils::getRequiredDeviceExtensions();
     const auto validationLayers = VulkanUtils::getRequiredDeviceValidationLayers();
@@ -54,8 +54,8 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
         mVkDevice = result.value;
         // ToDo: only one queue? maybe we need a queue manager
         mGraphicsQueue = mVkDevice.getQueue(queueFamilies.graphicsIndex.value(), 0);
-        mComputeQueue  = mVkDevice.getQueue(queueFamilies.computeIndex.value(), 0);
-        mTransferQueue = mVkDevice.getQueue(queueFamilies.transferIndex.value(), 0);
+        // mComputeQueue  = mVkDevice.getQueue(queueFamilies.computeIndex.value(), 0);
+        // mTransferQueue = mVkDevice.getQueue(queueFamilies.transferIndex.value(), 0);
     }
     else
     {

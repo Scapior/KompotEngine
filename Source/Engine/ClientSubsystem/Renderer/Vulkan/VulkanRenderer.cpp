@@ -10,6 +10,7 @@
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
 #include <vector>
+#include <cmath>
 
 using namespace Kompot;
 
@@ -38,8 +39,14 @@ void VulkanRenderer::createInstance()
 {
     vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, VK_MAKE_VERSION(1, 2, 0)};
 
-    const auto instanceExtensions = VulkanUtils::getRequiredInstanceExtensions();
-    auto vkInstanceCreateInfo     = vk::InstanceCreateInfo{}.setPApplicationInfo(&vkApplicationInfo).setPEnabledExtensionNames(instanceExtensions);
+    const auto instanceExtensions       = VulkanUtils::getRequiredInstanceExtensions();
+    const auto instanceValidationLayers = VulkanUtils::getRequiredInstanceValidationLayers();
+    auto vkInstanceCreateInfo           = vk::InstanceCreateInfo{}
+                                    .setPApplicationInfo(&vkApplicationInfo)
+                                    .setPEnabledExtensionNames(instanceExtensions)
+                                    .setPEnabledLayerNames(instanceValidationLayers)
+                                    .setEnabledLayerCount(instanceValidationLayers.size())
+                                    .setEnabledExtensionCount(instanceExtensions.size());
 
     if (const auto result = vk::createInstance(vkInstanceCreateInfo); result.result == vk::Result::eSuccess)
     {
@@ -168,14 +175,14 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         const auto foundPresentQueue = mVulkanDevice->findPresentQueue(windowAttributes);
         const auto graphicQueueIndex = mVulkanDevice->getGraphicsQueueIndex();
 
+        windowAttributes->presentQueue                   = foundPresentQueue.first;
         const std::array<uint32_t, 2> queueFamilyIndices = {foundPresentQueue.second, graphicQueueIndex};
         const bool bQueuesAreSame                        = graphicQueueIndex == foundPresentQueue.second;
 
-        mVkSwapchainFormat = vk::Format::eB8G8R8A8Srgb; // ToDo: add selection based on GPU capabilities
         // VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR  ?
         auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
                                        .setSurface(windowAttributes->surface)
-                                       .setMinImageCount(vkSurfaceCapabilities.maxImageCount)
+                                       .setMinImageCount(vkSurfaceCapabilities.minImageCount)
                                        .setImageFormat(mVkSwapchainFormat)
                                        .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
                                        .setImageExtent(windowAttributes->scissor.extent)
@@ -377,26 +384,28 @@ void VulkanRenderer::createCommands()
 
 void VulkanRenderer::createRenderpass()
 {
-    auto renderpassAttachmentDescription = vk::AttachmentDescription{}
-                                               .setFormat(mVkSwapchainFormat)
-                                               .setSamples(vk::SampleCountFlagBits::e1)
-                                               .setLoadOp(vk::AttachmentLoadOp::eClear)
-                                               .setStoreOp(vk::AttachmentStoreOp::eStore)
-                                               .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-                                               .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                                               .setInitialLayout(vk::ImageLayout::eUndefined)
-                                               .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-    std::array renderpassAttachmentDescriptionArray = {renderpassAttachmentDescription};
+    const auto renderpassAttachmentDescription = vk::AttachmentDescription{}
+                                                     .setFormat(mVkSwapchainFormat)
+                                                     .setSamples(vk::SampleCountFlagBits::e1)
+                                                     .setLoadOp(vk::AttachmentLoadOp::eClear)
+                                                     .setStoreOp(vk::AttachmentStoreOp::eStore)
+                                                     .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                                                     .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                                                     .setInitialLayout(vk::ImageLayout::eUndefined)
+                                                     .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
-    const auto attachmentReference      = vk::AttachmentReference{}.setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-    std::array attachmentReferenceArray = {attachmentReference};
+    const auto attachmentReference = vk::AttachmentReference{}.setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-    const auto subpassDescription =
-        vk::SubpassDescription{}.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics).setColorAttachments(attachmentReferenceArray);
-    std::array subpassDescriptionArray = {subpassDescription};
+    const auto subpassDescription = vk::SubpassDescription{}
+                                        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                                        .setColorAttachmentCount(1)
+                                        .setPColorAttachments(&attachmentReference);
 
-    const auto renderpassCreateInfo =
-        vk::RenderPassCreateInfo{}.setAttachments(renderpassAttachmentDescriptionArray).setSubpasses(subpassDescriptionArray);
+    const auto renderpassCreateInfo = vk::RenderPassCreateInfo{}
+                                          .setAttachmentCount(1)
+                                          .setPAttachments(&renderpassAttachmentDescription)
+                                          .setSubpassCount(1)
+                                          .setPSubpasses(&subpassDescription);
 
 
     if (const auto result = mVulkanDevice->logicDevice().createRenderPass(renderpassCreateInfo); result.result == vk::Result::eSuccess)
@@ -441,10 +450,9 @@ void VulkanRenderer::draw(Window* window)
     }
 
     // wait until the GPU has finished rendering the last frame. Timeout of 1 second
-    std::array fencesArray = {mVkRenderFence};
-    const auto timeout     = std::chrono::microseconds(1).count();
-    check(mVulkanDevice->logicDevice().waitForFences(fencesArray, true, timeout) == vk::Result::eSuccess);
-    mVulkanDevice->logicDevice().resetFences(fencesArray);
+    const auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)).count();
+    check(mVulkanDevice->logicDevice().waitForFences(1, &mVkRenderFence, true, timeout) == vk::Result::eSuccess);
+    check(mVulkanDevice->logicDevice().resetFences(1, &mVkRenderFence) == vk::Result::eSuccess);
 
     uint32_t swapchainImageIndex = 0;
     if (const auto result =
@@ -461,7 +469,7 @@ void VulkanRenderer::draw(Window* window)
     check(mMainCommandBuffer.reset(vk::CommandBufferResetFlagBits{}) == vk::Result::eSuccess);
     check(mMainCommandBuffer.begin(vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)) == vk::Result::eSuccess);
 
-    const float flash              = abs(sin(mFrameNumber / 120.f));
+    const float flash              = std::abs(std::sin(mFrameNumber / 30.f));
     const auto clearValue          = vk::ClearValue{}.setColor(vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f}));
     const auto renderPassBeginInfo = vk::RenderPassBeginInfo{}
                                          .setRenderPass(mVkRenderPass)
@@ -475,22 +483,24 @@ void VulkanRenderer::draw(Window* window)
 
     check(mMainCommandBuffer.end() == vk::Result::eSuccess);
 
-    const std::array renderSemaphoreArray    = {mVkRenderSemaphore};
-    const std::array pipelineStageFlagsArray = {vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput}};
-    const std::array commandBufferArray      = {mMainCommandBuffer};
-    const std::array presentSemaphoreArray   = {mVkPresentSemaphore};
-    const std::array submitInfoArray         = {vk::SubmitInfo{}
-                                            .setWaitSemaphores(renderSemaphoreArray)
-                                            .setWaitDstStageMask(pipelineStageFlagsArray)
-                                            .setCommandBuffers(commandBufferArray)
-                                            .setSignalSemaphores(presentSemaphoreArray)};
+    const auto pipelineStageFlags = vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    const auto submitInfo         = vk::SubmitInfo{}
+                                .setWaitSemaphoreCount(1)
+                                .setPWaitSemaphores(&mVkPresentSemaphore)
+                                .setPWaitDstStageMask(&pipelineStageFlags)
+                                .setCommandBufferCount(1)
+                                .setPCommandBuffers(&mMainCommandBuffer)
+                                .setSignalSemaphoreCount(1)
+                                .setPSignalSemaphores(&mVkRenderSemaphore);
 
-    check(mVulkanDevice->getGraphicsQueue().submit(submitInfoArray, mVkRenderFence) == vk::Result::eSuccess);
+    check(mVulkanDevice->getGraphicsQueue().submit(1, &submitInfo, mVkRenderFence) == vk::Result::eSuccess);
 
-    const std::array swapchainArray    = {windowAttributes->swapchain.handler};
-    const std::array ImageIndicesArray = {swapchainImageIndex};
-    const auto presentInfo =
-        vk::PresentInfoKHR{}.setWaitSemaphores(renderSemaphoreArray).setSwapchains(swapchainArray).setImageIndices(ImageIndicesArray);
+    const auto presentInfo = vk::PresentInfoKHR{}
+                                 .setWaitSemaphoreCount(1)
+                                 .setPWaitSemaphores(&mVkRenderSemaphore)
+                                 .setSwapchainCount(1)
+                                 .setPSwapchains(&windowAttributes->swapchain.handler)
+                                 .setPImageIndices(&swapchainImageIndex);
 
     check(windowAttributes->presentQueue.presentKHR(presentInfo) == vk::Result::eSuccess);
 

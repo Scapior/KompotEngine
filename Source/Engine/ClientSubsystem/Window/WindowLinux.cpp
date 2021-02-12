@@ -75,8 +75,8 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
         mWindowHandlers->xcbScreen->root,
         0,
         0,
-        500, // engineConfig.windowWidth,
-        500, // engineConfig.windowHeight,
+        400, // engineConfig.windowWidth,
+        400, // engineConfig.windowHeight,
         10,
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         mWindowHandlers->xcbScreen->root_visual,
@@ -142,9 +142,14 @@ void Window::run()
         {
             xcb_expose_event_t* xcbExposeEvent = reinterpret_cast<xcb_expose_event_t*>(xcbEvent);
 
-            log << "Window " << xcbExposeEvent->window << " exposed. Region to be redrawn at location (" << xcbExposeEvent->x << ","
-                << xcbExposeEvent->y << "), with dimension (" << xcbExposeEvent->width << "," << xcbExposeEvent->height << ")\n"
-                << std::endl;
+            if (mRenderer)
+            {
+                mRenderer->draw(this);
+            }
+
+            //            log << "Window " << xcbExposeEvent->window << " exposed. Region to be redrawn at location (" << xcbExposeEvent->x << ","
+            //                << xcbExposeEvent->y << "), with dimension (" << xcbExposeEvent->width << "," << xcbExposeEvent->height << ")\n"
+            //                << std::endl;
             break;
         }
         case XCB_CLIENT_MESSAGE:
