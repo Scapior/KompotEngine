@@ -49,8 +49,8 @@ void VulkanRenderer::createInstance()
                                     .setPApplicationInfo(&vkApplicationInfo)
                                     .setPEnabledExtensionNames(instanceExtensions)
                                     .setPEnabledLayerNames(instanceValidationLayers)
-                                    .setEnabledLayerCount(instanceValidationLayers.size())
-                                    .setEnabledExtensionCount(instanceExtensions.size());
+                                    .setEnabledLayerCount(static_cast<uint32_t>(instanceValidationLayers.size()))
+                                    .setEnabledExtensionCount(static_cast<uint32_t>(instanceExtensions.size()));
 
     if (const auto result = vk::createInstance(vkInstanceCreateInfo); result.result == vk::Result::eSuccess)
     {

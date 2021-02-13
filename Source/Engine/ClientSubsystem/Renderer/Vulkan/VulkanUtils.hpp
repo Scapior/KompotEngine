@@ -9,6 +9,7 @@
 #include <EngineTypes.hpp>
 #include <optional>
 #include <vulkan/vulkan.hpp>
+#include <set>
 
 namespace Kompot::VulkanUtils
 {
@@ -30,16 +31,18 @@ std::vector<const char*> getRequiredDeviceValidationLayers();
 
 struct QueueFamilies
 {
-    std::optional<uint32_t> graphicsIndex;
+    std::optional<std::uint32_t> graphicsIndex;
     std::uint32_t graphicsCount;
 
-    std::optional<uint32_t> computeIndex;
+    std::optional<std::uint32_t> computeIndex;
     std::uint32_t computeCount;
 
-    std::optional<uint32_t> transferIndex;
+    std::optional<std::uint32_t> transferIndex;
     std::uint32_t transferCount;
 
     bool hasAllIndicies() const;
+
+    const std::set<std::uint32_t> getUniqueQueueFamilyIndicies();
 };
 
 QueueFamilies selectQueuesFamilies(const vk::PhysicalDevice& vkPhysicalDevice);

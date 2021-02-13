@@ -126,3 +126,11 @@ bool VulkanUtils::QueueFamilies::hasAllIndicies() const
 {
     return graphicsIndex.has_value() && computeIndex.has_value() && transferIndex.has_value();
 }
+const std::set<std::uint32_t> VulkanUtils::QueueFamilies::getUniqueQueueFamilyIndicies()
+{
+    if (hasAllIndicies())
+    {
+        return {graphicsIndex.value(), computeIndex.value(), transferIndex.value()};
+    }
+    return {};
+}
