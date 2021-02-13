@@ -26,6 +26,7 @@ public:
 
     virtual void draw(Window* window) = 0;
 
+    virtual void notifyWindowResized(Window* window)                         = 0;
     virtual WindowRendererAttributes* updateWindowAttributes(Window* window) = 0;
     virtual void unregisterWindow(Window* window)                            = 0;
     virtual std::string_view getName() const                                 = 0;

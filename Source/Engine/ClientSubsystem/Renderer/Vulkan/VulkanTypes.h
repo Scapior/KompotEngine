@@ -27,6 +27,8 @@ struct VulkanWindowRendererAttributes : public WindowRendererAttributes
     VulkanSwapchain swapchain;
     vk::Rect2D scissor;
     vk::Queue presentQueue;
+    bool framebufferResized = false;
+    bool isPendingDestroy   = false;
 };
 
 } // namespace Kompot

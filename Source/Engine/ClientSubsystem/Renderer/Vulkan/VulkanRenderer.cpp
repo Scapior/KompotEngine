@@ -27,10 +27,14 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 
 VulkanRenderer::~VulkanRenderer()
 {
+    mVulkanDevice->logicDevice().destroy(mVkRenderFence);
+    mVulkanDevice->logicDevice().destroy(mVkRenderSemaphore);
+    mVulkanDevice->logicDevice().destroy(mVkPresentSemaphore);
     mVulkanDevice->logicDevice().destroy(mVkRenderPass);
     mVulkanDevice->logicDevice().destroy(mVkCommandPool);
     mMainCommandBuffer = nullptr;
-    mVulkanDevice.release();
+    // mVulkanDevice->logicDevice().destroy();
+    mVulkanDevice.reset();
     deleteDebugCallback();
     mVkInstance.destroy(nullptr);
 }
@@ -128,11 +132,13 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
         windowAttributes = new VulkanWindowRendererAttributes;
     }
     cleanupWindowSwapchain(windowAttributes);
-    windowAttributes->scissor.extent = vk::Extent2D{window->getWidth(), window->getHeight()};
+    const auto windowExtent          = window->getExtent();
+    windowAttributes->scissor.extent = vk::Extent2D{windowExtent[0], windowExtent[1]};
     if (windowAttributes && !windowAttributes->surface)
     {
         windowAttributes->surface = window->createVulkanSurface();
     }
+    const auto windowExtentAfter = window->getExtent();
     recreateWindowHandlers(windowAttributes);
 
     //    createImageViews();
@@ -150,9 +156,13 @@ void VulkanRenderer::unregisterWindow(Window* window)
     {
         return;
     }
+
     auto windowAttributes = window->getWindowRendererAttributes();
     if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(windowAttributes))
     {
+        vulkanWindowAttributes->isPendingDestroy = true;
+        check(mVulkanDevice->logicDevice().waitIdle() == vk::Result::eSuccess);
+
         cleanupWindowSwapchain(vulkanWindowAttributes);
         mVkInstance.destroySurfaceKHR(vulkanWindowAttributes->surface);
     }
@@ -179,13 +189,15 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         const std::array<uint32_t, 2> queueFamilyIndices = {foundPresentQueue.second, graphicQueueIndex};
         const bool bQueuesAreSame                        = graphicQueueIndex == foundPresentQueue.second;
 
+        windowAttributes->scissor.setExtent(vkSurfaceCapabilities.currentExtent);
+
         // VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR  ?
         auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
                                        .setSurface(windowAttributes->surface)
                                        .setMinImageCount(vkSurfaceCapabilities.minImageCount)
                                        .setImageFormat(mVkSwapchainFormat)
                                        .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
-                                       .setImageExtent(windowAttributes->scissor.extent)
+                                       .setImageExtent(vkSurfaceCapabilities.currentExtent)
                                        .setImageArrayLayers(1)
                                        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
                                        .setImageSharingMode(bQueuesAreSame ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
@@ -193,8 +205,8 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
                                        .setPreTransform(vkSurfaceCapabilities.currentTransform)
                                        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
                                        .setPresentMode(vk::PresentModeKHR::eMailbox)
-                                       .setClipped(VK_TRUE)
-                                       .setOldSwapchain(windowAttributes->swapchain.handler);
+                                       .setClipped(VK_TRUE);
+        //.setOldSwapchain(windowAttributes->swapchain.handler);
 
         const auto& logicalDevice = mVulkanDevice->logicDevice();
         auto& swapchain           = windowAttributes->swapchain;
@@ -248,6 +260,8 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
             }
         }
     }
+
+    windowAttributes->framebufferResized = false;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::vulkanDebugCallback(
@@ -444,15 +458,13 @@ void VulkanRenderer::createSyncStructure()
 void VulkanRenderer::draw(Window* window)
 {
     auto windowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(window ? window->getWindowRendererAttributes() : nullptr);
-    if (!windowAttributes)
+    if (!windowAttributes || windowAttributes->isPendingDestroy)
     {
         return;
     }
 
     // wait until the GPU has finished rendering the last frame. Timeout of 1 second
     const auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)).count();
-    check(mVulkanDevice->logicDevice().waitForFences(1, &mVkRenderFence, true, timeout) == vk::Result::eSuccess);
-    check(mVulkanDevice->logicDevice().resetFences(1, &mVkRenderFence) == vk::Result::eSuccess);
 
     uint32_t swapchainImageIndex = 0;
     if (const auto result =
@@ -461,15 +473,23 @@ void VulkanRenderer::draw(Window* window)
     {
         swapchainImageIndex = result.value;
     }
+    else if (result.result == vk::Result::eErrorOutOfDateKHR || result.result == vk::Result::eSuboptimalKHR || windowAttributes->framebufferResized)
+    {
+        updateWindowAttributes(window);
+        return;
+    }
     else
     {
         Kompot::ErrorHandling::exit("Failed to acquire next framebuffer image");
     }
 
+    check(mVulkanDevice->logicDevice().waitForFences(1, &mVkRenderFence, true, timeout) == vk::Result::eSuccess);
+    check(mVulkanDevice->logicDevice().resetFences(1, &mVkRenderFence) == vk::Result::eSuccess);
+
     check(mMainCommandBuffer.reset(vk::CommandBufferResetFlagBits{}) == vk::Result::eSuccess);
     check(mMainCommandBuffer.begin(vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)) == vk::Result::eSuccess);
 
-    const float flash              = std::abs(std::sin(mFrameNumber / 30.f));
+    const float flash              = std::abs(std::sin(mFrameNumber / 120.f));
     const auto clearValue          = vk::ClearValue{}.setColor(vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f}));
     const auto renderPassBeginInfo = vk::RenderPassBeginInfo{}
                                          .setRenderPass(mVkRenderPass)
@@ -502,7 +522,21 @@ void VulkanRenderer::draw(Window* window)
                                  .setPSwapchains(&windowAttributes->swapchain.handler)
                                  .setPImageIndices(&swapchainImageIndex);
 
-    check(windowAttributes->presentQueue.presentKHR(presentInfo) == vk::Result::eSuccess);
+    const auto presentResult = windowAttributes->presentQueue.presentKHR(presentInfo);
+    if (presentResult == vk::Result::eErrorOutOfDateKHR)
+    {
+        windowAttributes->framebufferResized = true;
+        // , &mVkRenderFence
+    }
 
     ++mFrameNumber;
+}
+
+void VulkanRenderer::notifyWindowResized(Window* window)
+{
+    auto windowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(window ? window->getWindowRendererAttributes() : nullptr);
+    if (windowAttributes)
+    {
+        windowAttributes->framebufferResized = true;
+    }
 }

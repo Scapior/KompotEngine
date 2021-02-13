@@ -21,6 +21,7 @@ public:
 
     void draw(Window* window) override;
 
+    void notifyWindowResized(Window* window) override;
     WindowRendererAttributes* updateWindowAttributes(Window* window) override;
     void unregisterWindow(Window* window) override;
     std::string_view getName() const override

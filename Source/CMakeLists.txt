@@ -6,6 +6,8 @@ set(GLOBAL_INCLUDE_PATH
 
 find_package(Vulkan REQUIRED)
 
+add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
+
 if (WIN32)
     add_compile_definitions(ENGINE_OS_WINDOWS)
     add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)

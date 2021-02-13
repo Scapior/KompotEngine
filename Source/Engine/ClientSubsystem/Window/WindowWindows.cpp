@@ -68,8 +68,8 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
         windowStyleFlags,
         CW_USEDEFAULT, // X
         CW_USEDEFAULT, // Y
-        mWidth,
-        mHeight,
+        384,
+        361,
         nullptr,
         nullptr,
         currentAppHandlerInstance,
@@ -173,6 +173,12 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
         }
         break;
     }
+    case WM_SIZE:
+        if (window->mRenderer)
+        {
+            window->mRenderer->notifyWindowResized(window);
+        }
+        break;
     case WM_CLOSE:
         ::PostQuitMessage(0);
         break;
@@ -187,4 +193,19 @@ int64_t Window::windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, i
         return ::DefWindowProcW(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+std::array<uint32_t, 2> Window::getExtent() const
+{
+    std::array<uint32_t, 2> result{};
+
+    RECT windowRectangle{};
+    if (::GetWindowRect(mWindowHandlers->windowHandler, &windowRectangle))
+    {
+        result = {
+            static_cast<uint32_t>(windowRectangle.right - windowRectangle.left),
+            static_cast<uint32_t>(windowRectangle.bottom - windowRectangle.top)};
+    }
+
+    return result;
 }

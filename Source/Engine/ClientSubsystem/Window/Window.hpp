@@ -27,15 +27,7 @@ public:
     void run();
     void closeWindow();
 
-    uint32_t getWidth() const
-    {
-        return mWidth;
-    };
-
-    uint32_t getHeight() const
-    {
-        return mHeight;
-    };
+    std::array<uint32_t, 2> getExtent() const;
 
     WindowRendererAttributes* getWindowRendererAttributes() const
     {
@@ -52,9 +44,6 @@ public:
 private:
     std::string mWindowName;
     Kompot::IRenderer* mRenderer;
-
-    uint32_t mWidth  = 400;
-    uint32_t mHeight = 400;
 
     PlatformHandlers* mWindowHandlers             = nullptr;
     const PlatformHandlers* mParentWindowHandlers = nullptr;
