@@ -24,7 +24,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
         Kompot::ErrorHandling::exit("Not all queue families was found");
     }
 
-    const std::set<std::uint32_t> uniqueQueueFamilyIndicies  =  queueFamilies.getUniqueQueueFamilyIndicies();
+    const std::set<std::uint32_t> uniqueQueueFamilyIndicies = queueFamilies.getUniqueQueueFamilyIndicies();
 
     std::vector<vk::DeviceQueueCreateInfo> queuesCreateInfos{uniqueQueueFamilyIndicies.size()};
     std::vector<std::vector<float>> queuePriorities{uniqueQueueFamilyIndicies.size()};
