@@ -17,6 +17,9 @@ struct Kompot::PlatformHandlers
     xcb_connection_t* xcbConnection;
     xcb_screen_t* xcbScreen;
     xcb_window_t xcbWindow;
+
+    std::uint32_t width;
+    std::uint32_t height;
 };
 
 xcb_intern_atom_reply_t* reply2;
@@ -95,11 +98,35 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
     xcb_flush(mWindowHandlers->xcbConnection);
 
     mWindowRendererAttributes = renderer->updateWindowAttributes(this);
+    const auto extent = getExtent();
+    mWindowHandlers->width = extent[0];
+    mWindowHandlers->height = extent[1];
 }
 
 Window::~Window()
 {
-    xcb_disconnect(mWindowHandlers->xcbConnection);
+    if (mRenderer)
+    {
+        mRenderer->unregisterWindow(this);
+    }
+    if (mWindowRendererAttributes)
+    {
+        delete mWindowRendererAttributes;
+        mWindowRendererAttributes = nullptr;
+    }
+    if (mWindowHandlers)
+    {
+        xcb_destroy_window(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
+        xcb_flush(mWindowHandlers->xcbConnection);
+        // cleanup screen_t ?
+        xcb_disconnect(mWindowHandlers->xcbConnection);
+
+        mWindowHandlers->xcbWindow = 0;
+        mWindowHandlers->xcbScreen = nullptr;
+        mWindowHandlers->xcbConnection = nullptr;
+    }
+    delete mWindowHandlers;
+    mWindowHandlers = nullptr;
 }
 
 void Window::run()
@@ -138,6 +165,17 @@ void Window::run()
             break;
         case XCB_ENTER_NOTIFY:
             break;
+        case XCB_CONFIGURE_NOTIFY:
+        {
+            xcb_configure_notify_event_t* xcbConfigureEvent = reinterpret_cast<xcb_configure_notify_event_t*>(xcbEvent);
+            if (xcbConfigureEvent->width != mWindowHandlers->width || xcbConfigureEvent->height != mWindowHandlers->height)
+            {
+                mWindowHandlers->width  = xcbConfigureEvent->width;
+                mWindowHandlers->height = xcbConfigureEvent->height;
+                mRenderer->notifyWindowResized(this);
+            }
+            break;
+        }
         case XCB_EXPOSE:
         {
             xcb_expose_event_t* xcbExposeEvent = reinterpret_cast<xcb_expose_event_t*>(xcbEvent);
@@ -202,4 +240,22 @@ vk::SurfaceKHR Window::createVulkanSurface() const
     }
 
     return nullptr;
+}
+std::array<uint32_t, 2> Window::getExtent() const
+{
+    std::array<uint32_t, 2> result{};
+    if (mWindowHandlers)
+    {
+        return {mWindowHandlers->width, mWindowHandlers->height};
+    }
+    return {};
+//    const auto windowGeometryCookie = xcb_get_geometry(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
+//    xcb_flush(mWindowHandlers->xcbConnection);
+//    xcb_generic_error_t* xcbError;
+//    if (auto windowGeometry = xcb_get_geometry_reply(mWindowHandlers->xcbConnection, windowGeometryCookie, &xcbError))
+//    {
+//        result = {windowGeometry->width, windowGeometry->height};
+//        free(windowGeometry);
+//    }
+//    return result;
 }

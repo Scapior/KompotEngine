@@ -132,7 +132,8 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
         windowAttributes = new VulkanWindowRendererAttributes;
     }
     cleanupWindowSwapchain(windowAttributes);
-    const auto windowExtent          = window->getExtent();
+    std::array<uint32_t, 2> windowExtent;
+    windowExtent                     = window->getExtent();
     windowAttributes->scissor.extent = vk::Extent2D{windowExtent[0], windowExtent[1]};
     if (windowAttributes && !windowAttributes->surface)
     {

@@ -95,6 +95,19 @@ Window::~Window()
         delete mWindowRendererAttributes;
         mWindowRendererAttributes = nullptr;
     }
+    if (mWindowHandlers)
+    {
+//        xcb_destroy_window(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
+//        xcb_flush(mWindowHandlers->xcbConnection);
+//        // cleanup screen_t ?
+//        xcb_disconnect(mWindowHandlers->xcbConnection);
+//
+//        mWindowHandlers->xcbWindow = 0;
+//        mWindowHandlers->xcbScreen = nullptr;
+//        mWindowHandlers->xcbConnection = nullptr;
+    }
+    delete mWindowHandlers;
+    mWindowHandlers = nullptr;
 }
 
 void Window::run()
