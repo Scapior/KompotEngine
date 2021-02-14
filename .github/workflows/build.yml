@@ -21,6 +21,12 @@ jobs:
           repository: g-truc/glm
           path: ThirdParty/glm
 
+      - name: Install VMA submodule
+        uses: actions/checkout@v2
+        with:
+          repository: GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+          path: ThirdParty/VulkanMemoryAllocator
+
       - name: Install dependecies
         shell: bash
         run: |
