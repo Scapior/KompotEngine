@@ -20,6 +20,9 @@ jobs:
         with:
           repository: g-truc/glm
           path: ThirdParty/glm
+        run: |
+          ls .
+          ls ThirdParty/glm
 
       - name: Install dependecies
         shell: bash
@@ -66,6 +69,9 @@ jobs:
       - name: CMake
         run: cmake -Bbuild -D CMAKE_CXX_COMPILER=g++-10
       - name: Build
-        run: cmake --build build
+        run: |
+          ls .
+          ls ThirdParty/glm
+          cmake --build build
 
 

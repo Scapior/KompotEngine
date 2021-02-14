@@ -7,7 +7,7 @@ set(GLOBAL_INCLUDE_PATH
 find_package(Vulkan REQUIRED)
 add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
 
-find_package(glm REQUIRED)
+find_package(glm REQUIRED PATHS "${PROJECT_SOURCE_DIR}/ThirdParty/glm/cmake/glm/")
 
 if (WIN32)
     add_compile_definitions(ENGINE_OS_WINDOWS)
