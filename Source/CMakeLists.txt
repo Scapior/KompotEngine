@@ -5,6 +5,7 @@ set(GLOBAL_INCLUDE_PATH
         )
 
 find_package(Vulkan REQUIRED)
+find_package(GLM REQUIRED)
 
 add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
 
@@ -31,6 +32,7 @@ target_include_directories(Engine
         PUBLIC
         ${GLOBAL_INCLUDE_PATH}
         ${Vulkan_INCLUDE_DIR}
+        ${GLM_INCLUDE_DIRS}
         )
 
 add_subdirectory(Math)

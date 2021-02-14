@@ -98,9 +98,9 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
     xcb_flush(mWindowHandlers->xcbConnection);
 
     mWindowRendererAttributes = renderer->updateWindowAttributes(this);
-    const auto extent = getExtent();
-    mWindowHandlers->width = extent[0];
-    mWindowHandlers->height = extent[1];
+    const auto extent         = getExtent();
+    mWindowHandlers->width    = extent[0];
+    mWindowHandlers->height   = extent[1];
 }
 
 Window::~Window()
@@ -121,8 +121,8 @@ Window::~Window()
         // cleanup screen_t ?
         xcb_disconnect(mWindowHandlers->xcbConnection);
 
-        mWindowHandlers->xcbWindow = 0;
-        mWindowHandlers->xcbScreen = nullptr;
+        mWindowHandlers->xcbWindow     = 0;
+        mWindowHandlers->xcbScreen     = nullptr;
         mWindowHandlers->xcbConnection = nullptr;
     }
     delete mWindowHandlers;
@@ -249,13 +249,13 @@ std::array<uint32_t, 2> Window::getExtent() const
         return {mWindowHandlers->width, mWindowHandlers->height};
     }
     return {};
-//    const auto windowGeometryCookie = xcb_get_geometry(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
-//    xcb_flush(mWindowHandlers->xcbConnection);
-//    xcb_generic_error_t* xcbError;
-//    if (auto windowGeometry = xcb_get_geometry_reply(mWindowHandlers->xcbConnection, windowGeometryCookie, &xcbError))
-//    {
-//        result = {windowGeometry->width, windowGeometry->height};
-//        free(windowGeometry);
-//    }
-//    return result;
+    //    const auto windowGeometryCookie = xcb_get_geometry(mWindowHandlers->xcbConnection, mWindowHandlers->xcbWindow);
+    //    xcb_flush(mWindowHandlers->xcbConnection);
+    //    xcb_generic_error_t* xcbError;
+    //    if (auto windowGeometry = xcb_get_geometry_reply(mWindowHandlers->xcbConnection, windowGeometryCookie, &xcbError))
+    //    {
+    //        result = {windowGeometry->width, windowGeometry->height};
+    //        free(windowGeometry);
+    //    }
+    //    return result;
 }
