@@ -6,8 +6,12 @@ set(GLOBAL_INCLUDE_PATH
 
 find_package(Vulkan REQUIRED)
 add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
+find_package(glm CONFIG REQUIRED PATHS "${PROJECT_SOURCE_DIR}/ThirdParty/glm/cmake/glm/")
 
-find_package(glm REQUIRED PATHS "${PROJECT_SOURCE_DIR}/ThirdParty/glm/cmake/glm/")
+#find_package(VulkanMemoryAllocator) bruh, is no binding exists
+file(COPY
+        ${PROJECT_SOURCE_DIR}/ThirdParty/VulkanMemoryAllocator/src/vk_mem_alloc.h
+        DESTINATION ${PROJECT_SOURCE_DIR}/ThirdParty/Include)
 
 if (WIN32)
     add_compile_definitions(ENGINE_OS_WINDOWS)
@@ -33,7 +37,9 @@ target_include_directories(Engine
         ${GLOBAL_INCLUDE_PATH}
         ${Vulkan_INCLUDE_DIR}
         ${GLM_INCLUDE_DIRS}
+        ${PROJECT_SOURCE_DIR}/ThirdParty/Include/
         )
+
 
 add_subdirectory(Math)
 

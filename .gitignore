@@ -4,6 +4,8 @@ KompotEngine
 log.txt
 build-*
 
+ThirdParty/Include
+
 # Qt
 CMakeLists.txt.user.*
 

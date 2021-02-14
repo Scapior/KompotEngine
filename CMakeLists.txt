@@ -5,6 +5,8 @@ project(KompotEngine
         LANGUAGES CXX
 )
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake)
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_definitions(-DVULKAN_HPP_NO_EXCEPTIONS)
 
