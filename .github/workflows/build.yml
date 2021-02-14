@@ -70,8 +70,7 @@ jobs:
         run: cmake -Bbuild -D CMAKE_CXX_COMPILER=g++-10
       - name: Build
         run: |
-          ls .
-          ls ThirdParty/glm
+          ls . && ls ThirdParty/glm
           cmake --build build
 
 
