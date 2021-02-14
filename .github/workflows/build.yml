@@ -13,19 +13,18 @@ jobs:
     env:
       DEBIAN_FRONTEND: "noninteractive"
     steps:
-      - uses: actions/checkout@v2
 
       - name: Install glm submodule
         uses: actions/checkout@v2
         with:
           repository: g-truc/glm
           path: ThirdParty/glm
-        run: |
-          ls .
-          ls ThirdParty/glm
+
       - name: Install dependecies
         shell: bash
         run: |
+          ls .
+          ls ThirdParty/glm
           apt update && apt install -y sudo
           apt install -y \
             g++-10 \
