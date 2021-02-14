@@ -5,14 +5,9 @@ set(GLOBAL_INCLUDE_PATH
         )
 
 find_package(Vulkan REQUIRED)
-
-if (WIN32) # wtf
-    find_package(GLM REQUIRED)
-else()
-    find_package(glm REQUIRED)
-endif()
-
 add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
+
+find_package(glm REQUIRED)
 
 if (WIN32)
     add_compile_definitions(ENGINE_OS_WINDOWS)
