@@ -23,8 +23,6 @@ jobs:
       - name: Install dependecies
         shell: bash
         run: |
-          ls .
-          ls ThirdParty/glm
           apt update && apt install -y sudo
           apt install -y \
             g++-10 \
@@ -65,6 +63,7 @@ jobs:
         run: cmake -Bbuild -D CMAKE_CXX_COMPILER=g++-10
       - name: Build
         run: |
-          ls . && ls ThirdParty/glm
+          ls .
+          ls ThirdParty/glm
           cmake --build build
           
