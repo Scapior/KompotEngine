@@ -15,10 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install git submodules
-        shell: bash
-        run: |
-          git submodule update --init --recursive
+      - name: Install glm submodule
+        uses: actions/checkout@v2
+        with:
+          repository: g-truc/glm
+          path: ThirdParty/glm
 
       - name: Install dependecies
         shell: bash
