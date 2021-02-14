@@ -63,7 +63,9 @@ jobs:
             export VK_LAYER_PATH=$VULKAN_SDK/etc/explicit_layer.d
 
       - name: CMake
+        shell: bash
         run: cmake -Bbuild -D CMAKE_CXX_COMPILER=g++-10
 
       - name: Build
+        shell: bash
         run: cmake --build build
