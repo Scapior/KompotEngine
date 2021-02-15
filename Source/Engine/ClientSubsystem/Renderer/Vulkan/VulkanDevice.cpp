@@ -5,6 +5,7 @@
  */
 
 #include "VulkanDevice.hpp"
+#include <Memory/VulkanAllocator/VulkanAllocator.hpp>
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>

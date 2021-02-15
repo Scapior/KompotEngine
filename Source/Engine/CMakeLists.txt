@@ -29,8 +29,7 @@ set(ENGINE_SOURCES
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp
-        ClientSubsystem/Renderer/Vulkan/VulkanMemory.cpp
-        ErrorHandling.cpp ClientSubsystem/Renderer/Vulkan/VulkanMemory.cpp)
+        ErrorHandling.cpp)
 
 if (WIN32)
     list(APPEND ENGINE_SOURCES
@@ -48,7 +47,6 @@ add_library(Engine STATIC
         ${ENGINE_SOURCES}
         ${ENGINE_HEADERS}
         ${GLOBAL_INCLUDES}
-        ${PROJECT_SOURCE_DIR}/ThirdParty/VulkanMemoryAllocator/src/vk_mem_alloc.natvis
         )
 
 if (LINUX)

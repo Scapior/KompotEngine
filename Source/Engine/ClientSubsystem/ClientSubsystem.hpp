@@ -4,7 +4,6 @@
  *  Licensed under the MIT license.
  */
 
-//#ifdef ENGINE_OS_LINUX
 
 #pragma once
 
