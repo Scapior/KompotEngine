@@ -12,8 +12,8 @@ static_assert(
     " and after that rerun CMake.");
 #endif
 
-#define VMA_IMPLEMENTATION
-#include "VulkanAllocator.hpp"
+//#define VMA_IMPLEMENTATION
+//#include "VulkanAllocator.hpp"
 
 
 

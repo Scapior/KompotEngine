@@ -21,12 +21,12 @@ public:
     VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDevice& vkPhysicalDevice);
     ~VulkanDevice();
 
-    const vk::Device logicDevice() const
+    const vk::Device asLogicDevice() const
     {
         return mVkDevice;
     }
 
-    const vk::PhysicalDevice physicalDevice() const
+    const vk::PhysicalDevice asPhysicalDevice() const
     {
         return mVkPhysicalDevice;
     }

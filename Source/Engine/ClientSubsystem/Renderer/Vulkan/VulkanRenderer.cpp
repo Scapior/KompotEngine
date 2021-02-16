@@ -4,6 +4,8 @@
  *  Licensed under the MIT license.
  */
 
+#define VMA_IMPLEMENTATION
+
 #include "VulkanRenderer.hpp"
 #include <Engine/ClientSubsystem/Window/Window.hpp>
 #include <Engine/ErrorHandling.hpp>
@@ -11,6 +13,8 @@
 #include <EngineDefines.hpp>
 #include <vector>
 #include <cmath>
+
+#define ENGINE_VULKAN_VERSION VK_API_VERSION_1_2
 
 using namespace Kompot;
 
@@ -20,6 +24,8 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
     setupDebugCallback();
     mVulkanDevice.reset(new VulkanDevice(mVkInstance, selectPhysicalDevice()));
 
+    setupAllocator();
+
     createCommands();
     createRenderpass();
     createSyncStructure();
@@ -27,13 +33,13 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 
 VulkanRenderer::~VulkanRenderer()
 {
-    mVulkanDevice->logicDevice().destroy(mVkRenderFence);
-    mVulkanDevice->logicDevice().destroy(mVkRenderSemaphore);
-    mVulkanDevice->logicDevice().destroy(mVkPresentSemaphore);
-    mVulkanDevice->logicDevice().destroy(mVkRenderPass);
-    mVulkanDevice->logicDevice().destroy(mVkCommandPool);
+    mVulkanDevice->asLogicDevice().destroy(mVkRenderFence);
+    mVulkanDevice->asLogicDevice().destroy(mVkRenderSemaphore);
+    mVulkanDevice->asLogicDevice().destroy(mVkPresentSemaphore);
+    mVulkanDevice->asLogicDevice().destroy(mVkRenderPass);
+    mVulkanDevice->asLogicDevice().destroy(mVkCommandPool);
     mMainCommandBuffer = nullptr;
-    // mVulkanDevice->logicDevice().destroy();
+    // mVulkanDevice->asLogicDevice().destroy();
     mVulkanDevice.reset();
     deleteDebugCallback();
     mVkInstance.destroy(nullptr);
@@ -41,7 +47,7 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
-    vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, VK_MAKE_VERSION(1, 2, 0)};
+    vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, ENGINE_VULKAN_VERSION};
 
     const auto instanceExtensions       = VulkanUtils::getRequiredInstanceExtensions();
     const auto instanceValidationLayers = VulkanUtils::getRequiredInstanceValidationLayers();
@@ -107,6 +113,7 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
 
     return physicalDevices[selectedDeviceIndex];
 }
+
 WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
 {
     if (!window)
@@ -115,7 +122,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     }
     mWindows.emplace(window);
 
-    check(mVulkanDevice->logicDevice().waitIdle() == vk::Result::eSuccess);
+    check(mVulkanDevice->asLogicDevice().waitIdle() == vk::Result::eSuccess);
 
     VulkanWindowRendererAttributes* windowAttributes;
     auto abstractWindowAttributes = window->getWindowRendererAttributes();
@@ -139,14 +146,8 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     {
         windowAttributes->surface = window->createVulkanSurface();
     }
-    const auto windowExtentAfter = window->getExtent();
+    //const auto windowExtentAfter = window->getExtent();
     recreateWindowHandlers(windowAttributes);
-
-    //    createImageViews();
-    //    createRenderPass();
-    //    createGraphicsPipeline();
-    //    createFramebuffers();
-    //    createCommandBuffers();
 
     return windowAttributes;
 }
@@ -162,7 +163,7 @@ void VulkanRenderer::unregisterWindow(Window* window)
     if (auto vulkanWindowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(windowAttributes))
     {
         vulkanWindowAttributes->isPendingDestroy = true;
-        check(mVulkanDevice->logicDevice().waitIdle() == vk::Result::eSuccess);
+        check(mVulkanDevice->asLogicDevice().waitIdle() == vk::Result::eSuccess);
 
         cleanupWindowSwapchain(vulkanWindowAttributes);
         mVkInstance.destroySurfaceKHR(vulkanWindowAttributes->surface);
@@ -178,7 +179,7 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         return;
     }
 
-    if (auto surfaceCapabilitiesResult = mVulkanDevice->physicalDevice().getSurfaceCapabilitiesKHR(windowAttributes->surface);
+    if (auto surfaceCapabilitiesResult = mVulkanDevice->asPhysicalDevice().getSurfaceCapabilitiesKHR(windowAttributes->surface);
         surfaceCapabilitiesResult.result == vk::Result::eSuccess)
     {
         auto& vkSurfaceCapabilities = surfaceCapabilitiesResult.value;
@@ -209,7 +210,7 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
                                        .setClipped(VK_TRUE);
         //.setOldSwapchain(windowAttributes->swapchain.handler);
 
-        const auto& logicalDevice = mVulkanDevice->logicDevice();
+        const auto& logicalDevice = mVulkanDevice->asLogicDevice();
         auto& swapchain           = windowAttributes->swapchain;
         if (const auto result = logicalDevice.createSwapchainKHR(swapchainCreateInfo); result.result == vk::Result::eSuccess)
         {
@@ -257,7 +258,7 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
             else
             {
                 Kompot::ErrorHandling::exit(
-                    "Failed to create an framebuffer for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
+                    "Failed to create a framebuffer for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
             }
         }
     }
@@ -334,7 +335,7 @@ void VulkanRenderer::deleteDebugCallback()
 
 void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes)
 {
-    auto& logicDevice = mVulkanDevice->logicDevice();
+    auto& logicDevice = mVulkanDevice->asLogicDevice();
     auto& swapchain   = windowAttributes->swapchain;
     for (auto& framebuffer : swapchain.framebuffers)
     {
@@ -351,21 +352,6 @@ void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* wind
     {
         logicDevice.destroy(swapchain.handler);
     }
-    //    for (auto framebuffer : swapChainFramebuffers) {
-    //        vkDestroyFramebuffer(device, framebuffer, nullptr);
-    //    }
-    //
-    //    vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-    //
-    //    vkDestroyPipeline(device, graphicsPipeline, nullptr);
-    //    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    //    vkDestroyRenderPass(device, renderPass, nullptr);
-    //
-    //    for (auto imageView : swapChainImageViews) {
-    //        vkDestroyImageView(device, imageView, nullptr);
-    //    }
-    //
-    //    vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 void VulkanRenderer::createCommands()
@@ -374,26 +360,26 @@ void VulkanRenderer::createCommands()
                                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
                                            .setQueueFamilyIndex(mVulkanDevice->getGraphicsQueueIndex());
 
-    if (const auto result = mVulkanDevice->logicDevice().createCommandPool(commandPoolCreateInfo); result.result == vk::Result::eSuccess)
+    if (const auto result = mVulkanDevice->asLogicDevice().createCommandPool(commandPoolCreateInfo); result.result == vk::Result::eSuccess)
     {
         mVkCommandPool = result.value;
     }
     else
     {
-        Kompot::ErrorHandling::exit("Failed to create an CommandPool, result code \"" + vk::to_string(result.result) + "\"");
+        Kompot::ErrorHandling::exit("Failed to create a CommandPool, result code \"" + vk::to_string(result.result) + "\"");
     }
 
     const auto commandBufferAllocateInfo =
         vk::CommandBufferAllocateInfo{}.setCommandPool(mVkCommandPool).setCommandBufferCount(1).setLevel(vk::CommandBufferLevel::ePrimary);
 
-    if (const auto result = mVulkanDevice->logicDevice().allocateCommandBuffers(commandBufferAllocateInfo);
+    if (const auto result = mVulkanDevice->asLogicDevice().allocateCommandBuffers(commandBufferAllocateInfo);
         result.result == vk::Result::eSuccess && result.value.size() == 1)
     {
         mMainCommandBuffer = result.value[0];
     }
     else
     {
-        Kompot::ErrorHandling::exit("Failed to create an CommandBuffer, result code \"" + vk::to_string(result.result) + "\"");
+        Kompot::ErrorHandling::exit("Failed to create a CommandBuffer, result code \"" + vk::to_string(result.result) + "\"");
     }
 }
 
@@ -423,30 +409,30 @@ void VulkanRenderer::createRenderpass()
                                           .setPSubpasses(&subpassDescription);
 
 
-    if (const auto result = mVulkanDevice->logicDevice().createRenderPass(renderpassCreateInfo); result.result == vk::Result::eSuccess)
+    if (const auto result = mVulkanDevice->asLogicDevice().createRenderPass(renderpassCreateInfo); result.result == vk::Result::eSuccess)
     {
         mVkRenderPass = result.value;
     }
     else
     {
-        Kompot::ErrorHandling::exit("Failed to create an RenderPass, result code \"" + vk::to_string(result.result) + "\"");
+        Kompot::ErrorHandling::exit("Failed to create a RenderPass, result code \"" + vk::to_string(result.result) + "\"");
     }
 }
 
 void VulkanRenderer::createSyncStructure()
 {
     const auto fenceCreateInfo = vk::FenceCreateInfo{}.setFlags(vk::FenceCreateFlagBits::eSignaled);
-    if (const auto result = mVulkanDevice->logicDevice().createFence(fenceCreateInfo); result.result == vk::Result::eSuccess)
+    if (const auto result = mVulkanDevice->asLogicDevice().createFence(fenceCreateInfo); result.result == vk::Result::eSuccess)
     {
         mVkRenderFence = result.value;
     }
 
-    if (const auto result = mVulkanDevice->logicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+    if (const auto result = mVulkanDevice->asLogicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
     {
         mVkRenderSemaphore = result.value;
     }
 
-    if (const auto result = mVulkanDevice->logicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+    if (const auto result = mVulkanDevice->asLogicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
     {
         mVkPresentSemaphore = result.value;
     }
@@ -456,6 +442,7 @@ void VulkanRenderer::createSyncStructure()
         Kompot::ErrorHandling::exit("Failed to create sync structures");
     }
 }
+
 void VulkanRenderer::draw(Window* window)
 {
     auto windowAttributes = dynamic_cast<VulkanWindowRendererAttributes*>(window ? window->getWindowRendererAttributes() : nullptr);
@@ -469,7 +456,7 @@ void VulkanRenderer::draw(Window* window)
 
     uint32_t swapchainImageIndex = 0;
     if (const auto result =
-            mVulkanDevice->logicDevice().acquireNextImageKHR(windowAttributes->swapchain.handler, timeout, mVkPresentSemaphore, nullptr);
+            mVulkanDevice->asLogicDevice().acquireNextImageKHR(windowAttributes->swapchain.handler, timeout, mVkPresentSemaphore, nullptr);
         result.result == vk::Result::eSuccess)
     {
         swapchainImageIndex = result.value;
@@ -484,8 +471,8 @@ void VulkanRenderer::draw(Window* window)
         Kompot::ErrorHandling::exit("Failed to acquire next framebuffer image");
     }
 
-    check(mVulkanDevice->logicDevice().waitForFences(1, &mVkRenderFence, true, timeout) == vk::Result::eSuccess);
-    check(mVulkanDevice->logicDevice().resetFences(1, &mVkRenderFence) == vk::Result::eSuccess);
+    check(mVulkanDevice->asLogicDevice().waitForFences(1, &mVkRenderFence, true, timeout) == vk::Result::eSuccess);
+    check(mVulkanDevice->asLogicDevice().resetFences(1, &mVkRenderFence) == vk::Result::eSuccess);
 
     check(mMainCommandBuffer.reset(vk::CommandBufferResetFlagBits{}) == vk::Result::eSuccess);
     check(mMainCommandBuffer.begin(vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)) == vk::Result::eSuccess);
@@ -539,5 +526,20 @@ void VulkanRenderer::notifyWindowResized(Window* window)
     if (windowAttributes)
     {
         windowAttributes->framebufferResized = true;
+    }
+}
+
+void VulkanRenderer::setupAllocator()
+{
+    VmaAllocatorCreateInfo allocatorInfo{};
+    allocatorInfo.vulkanApiVersion = ENGINE_VULKAN_VERSION;
+    allocatorInfo.physicalDevice = mVulkanDevice->asPhysicalDevice();
+    allocatorInfo.device = mVulkanDevice->asLogicDevice();
+    allocatorInfo.instance = mVkInstance;
+    //allocatorInfo.frameInUseCount = get from phys dev cap ?
+
+    if (const auto result = vmaCreateAllocator(&allocatorInfo, &mAllocator); result != VK_SUCCESS)
+    {
+        Kompot::ErrorHandling::exit("Failed to create a VulkanMemoryAllocator, result code \"" + vk::to_string(vk::Result(result)) + "\"");
     }
 }

@@ -7,6 +7,7 @@
 #pragma once
 #include "../IRenderer.hpp"
 #include "VulkanTypes.h"
+#include <Memory/VulkanAllocator/VulkanAllocator.hpp>
 #include "VulkanDevice.hpp"
 #include <set>
 #include <vulkan/vulkan.hpp>
@@ -24,6 +25,7 @@ public:
     void notifyWindowResized(Window* window) override;
     WindowRendererAttributes* updateWindowAttributes(Window* window) override;
     void unregisterWindow(Window* window) override;
+
     std::string_view getName() const override
     {
         return "Vulkan";
@@ -32,6 +34,11 @@ public:
     const vk::Instance getVkInstance() const
     {
         return mVkInstance;
+    };
+
+    const vk::AllocationCallbacks getAllocatorCallbacks() const
+    {
+        return mAllocator;
     };
 
 protected:
@@ -54,6 +61,8 @@ private:
 private:
     std::size_t mFrameNumber = 0;
 
+    VmaAllocator_T* mAllocator = nullptr;
+
     vk::Instance mVkInstance;
     std::unique_ptr<VulkanDevice> mVulkanDevice;
 
@@ -75,6 +84,8 @@ private:
 #endif
 
 private:
+    void setupAllocator();
+
     void createInstance();
     vk::PhysicalDevice selectPhysicalDevice();
     void createDevice();
