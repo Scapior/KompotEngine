@@ -4,7 +4,10 @@ KompotEngine
 log.txt
 build-*
 
+
+# Vulkan
 Source/Memory/VulkanAllocator/VulkanAllocator.hpp
+*.spv
 
 # Qt
 CMakeLists.txt.user.*

@@ -49,6 +49,9 @@ add_library(Engine STATIC
         ${GLOBAL_INCLUDES}
         )
 
+add_subdirectory(ClientSubsystem/Renderer/Vulkan/Shaders)
+add_dependencies(Engine Shaders)
+
 if (LINUX)
     find_package(PkgConfig)
     pkg_check_modules(PKG_X11_XCB REQUIRED x11-xcb)
