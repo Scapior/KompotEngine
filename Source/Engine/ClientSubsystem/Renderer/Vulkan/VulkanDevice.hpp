@@ -7,7 +7,7 @@
 #pragma once
 
 #include "VulkanUtils.hpp"
-#include "VulkanTypes.h"
+#include "VulkanTypes.hpp"
 #include <vulkan/vulkan.hpp>
 #include <optional>
 #include <utility>

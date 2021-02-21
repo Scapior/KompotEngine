@@ -5,12 +5,14 @@
  */
 
 #pragma once
+#include "VulkanShader.hpp"
 #include "../IRenderer.hpp"
-#include "VulkanTypes.h"
-#include <Memory/VulkanAllocator/VulkanAllocator.hpp>
+#include "VulkanTypes.hpp"
 #include "VulkanDevice.hpp"
-#include <set>
+#include "VulkanPipelineBuilder.hpp"
+#include <Memory/VulkanAllocator/VulkanAllocator.hpp>
 #include <vulkan/vulkan.hpp>
+#include <set>
 
 namespace Kompot
 {
@@ -41,8 +43,13 @@ public:
         return mAllocator;
     };
 
+    vk::RenderPass getRenderPass() const
+    {
+        return mVkRenderPass;
+    };
+
 protected:
-    void cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes);
+    void cleanupWindowHandlers(VulkanWindowRendererAttributes* windowAttributes);
     void recreateWindowHandlers(VulkanWindowRendererAttributes* windowAttributes);
 
 private:
@@ -66,6 +73,8 @@ private:
     vk::Instance mVkInstance;
     std::unique_ptr<VulkanDevice> mVulkanDevice;
 
+    VulkanPipelineBuilder mVulkanPipelineBuilder;
+
     vk::CommandPool mVkCommandPool;
     vk::CommandBuffer mMainCommandBuffer;
 
@@ -76,6 +85,9 @@ private:
     vk::Semaphore mVkPresentSemaphore;
     vk::Semaphore mVkRenderSemaphore;
     vk::Fence mVkRenderFence;
+
+    VulkanShader mVertexShader;
+    VulkanShader mFragmentShader;
 
     std::set<Window*> mWindows;
 
@@ -90,6 +102,7 @@ private:
     vk::PhysicalDevice selectPhysicalDevice();
     void createDevice();
     void createCommands();
+    void createPipeline(VulkanWindowRendererAttributes* window);
     void createRenderpass();
     void createSyncStructure();
 };

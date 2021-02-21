@@ -23,6 +23,7 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
     createInstance();
     setupDebugCallback();
     mVulkanDevice.reset(new VulkanDevice(mVkInstance, selectPhysicalDevice()));
+    mVulkanPipelineBuilder.setDevice(mVulkanDevice->asLogicDevice());
 
     setupAllocator();
 
@@ -33,6 +34,9 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 
 VulkanRenderer::~VulkanRenderer()
 {
+    mVulkanDevice->asLogicDevice().destroy(mVertexShader.get());
+    mVulkanDevice->asLogicDevice().destroy(mFragmentShader.get());
+
     mVulkanDevice->asLogicDevice().destroy(mVkRenderFence);
     mVulkanDevice->asLogicDevice().destroy(mVkRenderSemaphore);
     mVulkanDevice->asLogicDevice().destroy(mVkPresentSemaphore);
@@ -138,7 +142,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
         }
         windowAttributes = new VulkanWindowRendererAttributes;
     }
-    cleanupWindowSwapchain(windowAttributes);
+    cleanupWindowHandlers(windowAttributes);
     std::array<uint32_t, 2> windowExtent;
     windowExtent                     = window->getExtent();
     windowAttributes->scissor.extent = vk::Extent2D{windowExtent[0], windowExtent[1]};
@@ -146,7 +150,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     {
         windowAttributes->surface = window->createVulkanSurface();
     }
-    //const auto windowExtentAfter = window->getExtent();
+    // const auto windowExtentAfter = window->getExtent();
     recreateWindowHandlers(windowAttributes);
 
     return windowAttributes;
@@ -165,7 +169,7 @@ void VulkanRenderer::unregisterWindow(Window* window)
         vulkanWindowAttributes->isPendingDestroy = true;
         check(mVulkanDevice->asLogicDevice().waitIdle() == vk::Result::eSuccess);
 
-        cleanupWindowSwapchain(vulkanWindowAttributes);
+        cleanupWindowHandlers(vulkanWindowAttributes);
         mVkInstance.destroySurfaceKHR(vulkanWindowAttributes->surface);
     }
 
@@ -263,6 +267,8 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         }
     }
 
+    createPipeline(windowAttributes);
+
     windowAttributes->framebufferResized = false;
 }
 
@@ -333,9 +339,18 @@ void VulkanRenderer::deleteDebugCallback()
 #endif
 }
 
-void VulkanRenderer::cleanupWindowSwapchain(VulkanWindowRendererAttributes* windowAttributes)
+void VulkanRenderer::cleanupWindowHandlers(VulkanWindowRendererAttributes* windowAttributes)
 {
+    if (!windowAttributes)
+    {
+        return;
+    }
+
     auto& logicDevice = mVulkanDevice->asLogicDevice();
+
+    logicDevice.destroy(windowAttributes->pipeline.pipelineLayout);
+    logicDevice.destroy(windowAttributes->pipeline.pipeline);
+
     auto& swapchain   = windowAttributes->swapchain;
     for (auto& framebuffer : swapchain.framebuffers)
     {
@@ -487,6 +502,10 @@ void VulkanRenderer::draw(Window* window)
                                          .setPClearValues(&clearValue);
 
     mMainCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+
+    mMainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, windowAttributes->pipeline.pipeline);
+    mMainCommandBuffer.draw(3, 1, 0, 0);
+
     mMainCommandBuffer.endRenderPass();
 
     check(mMainCommandBuffer.end() == vk::Result::eSuccess);
@@ -533,13 +552,34 @@ void VulkanRenderer::setupAllocator()
 {
     VmaAllocatorCreateInfo allocatorInfo{};
     allocatorInfo.vulkanApiVersion = ENGINE_VULKAN_VERSION;
-    allocatorInfo.physicalDevice = mVulkanDevice->asPhysicalDevice();
-    allocatorInfo.device = mVulkanDevice->asLogicDevice();
-    allocatorInfo.instance = mVkInstance;
-    //allocatorInfo.frameInUseCount = get from phys dev cap ?
+    allocatorInfo.physicalDevice   = mVulkanDevice->asPhysicalDevice();
+    allocatorInfo.device           = mVulkanDevice->asLogicDevice();
+    allocatorInfo.instance         = mVkInstance;
+    // allocatorInfo.frameInUseCount = get from phys dev cap ?
 
     if (const auto result = vmaCreateAllocator(&allocatorInfo, &mAllocator); result != VK_SUCCESS)
     {
         Kompot::ErrorHandling::exit("Failed to create a VulkanMemoryAllocator, result code \"" + vk::to_string(vk::Result(result)) + "\"");
+    }
+}
+
+void VulkanRenderer::createPipeline(VulkanWindowRendererAttributes* windowAttributes)
+{
+    if (!windowAttributes)
+    {
+        return;
+    }
+
+    mVertexShader = VulkanShader("triangle.vert.spv", mVulkanDevice->asLogicDevice());
+    mFragmentShader = VulkanShader("triangle.frag.spv", mVulkanDevice->asLogicDevice());
+    if (!mVertexShader.load() || !mFragmentShader.load())
+    {
+        //Log::getInstance() << "Failed to create shaders" << std::endl;
+    }
+
+    std::vector<VulkanShader> shaders = {mVertexShader, mFragmentShader};
+    if (const auto result = mVulkanPipelineBuilder.buildGraphicsPipeline(windowAttributes, this, shaders); result != vk::Result::eSuccess)
+    {
+        Kompot::ErrorHandling::exit("Failed to build graphics pipeline");
     }
 }

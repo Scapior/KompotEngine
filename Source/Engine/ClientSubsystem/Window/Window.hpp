@@ -54,7 +54,7 @@ private:
 
 #ifdef ENGINE_OS_WINDOWS
     std::atomic_bool mNeedToClose         = false;
-    static constexpr auto windowClassName = TemplateUtils::makeArray(L"KompotEngineWindow");
+    static const std::wstring windowClassNamePrefix;
     static int64_t __stdcall windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam);
 #endif
 };

@@ -11,7 +11,10 @@
 #include <Engine/ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp>
 #include <Engine/Log/Log.hpp>
 
+
 using namespace Kompot;
+
+const std::wstring Window::windowClassNamePrefix = L"KompotEngineWindow_";
 
 struct Kompot::PlatformHandlers
 {
@@ -39,6 +42,8 @@ Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const P
         static_cast<int>(windowName.size()),
         mWindowHandlers->windowNameWideCharBuffer,
         static_cast<int>(mWindowHandlers->windowNameWideCharBufferSize)));
+
+    const auto windowClassName = windowClassNamePrefix + mWindowHandlers->windowNameWideCharBuffer;
 
     WNDCLASSEXW windowClass{};
     windowClass.cbSize        = sizeof(WNDCLASSEXW);

@@ -21,12 +21,19 @@ struct VulkanSwapchain
     std::vector<vk::Framebuffer> framebuffers;
 };
 
+struct VulkanPipeline
+{
+    vk::PipelineLayout pipelineLayout;
+    vk::Pipeline pipeline;
+};
+
 struct VulkanWindowRendererAttributes : public WindowRendererAttributes
 {
     vk::SurfaceKHR surface;
     VulkanSwapchain swapchain;
     vk::Rect2D scissor;
     vk::Queue presentQueue;
+    VulkanPipeline pipeline;
     bool framebufferResized = false;
     bool isPendingDestroy   = false;
 };

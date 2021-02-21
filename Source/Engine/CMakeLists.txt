@@ -5,41 +5,45 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 set(ENGINE_HEADERS
-        ErrorHandling.hpp
-        Log/Log.hpp
-        DebugUtils/DebugUtils.hpp
-        EngineConfig.hpp
         Engine.hpp
-        Config/ConfigManager.hpp
+        ErrorHandling.hpp
+        EngineConfig.hpp
         IEngineSystem.hpp
+        Log/Log.hpp
+        Config/ConfigManager.hpp
+        DebugUtils/DebugUtils.hpp
         ClientSubsystem/ClientSubsystem.hpp
         ClientSubsystem/Window/Window.hpp
         ClientSubsystem/Renderer/IRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.hpp
-        ClientSubsystem/Renderer/Vulkan/VulkanTypes.h)
+        ClientSubsystem/Renderer/Vulkan/VulkanTypes.hpp
+        ClientSubsystem/Renderer/Vulkan/VulkanShader.hpp
+        ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.hpp)
 
 set(ENGINE_SOURCES
-        Log/Log.cpp
-        DebugUtils/DebugUtils.cpp
-        Config/ConfigManager.cpp
         Engine.cpp
+        ErrorHandling.cpp
+        Log/Log.cpp
+        Config/ConfigManager.cpp
+        DebugUtils/DebugUtils.cpp
         ClientSubsystem/ClientSubsystem.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp
-        ErrorHandling.cpp)
+        ClientSubsystem/Renderer/Vulkan/VulkanShader.cpp
+        ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.cpp)
 
 if (WIN32)
-    list(APPEND ENGINE_SOURCES
-            ClientSubsystem/Window/WindowWindows.cpp
-            )
+list(APPEND ENGINE_SOURCES
+        ClientSubsystem/Window/WindowWindows.cpp
+        )
 endif ()
 
 if (LINUX)
-    list(APPEND ENGINE_SOURCES
-            ClientSubsystem/Window/WindowLinux.cpp
+list(APPEND ENGINE_SOURCES
+        ClientSubsystem/Window/WindowLinux.cpp
             )
 endif ()
 
@@ -48,9 +52,6 @@ add_library(Engine STATIC
         ${ENGINE_HEADERS}
         ${GLOBAL_INCLUDES}
         )
-
-add_subdirectory(ClientSubsystem/Renderer/Vulkan/Shaders)
-add_dependencies(Engine Shaders)
 
 if (LINUX)
     find_package(PkgConfig)
