@@ -570,8 +570,15 @@ void VulkanRenderer::createPipeline(VulkanWindowRendererAttributes* windowAttrib
         return;
     }
 
-    mVertexShader = VulkanShader("triangle.vert.spv", mVulkanDevice->asLogicDevice());
-    mFragmentShader = VulkanShader("triangle.frag.spv", mVulkanDevice->asLogicDevice());
+    if (!mVertexShader.get())
+    {
+        mVertexShader = VulkanShader("triangle.vert.spv", mVulkanDevice->asLogicDevice());
+    }
+    if (!mFragmentShader.get())
+    {
+        mFragmentShader = VulkanShader("triangle.frag.spv", mVulkanDevice->asLogicDevice());
+    }
+
     if (!mVertexShader.load() || !mFragmentShader.load())
     {
         //Log::getInstance() << "Failed to create shaders" << std::endl;
