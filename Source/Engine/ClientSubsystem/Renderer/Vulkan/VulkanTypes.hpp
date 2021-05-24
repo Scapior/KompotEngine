@@ -15,27 +15,37 @@ namespace Kompot
 struct VulkanSwapchain
 {
     vk::SwapchainKHR handler;
+    uint32_t         swapchainImagesCount;
 
-    std::vector<vk::Image> images;
-    std::vector<vk::ImageView> imageViews;
-    std::vector<vk::Framebuffer> framebuffers;
+    std::vector<vk::Image>          images;
+    std::vector<vk::ImageView>      imageViews;
+    std::vector<vk::Framebuffer>    framebuffers;
 };
 
 struct VulkanPipeline
 {
-    vk::PipelineLayout pipelineLayout;
-    vk::Pipeline pipeline;
+    vk::PipelineLayout  pipelineLayout;
+    vk::Pipeline        pipeline;
 };
 
 struct VulkanWindowRendererAttributes : public WindowRendererAttributes
-{
-    vk::SurfaceKHR surface;
+{    
+    vk::SurfaceKHR  surface;
     VulkanSwapchain swapchain;
-    vk::Rect2D scissor;
-    vk::Queue presentQueue;
-    VulkanPipeline pipeline;
-    bool framebufferResized = false;
-    bool isPendingDestroy   = false;
+    vk::Rect2D      scissor;
+    vk::Queue       presentQueue;
+    VulkanPipeline  pipeline;
+    bool            framebufferResized = false;
+    bool            isPendingDestroy   = false;
+};
+
+struct VulkanFrameData
+{
+    vk::CommandPool   vkCommandPool;
+    vk::CommandBuffer vkCommandBuffer;
+    vk::Semaphore     vkPresentSemaphore;
+    vk::Semaphore     vkRenderSemaphore;
+    vk::Fence         vkRenderFence;
 };
 
 } // namespace Kompot

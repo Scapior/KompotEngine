@@ -1,8 +1,9 @@
-# executable file and log
+# compiled binaries, log
 
 KompotEngine
 log.txt
 build-*
+build/
 
 
 # Vulkan
@@ -88,3 +89,9 @@ CTestTestfile.cmake
 # CLion
 .idea
 cmake-*
+
+# VS Code
+compile_commands.json 
+.vscode/*
+
+.cache/*

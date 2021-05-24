@@ -7,8 +7,10 @@
 #include "Window.hpp"
 #include <Engine/Log/Log.hpp>
 #include <Engine/ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp>
+#include <ios>
 #include <xcb/xcb.h>
 #include <Engine/ErrorHandling.hpp>
+#include <xcb/xproto.h>
 
 using namespace Kompot;
 
@@ -137,76 +139,113 @@ void Window::run()
     while (!needToExit)
     {
         xcbEvent = xcb_poll_for_event(mWindowHandlers->xcbConnection);
-        if (xcbEvent == nullptr)
+        if (xcbEvent)
         {
-            // mNeedToExit = true;
-            continue;
-        }
-
-        switch (xcbEvent->response_type & ~0x80)
-        {
-        case XCB_KEY_PRESS:
-            /* Handle the ButtonPress event type */
-            // xcb_button_press_event_t* xcbButtonPressEvent =
-            // reinterpret_cast<xcb_button_press_event_t*>(xcbEvent); log << xcbButtonPressEvent->
-            // << std::endl;
-            break;
-        case XCB_KEY_RELEASE:
-            // xcb_key_release_event_t
-            break;
-        case XCB_BUTTON_PRESS:
-            // xcb_button_press_event_t
-            break;
-        case XCB_BUTTON_RELEASE:
-            //  xcb_button_release_event_t
-            break;
-        case XCB_MOTION_NOTIFY:
-            // xcb_motion_notify_event_t
-            break;
-        case XCB_ENTER_NOTIFY:
-            break;
-        case XCB_CONFIGURE_NOTIFY:
-        {
-            xcb_configure_notify_event_t* xcbConfigureEvent = reinterpret_cast<xcb_configure_notify_event_t*>(xcbEvent);
-            if (xcbConfigureEvent->width != mWindowHandlers->width || xcbConfigureEvent->height != mWindowHandlers->height)
+            switch (const uint8_t xcbEventType = xcbEvent->response_type & ~0x80)
             {
-                mWindowHandlers->width  = xcbConfigureEvent->width;
-                mWindowHandlers->height = xcbConfigureEvent->height;
+            case XCB_KEY_PRESS:
+                /* Handle the ButtonPress event type */
+                // xcb_button_press_event_t* xcbButtonPressEvent =
+                // reinterpret_cast<xcb_button_press_event_t*>(xcbEvent); log << xcbButtonPressEvent->
+                // << std::endl;
+            case XCB_KEY_RELEASE:
+            case XCB_BUTTON_PRESS:
+            case XCB_BUTTON_RELEASE:
+            case XCB_MOTION_NOTIFY:
+                break;
+            case XCB_ENTER_NOTIFY:
+                log << "XCB_ENTER_NOTIFY" << std::endl; break;
+            case XCB_LEAVE_NOTIFY:
+                log << "XCB_LEAVE_NOTIFY" << std::endl; break;
+            case XCB_FOCUS_IN:
+                log << "XCB_FOCUS_IN" << std::endl; break;
+            case XCB_FOCUS_OUT:
+                log << "XCB_FOCUS_OUT" << std::endl; break;
+            case XCB_KEYMAP_NOTIFY:
+                log << "XCB_KEYMAP_NOTIFY" << std::endl; break;
+            case XCB_EXPOSE:
+            {
+                log << "XCB_EXPOSE" << std::endl; break;
+                //xcb_expose_event_t* xcbExposeEvent = reinterpret_cast<xcb_expose_event_t*>(xcbEvent);
+                //            log << "Window " << xcbExposeEvent->window << " exposed. Region to be redrawn at location (" << xcbExposeEvent->x << ","
+                //                << xcbExposeEvent->y << "), with dimension (" << xcbExposeEvent->width << "," << xcbExposeEvent->height << ")\n"
+                //                << std::endl;
+            }
+            case XCB_GRAPHICS_EXPOSURE:
+                log << "XCB_GRAPHICS_EXPOSURE" << std::endl; break;
+            case XCB_NO_EXPOSURE:
+                log << "XCB_NO_EXPOSURE" << std::endl; break;
+            case XCB_VISIBILITY_NOTIFY:
+                log << "XCB_VISIBILITY_NOTIFY" << std::endl; break;
+            case XCB_CREATE_NOTIFY:
+                log << "XCB_CREATE_NOTIFY" << std::endl; break;
+            case XCB_DESTROY_NOTIFY:
+                log << "XCB_DESTROY_NOTIFY" << std::endl; break;
+            case XCB_UNMAP_NOTIFY:
+                log << "XCB_UNMAP_NOTIFY" << std::endl; break;
+            case XCB_MAP_NOTIFY:
+                log << "XCB_MAP_NOTIFY" << std::endl; break;
+            case XCB_MAP_REQUEST:
+                log << "XCB_MAP_REQUEST" << std::endl; break;
+            case XCB_REPARENT_NOTIFY:
+                log << "XCB_REPARENT_NOTIFY" << std::endl; break;
+            case XCB_CONFIGURE_NOTIFY:
+                log << "XCB_CONFIGURE_NOTIFY" << std::endl; break;
+            case XCB_CONFIGURE_REQUEST:
+                log << "XCB_CONFIGURE_REQUEST" << std::endl; break;
+            case XCB_GRAVITY_NOTIFY:
+                log << "XCB_GRAVITY_NOTIFY" << std::endl; break;
+            case XCB_RESIZE_REQUEST:
+            {
+                xcb_resize_request_event_t* xcbResizeEvent = reinterpret_cast<xcb_resize_request_event_t*>(xcbEvent);
+                mWindowHandlers->width = xcbResizeEvent->width;
+                mWindowHandlers->height = xcbResizeEvent->height;
                 mRenderer->notifyWindowResized(this);
             }
-            break;
-        }
-        case XCB_EXPOSE:
-        {
-            xcb_expose_event_t* xcbExposeEvent = reinterpret_cast<xcb_expose_event_t*>(xcbEvent);
-
-            if (mRenderer)
+            case XCB_CIRCULATE_NOTIFY:
+                log << "XCB_CIRCULATE_NOTIFY" << std::endl; break;
+            case XCB_CIRCULATE_REQUEST:
+                log << "XCB_CIRCULATE_REQUEST" << std::endl; break;
+            case XCB_PROPERTY_NOTIFY:
+                log << "XCB_PROPERTY_NOTIFY" << std::endl; break;
+            case XCB_SELECTION_CLEAR:
+                log << "XCB_SELECTION_CLEAR" << std::endl; break;
+            case XCB_SELECTION_REQUEST:
+                log << "XCB_SELECTION_REQUEST" << std::endl; break;
+            case XCB_SELECTION_NOTIFY:
+                log << "XCB_SELECTION_NOTIFY" << std::endl; break;
+            case XCB_COLORMAP_NOTIFY:
+                log << "XCB_COLORMAP_NOTIFY" << std::endl; break;
+            case XCB_CLIENT_MESSAGE:
             {
-                mRenderer->draw(this);
+                xcb_client_message_event_t* xcbClientMessageEvent = reinterpret_cast<xcb_client_message_event_t*>(xcbEvent);
+                if (reply2->atom == xcbClientMessageEvent->data.data32[0])
+                {
+                    needToExit = true;
+                }
+                xcbClientMessageEvent->data.data16[9] = 4;
+                break;
+            }
+            case XCB_MAPPING_NOTIFY:
+                log << "XCB_MAPPING_NOTIFY" << std::endl; break;
+            case XCB_GE_GENERIC:
+                log << "XCB_GE_GENERIC" << std::endl; break;
+
+            default:
+            {
+                log << "Unknown XCB event with code \"" << static_cast<int>(xcbEventType) << "\" received" << std::endl;
+                break;
             }
 
-            //            log << "Window " << xcbExposeEvent->window << " exposed. Region to be redrawn at location (" << xcbExposeEvent->x << ","
-            //                << xcbExposeEvent->y << "), with dimension (" << xcbExposeEvent->width << "," << xcbExposeEvent->height << ")\n"
-            //                << std::endl;
-            break;
+            } // switch
+
+            free(xcbEvent);
         }
-        case XCB_CLIENT_MESSAGE:
+
+        if (mRenderer)
         {
-            xcb_client_message_event_t* xcbClientMessageEvent = reinterpret_cast<xcb_client_message_event_t*>(xcbEvent);
-            if (reply2->atom == xcbClientMessageEvent->data.data32[0])
-            {
-                needToExit = true;
-            }
-            xcbClientMessageEvent->data.data16[9] = 4;
-            break;
+            mRenderer->draw(this);
         }
-        default:
-        {
-            log << "Unknown XCB event received" << std::endl;
-            break;
-        }
-        }
-        free(xcbEvent);
     }
     // conditionVariable.wait()
 }

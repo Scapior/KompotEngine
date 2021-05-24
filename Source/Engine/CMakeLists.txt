@@ -63,4 +63,4 @@ if (WIN32)
     target_link_libraries(Engine Dbghelp)
 endif ()
 
-target_compile_features(Engine PUBLIC cxx_std_17)
+target_compile_features(Engine PUBLIC cxx_std_20)

@@ -18,6 +18,8 @@
 
 using namespace Kompot;
 
+//const uint64_t VulkanRenderer::VULKAN_BUFFERS_COUNT = 2;
+
 VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 {
     createInstance();
@@ -29,7 +31,7 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 
     createCommands();
     createRenderpass();
-    createSyncStructure();
+    createSyncObjects();
 };
 
 VulkanRenderer::~VulkanRenderer()
@@ -37,12 +39,17 @@ VulkanRenderer::~VulkanRenderer()
     mVulkanDevice->asLogicDevice().destroy(mVertexShader.get());
     mVulkanDevice->asLogicDevice().destroy(mFragmentShader.get());
 
-    mVulkanDevice->asLogicDevice().destroy(mVkRenderFence);
-    mVulkanDevice->asLogicDevice().destroy(mVkRenderSemaphore);
-    mVulkanDevice->asLogicDevice().destroy(mVkPresentSemaphore);
+    for (auto& frame : mVulkanFrames)
+    {
+        mVulkanDevice->asLogicDevice().destroy(frame.vkRenderFence);
+        mVulkanDevice->asLogicDevice().destroy(frame.vkRenderSemaphore);
+        mVulkanDevice->asLogicDevice().destroy(frame.vkPresentSemaphore);
+
+        mVulkanDevice->asLogicDevice().destroy(frame.vkCommandPool);
+        frame.vkCommandBuffer = nullptr;
+    }
+
     mVulkanDevice->asLogicDevice().destroy(mVkRenderPass);
-    mVulkanDevice->asLogicDevice().destroy(mVkCommandPool);
-    mMainCommandBuffer = nullptr;
     // mVulkanDevice->asLogicDevice().destroy();
     mVulkanDevice.reset();
     deleteDebugCallback();
@@ -152,7 +159,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     }
     // const auto windowExtentAfter = window->getExtent();
     recreateWindowHandlers(windowAttributes);
-
+    Log::getInstance() << "updateWindowAttributes" << std::endl;
     return windowAttributes;
 }
 
@@ -224,9 +231,10 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         {
             swapchain.images = result.value;
         }
-        swapchain.imageViews.resize(swapchain.images.size());
+        swapchain.swapchainImagesCount = swapchain.images.size();
+        swapchain.imageViews.resize(swapchain.swapchainImagesCount);
 
-        swapchain.framebuffers.resize(swapchain.images.size());
+        swapchain.framebuffers.resize(swapchain.swapchainImagesCount);
         auto framebufferCreateInfo = vk::FramebufferCreateInfo{}
                                          .setRenderPass(mVkRenderPass)
                                          .setHeight(windowAttributes->scissor.extent.height)
@@ -234,7 +242,7 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
                                          .setLayers(1)
                                          .setAttachmentCount(1);
 
-        for (std::size_t i = 0; i < swapchain.imageViews.size(); ++i)
+        for (std::size_t i = 0; i < swapchain.swapchainImagesCount; ++i)
         {
             const auto imageViewCreateInfo =
                 vk::ImageViewCreateInfo{}
@@ -375,26 +383,30 @@ void VulkanRenderer::createCommands()
                                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
                                            .setQueueFamilyIndex(mVulkanDevice->getGraphicsQueueIndex());
 
-    if (const auto result = mVulkanDevice->asLogicDevice().createCommandPool(commandPoolCreateInfo); result.result == vk::Result::eSuccess)
+    for (auto& frame : mVulkanFrames)
     {
-        mVkCommandPool = result.value;
-    }
-    else
-    {
-        Kompot::ErrorHandling::exit("Failed to create a CommandPool, result code \"" + vk::to_string(result.result) + "\"");
-    }
 
-    const auto commandBufferAllocateInfo =
-        vk::CommandBufferAllocateInfo{}.setCommandPool(mVkCommandPool).setCommandBufferCount(1).setLevel(vk::CommandBufferLevel::ePrimary);
+        if (const auto result = mVulkanDevice->asLogicDevice().createCommandPool(commandPoolCreateInfo); result.result == vk::Result::eSuccess)
+        {
+            frame.vkCommandPool = result.value;
+        }
+        else
+        {
+            Kompot::ErrorHandling::exit("Failed to create a CommandPool, result code \"" + vk::to_string(result.result) + "\"");
+        }
 
-    if (const auto result = mVulkanDevice->asLogicDevice().allocateCommandBuffers(commandBufferAllocateInfo);
-        result.result == vk::Result::eSuccess && result.value.size() == 1)
-    {
-        mMainCommandBuffer = result.value[0];
-    }
-    else
-    {
-        Kompot::ErrorHandling::exit("Failed to create a CommandBuffer, result code \"" + vk::to_string(result.result) + "\"");
+        const auto commandBufferAllocateInfo =
+            vk::CommandBufferAllocateInfo{}.setCommandPool(frame.vkCommandPool).setCommandBufferCount(1).setLevel(vk::CommandBufferLevel::ePrimary);
+
+        if (const auto result = mVulkanDevice->asLogicDevice().allocateCommandBuffers(commandBufferAllocateInfo);
+            result.result == vk::Result::eSuccess && result.value.size() == 1)
+        {
+            frame.vkCommandBuffer = result.value[0];
+        }
+        else
+        {
+            Kompot::ErrorHandling::exit("Failed to create a CommandBuffer, result code \"" + vk::to_string(result.result) + "\"");
+        }
     }
 }
 
@@ -434,27 +446,31 @@ void VulkanRenderer::createRenderpass()
     }
 }
 
-void VulkanRenderer::createSyncStructure()
+void VulkanRenderer::createSyncObjects()
 {
     const auto fenceCreateInfo = vk::FenceCreateInfo{}.setFlags(vk::FenceCreateFlagBits::eSignaled);
-    if (const auto result = mVulkanDevice->asLogicDevice().createFence(fenceCreateInfo); result.result == vk::Result::eSuccess)
-    {
-        mVkRenderFence = result.value;
-    }
 
-    if (const auto result = mVulkanDevice->asLogicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+    for (auto& frame : mVulkanFrames)
     {
-        mVkRenderSemaphore = result.value;
-    }
+        if (const auto result = mVulkanDevice->asLogicDevice().createFence(fenceCreateInfo); result.result == vk::Result::eSuccess)
+        {
+            frame.vkRenderFence = result.value;
+        }
 
-    if (const auto result = mVulkanDevice->asLogicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
-    {
-        mVkPresentSemaphore = result.value;
-    }
+        if (const auto result = mVulkanDevice->asLogicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+        {
+            frame.vkRenderSemaphore = result.value;
+        }
 
-    if (!mVkRenderFence || !mVkRenderSemaphore || !mVkPresentSemaphore)
-    {
-        Kompot::ErrorHandling::exit("Failed to create sync structures");
+        if (const auto result = mVulkanDevice->asLogicDevice().createSemaphore(vk::SemaphoreCreateInfo{}); result.result == vk::Result::eSuccess)
+        {
+            frame.vkPresentSemaphore = result.value;
+        }
+
+        if (!frame.vkRenderFence || !frame.vkRenderSemaphore || !frame.vkPresentSemaphore)
+        {
+            Kompot::ErrorHandling::exit("Failed to create sync structures");
+        }
     }
 }
 
@@ -466,12 +482,18 @@ void VulkanRenderer::draw(Window* window)
         return;
     }
 
+    auto currentFrame = getCurrentFrame();
+
     // wait until the GPU has finished rendering the last frame. Timeout of 1 second
-    const auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)).count();
+    static const auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)).count();
+    check(mVulkanDevice->asLogicDevice().waitForFences(1, &currentFrame.vkRenderFence, true, timeout) == vk::Result::eSuccess);
+    check(mVulkanDevice->asLogicDevice().resetFences(1, &currentFrame.vkRenderFence) == vk::Result::eSuccess);
+
+    check(currentFrame.vkCommandBuffer.reset(vk::CommandBufferResetFlagBits{}) == vk::Result::eSuccess);
 
     uint32_t swapchainImageIndex = 0;
     if (const auto result =
-            mVulkanDevice->asLogicDevice().acquireNextImageKHR(windowAttributes->swapchain.handler, timeout, mVkPresentSemaphore, nullptr);
+            mVulkanDevice->asLogicDevice().acquireNextImageKHR(windowAttributes->swapchain.handler, timeout, currentFrame.vkPresentSemaphore, nullptr);
         result.result == vk::Result::eSuccess)
     {
         swapchainImageIndex = result.value;
@@ -486,11 +508,9 @@ void VulkanRenderer::draw(Window* window)
         Kompot::ErrorHandling::exit("Failed to acquire next framebuffer image");
     }
 
-    check(mVulkanDevice->asLogicDevice().waitForFences(1, &mVkRenderFence, true, timeout) == vk::Result::eSuccess);
-    check(mVulkanDevice->asLogicDevice().resetFences(1, &mVkRenderFence) == vk::Result::eSuccess);
+    Log::getInstance() << "Draw frame #" << mFrameNumber << std::endl;
 
-    check(mMainCommandBuffer.reset(vk::CommandBufferResetFlagBits{}) == vk::Result::eSuccess);
-    check(mMainCommandBuffer.begin(vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)) == vk::Result::eSuccess);
+    check(currentFrame.vkCommandBuffer.begin(vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)) == vk::Result::eSuccess);
 
     const float flash              = std::abs(std::sin(mFrameNumber / 120.f));
     const auto clearValue          = vk::ClearValue{}.setColor(vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f}));
@@ -501,30 +521,30 @@ void VulkanRenderer::draw(Window* window)
                                          .setClearValueCount(1)
                                          .setPClearValues(&clearValue);
 
-    mMainCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    currentFrame.vkCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
-    mMainCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, windowAttributes->pipeline.pipeline);
-    mMainCommandBuffer.draw(3, 1, 0, 0);
+    currentFrame.vkCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, windowAttributes->pipeline.pipeline);
+    currentFrame.vkCommandBuffer.draw(3, 1, 0, 0);
 
-    mMainCommandBuffer.endRenderPass();
+    currentFrame.vkCommandBuffer.endRenderPass();
 
-    check(mMainCommandBuffer.end() == vk::Result::eSuccess);
+    check(currentFrame.vkCommandBuffer.end() == vk::Result::eSuccess);
 
     const auto pipelineStageFlags = vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput};
     const auto submitInfo         = vk::SubmitInfo{}
                                 .setWaitSemaphoreCount(1)
-                                .setPWaitSemaphores(&mVkPresentSemaphore)
+                                .setPWaitSemaphores(&currentFrame.vkPresentSemaphore)
                                 .setPWaitDstStageMask(&pipelineStageFlags)
                                 .setCommandBufferCount(1)
-                                .setPCommandBuffers(&mMainCommandBuffer)
+                                .setPCommandBuffers(&currentFrame.vkCommandBuffer)
                                 .setSignalSemaphoreCount(1)
-                                .setPSignalSemaphores(&mVkRenderSemaphore);
+                                .setPSignalSemaphores(&currentFrame.vkRenderSemaphore);
 
-    check(mVulkanDevice->getGraphicsQueue().submit(1, &submitInfo, mVkRenderFence) == vk::Result::eSuccess);
+    check(mVulkanDevice->getGraphicsQueue().submit(1, &submitInfo, currentFrame.vkRenderFence) == vk::Result::eSuccess);
 
     const auto presentInfo = vk::PresentInfoKHR{}
                                  .setWaitSemaphoreCount(1)
-                                 .setPWaitSemaphores(&mVkRenderSemaphore)
+                                 .setPWaitSemaphores(&currentFrame.vkRenderSemaphore)
                                  .setSwapchainCount(1)
                                  .setPSwapchains(&windowAttributes->swapchain.handler)
                                  .setPImageIndices(&swapchainImageIndex);
@@ -533,7 +553,10 @@ void VulkanRenderer::draw(Window* window)
     if (presentResult == vk::Result::eErrorOutOfDateKHR)
     {
         windowAttributes->framebufferResized = true;
-        // , &mVkRenderFence
+    }
+    if (presentResult != vk::Result::eSuccess)
+    {
+        Log::getInstance() << "presentResult = " << vk::to_string(presentResult) << std::endl;
     }
 
     ++mFrameNumber;

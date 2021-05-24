@@ -66,6 +66,7 @@ private:
         [[maybe_unused]] void* userData);
 
 private:
+    static const uint64_t VULKAN_BUFFERS_COUNT = 2;
     std::size_t mFrameNumber = 0;
 
     VmaAllocator_T* mAllocator = nullptr;
@@ -75,16 +76,11 @@ private:
 
     VulkanPipelineBuilder mVulkanPipelineBuilder;
 
-    vk::CommandPool mVkCommandPool;
-    vk::CommandBuffer mMainCommandBuffer;
-
     vk::Format mVkSwapchainFormat = vk::Format::eB8G8R8A8Srgb; // ToDo: add selection based on GPU capabilities
     vk::RenderPass mVkRenderPass;
     std::vector<vk::Framebuffer> mVkFramebuffers;
 
-    vk::Semaphore mVkPresentSemaphore;
-    vk::Semaphore mVkRenderSemaphore;
-    vk::Fence mVkRenderFence;
+    std::array<VulkanFrameData, VULKAN_BUFFERS_COUNT> mVulkanFrames;
 
     VulkanShader mVertexShader;
     VulkanShader mFragmentShader;
@@ -95,6 +91,7 @@ private:
     vk::DebugUtilsMessengerEXT mVkDebugUtilsMessenger;
 #endif
 
+
 private:
     void setupAllocator();
 
@@ -104,7 +101,13 @@ private:
     void createCommands();
     void createPipeline(VulkanWindowRendererAttributes* window);
     void createRenderpass();
-    void createSyncStructure();
+    void createSyncObjects();
+
+    VulkanFrameData& getCurrentFrame()
+    {
+        return mVulkanFrames[mFrameNumber % VULKAN_BUFFERS_COUNT];
+    }
+
 };
 
 } // namespace Kompot

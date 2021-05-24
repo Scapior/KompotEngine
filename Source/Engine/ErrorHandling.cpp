@@ -8,7 +8,7 @@
 #include <Engine/Log/Log.hpp>
 
 #if __GNUC__ > 10
-void KompotEngine::ErrorHandling::exit(std::string_view exitMessage, const std::source_location& location, std::string_view stack);
+void Kompot::ErrorHandling::exit(std::string_view exitMessage, const std::source_location& location, std::string_view stack)
 #else
 void Kompot::ErrorHandling::exit(std::string_view exitMessage, std::string_view stack)
 #endif
