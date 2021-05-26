@@ -190,18 +190,19 @@ void Window::run()
             case XCB_REPARENT_NOTIFY:
                 log << "XCB_REPARENT_NOTIFY" << std::endl; break;
             case XCB_CONFIGURE_NOTIFY:
-                log << "XCB_CONFIGURE_NOTIFY" << std::endl; break;
+                //log << "XCB_CONFIGURE_NOTIFY" << std::endl; break;
+            {
+                xcb_configure_notify_event_t* xcbConfigureEvent = reinterpret_cast<xcb_configure_notify_event_t*>(xcbEvent);
+                mWindowHandlers->width = xcbConfigureEvent->width;
+                mWindowHandlers->height = xcbConfigureEvent->height;
+                mRenderer->notifyWindowResized(this);
+            }
             case XCB_CONFIGURE_REQUEST:
                 log << "XCB_CONFIGURE_REQUEST" << std::endl; break;
             case XCB_GRAVITY_NOTIFY:
                 log << "XCB_GRAVITY_NOTIFY" << std::endl; break;
             case XCB_RESIZE_REQUEST:
-            {
-                xcb_resize_request_event_t* xcbResizeEvent = reinterpret_cast<xcb_resize_request_event_t*>(xcbEvent);
-                mWindowHandlers->width = xcbResizeEvent->width;
-                mWindowHandlers->height = xcbResizeEvent->height;
-                mRenderer->notifyWindowResized(this);
-            }
+                log << "XCB_RESIZE_REQUEST" << std::endl; break;
             case XCB_CIRCULATE_NOTIFY:
                 log << "XCB_CIRCULATE_NOTIFY" << std::endl; break;
             case XCB_CIRCULATE_REQUEST:

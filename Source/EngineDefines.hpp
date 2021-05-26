@@ -38,4 +38,10 @@ static const char* ENGINE_NAME           = "KompotEngine";
     {                     \
         debugBreak();     \
     }
+#define checkVulkanSuccess(expression) \
+    if (const auto result = ((expression)); result != vk::Result::eSuccess)  \
+    {                     \
+        Log::getInstance() << "Expression \""#expression"\" returns " << vk::to_string(result) << std::endl; \
+        debugBreak();     \
+    }
 #define checkNotNull(expression) check(((expression)) != nullptr)

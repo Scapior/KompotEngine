@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.14)
 
 set(GLOBAL_INCLUDE_PATH
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # include <EngineDefines.hpp>, etc
