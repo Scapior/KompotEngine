@@ -18,4 +18,4 @@ add_library(Misc STATIC
         ${GLOBAL_INCLUDES}
         )
 
-target_compile_features(Misc PUBLIC cxx_std_17)
+target_compile_features(Misc PUBLIC cxx_std_20)

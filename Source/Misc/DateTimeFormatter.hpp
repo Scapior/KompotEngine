@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <ostream>
 #include <vector>
+#include <array>
 
 namespace Kompot
 {
@@ -116,9 +117,20 @@ public:
     }
 
 private:
-    DateTimeFormat m_dateTimeFormat = DateTimeFormat::Year + DateTimeFormat::Dot + DateTimeFormat::Month + DateTimeFormat::Dot + DateTimeFormat::Day +
-                                      DateTimeFormat::Space + DateTimeFormat::Hours24 + DateTimeFormat::Colon + DateTimeFormat::Minutes +
-                                      DateTimeFormat::Colon + DateTimeFormat::Seconds + DateTimeFormat::Dot + DateTimeFormat::Milliseconds;
+    DateTimeFormat m_dateTimeFormat = DateTimeFormat(std::to_array(
+        {DateTimeFormat::Year,
+         DateTimeFormat::Dot,
+         DateTimeFormat::Month,
+         DateTimeFormat::Dot,
+         DateTimeFormat::Day,
+         DateTimeFormat::Space,
+         DateTimeFormat::Hours24,
+         DateTimeFormat::Colon,
+         DateTimeFormat::Minutes,
+         DateTimeFormat::Colon,
+         DateTimeFormat::Seconds,
+         DateTimeFormat::Dot,
+         DateTimeFormat::Milliseconds}));
 
     mutable std::tm m_parsedTime;
     mutable std::chrono::milliseconds m_parsedMilliseconds;

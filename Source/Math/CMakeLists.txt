@@ -13,4 +13,4 @@ add_library(Math STATIC
         ${MATH_HEADERS}
         )
 
-target_compile_features(Math PUBLIC cxx_std_17)
+target_compile_features(Math PUBLIC cxx_std_20)
