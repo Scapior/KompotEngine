@@ -100,8 +100,10 @@ std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
 
 #if defined(ENGINE_OS_WINDOWS)
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-#elif defined(ENGINE_OS_LINUX)
+#elif defined(ENGINE_USE_XCB)
             VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+#elif defined(ENGINE_USE_XLIB)
+            VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
 #endif
 
 #ifdef ENGINE_DEBUG

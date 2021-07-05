@@ -14,9 +14,11 @@ if (WIN32)
 endif ()
 
 if (UNIX AND NOT APPLE)
-    add_compile_definitions(ENGINE_OS_LINUX)
-    add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
-endif ()
+    add_compile_definitions(ENGINE_OS_UNIX)
+    if (UNIX AND NOT APPLE)
+        add_compile_definitions(ENGINE_OS_LINUX)
+    endif()
+endif()
 
 add_subdirectory(Memory/VulkanAllocator)
 target_include_directories(VulkanAllocator

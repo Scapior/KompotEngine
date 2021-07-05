@@ -5,15 +5,18 @@
  */
 
 #include "Window.hpp"
-#include "Windows.h" // winapi
 #include <Engine/DebugUtils/DebugUtils.hpp>
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp>
 #include <Engine/Log/Log.hpp>
 
 
-using namespace Kompot;
+#ifdef ENGINE_OS_WINDOWS
 
+#include "Windows.h" // winapi
+
+
+using namespace Kompot;
 const std::wstring Window::windowClassNamePrefix = L"KompotEngineWindow_";
 
 struct Kompot::PlatformHandlers
@@ -227,3 +230,155 @@ std::array<uint32_t, 2> Window::getExtent() const
 
     return result;
 }
+
+#endif // Windows
+
+#if defined(ENGINE_OS_UNIX) and defined(ENGINE_USE_XLIB)
+#include <X11/Xlib.h>
+#include <sys/select.h>
+
+struct Kompot::PlatformHandlers
+{
+    //xcb_connection_t* xcbConnection;
+    Display* xlibDisplay;
+    int32_t xlibScreenNumber;
+    ::Window xlibWindow;
+    int32_t xlibConnectionDescriptor;
+
+    uint32_t width;
+    uint32_t height;
+};
+
+Kompot::Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers) :
+    mWindowName(windowName), mRenderer(renderer), mParentWindowHandlers(parentWindowHandlers)
+{
+    Log& log                       = Log::getInstance();
+    mWindowHandlers                = new Kompot::PlatformHandlers{};
+    mWindowHandlers->xlibDisplay = XOpenDisplay(nullptr);
+    assert(mWindowHandlers->xlibDisplay);
+    mWindowHandlers->xlibScreenNumber = DefaultScreen(mWindowHandlers->xlibDisplay);
+
+    const ::Window rootWindow = XDefaultRootWindow(mWindowHandlers->xlibDisplay);
+    mWindowHandlers->xlibWindow = XCreateSimpleWindow(
+                mWindowHandlers->xlibDisplay, rootWindow,
+                /* x, y */ 0, 0,
+                /* w, h */ 300, 300, 1,
+                XWhitePixel(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibScreenNumber),
+                XBlackPixel(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibScreenNumber)
+                );
+//    mWindowHandlers->xlibWindow = XCreateWindow(
+//                mWindowHandlers->xlibDisplay, rootWindow,
+//                /* x, y */ 0, 0,
+//                /* w, h */ 300, 300,
+//                /* border */ 1
+
+//                );
+
+    XSelectInput(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow,
+                 ExposureMask | StructureNotifyMask |
+                 PointerMotionMask |
+                 KeyPressMask | KeyReleaseMask |
+                 ButtonPressMask | ButtonReleaseMask);
+    XMapWindow(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow);
+    XFlush(mWindowHandlers->xlibDisplay);
+    mWindowHandlers->xlibConnectionDescriptor = XConnectionNumber(mWindowHandlers->xlibDisplay);
+
+    mWindowRendererAttributes = renderer->updateWindowAttributes(this);
+    const auto extent         = getExtent();
+    mWindowHandlers->width    = extent[0];
+    mWindowHandlers->height   = extent[1];
+}
+
+Kompot::Window::~Window()
+{
+    if (mRenderer)
+    {
+        mRenderer->unregisterWindow(this);
+    }
+    if (mWindowRendererAttributes)
+    {
+        delete mWindowRendererAttributes;
+        mWindowRendererAttributes = nullptr;
+    }
+    if (mWindowHandlers)
+    {
+        XDestroyWindow(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow);
+        XCloseDisplay(mWindowHandlers->xlibDisplay);
+    }
+    delete mWindowHandlers;
+    mWindowHandlers = nullptr;
+}
+
+void Kompot::Window::run()
+{
+    ::Atom xlibDeleteWindowMessageAtom = XInternAtom(mWindowHandlers->xlibDisplay, "WM_DELETE_WINDOW", false);
+    XSetWMProtocols(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow, &xlibDeleteWindowMessageAtom, 1);
+
+    Log& log                      = Log::getInstance();
+    XEvent xlibEvent;
+    while (!mNeedToClose)
+    {
+        if (XPending(mWindowHandlers->xlibDisplay))
+        {
+            XNextEvent(mWindowHandlers->xlibDisplay, &xlibEvent);
+
+            if (xlibEvent.type == ClientMessage &&
+                static_cast<Atom>(xlibEvent.xclient.data.l[0]) == xlibDeleteWindowMessageAtom)
+            {
+                mNeedToClose = true;
+            }
+        }
+
+        if (mRenderer)
+        {
+            mRenderer->draw(this);
+        }
+    }
+    // conditionVariable.wait()
+}
+
+void Kompot::Window::closeWindow()
+{
+    mNeedToClose = true;
+}
+
+vk::SurfaceKHR Kompot::Window::createVulkanSurface() const
+{
+    VulkanRenderer* vulkanRenderer = dynamic_cast<VulkanRenderer*>(mRenderer);
+    if (!vulkanRenderer)
+    {
+        check(!mRenderer);
+        if (mRenderer)
+        {
+            Log::getInstance() << "Trying to create VkSurface with non-Vulkan renderer (" << mRenderer->getName() << ')' << std::endl;
+        }
+        else
+        {
+            Log::getInstance() << "Trying to create VkSurface with not setted renderer" << std::endl;
+        }
+        return nullptr;
+    }
+
+    const auto surfaceInfo = vk::XlibSurfaceCreateInfoKHR{}.setDpy(mWindowHandlers->xlibDisplay).setWindow(mWindowHandlers->xlibWindow);
+    if (const auto createSurfaceResult = vulkanRenderer->getVkInstance().createXlibSurfaceKHR(surfaceInfo);
+        createSurfaceResult.result == vk::Result::eSuccess)
+    {
+        return createSurfaceResult.value;
+    }
+    else
+    {
+        Kompot::ErrorHandling::exit("Failed to create VkSurface, result code \"" + vk::to_string(createSurfaceResult.result) + "\"");
+    }
+
+    return nullptr;
+}
+std::array<uint32_t, 2> Kompot::Window::getExtent() const
+{
+    std::array<uint32_t, 2> result{};
+    if (mWindowHandlers)
+    {
+        return {mWindowHandlers->width, mWindowHandlers->height};
+    }
+    return {};
+}
+#endif // XLIB

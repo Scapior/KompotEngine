@@ -33,19 +33,8 @@ set(ENGINE_SOURCES
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanShader.cpp
-        ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.cpp)
-
-if (WIN32)
-list(APPEND ENGINE_SOURCES
-        ClientSubsystem/Window/WindowWindows.cpp
-        )
-endif ()
-
-if (LINUX)
-list(APPEND ENGINE_SOURCES
-        ClientSubsystem/Window/WindowLinux.cpp
-            )
-endif ()
+        ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.cpp
+        ClientSubsystem/Window/Window.cpp)
 
 add_library(Engine STATIC
         ${ENGINE_SOURCES}
@@ -53,11 +42,27 @@ add_library(Engine STATIC
         ${GLOBAL_INCLUDES}
         )
 
-if (LINUX)
-    find_package(PkgConfig)
-    pkg_check_modules(PKG_X11_XCB REQUIRED x11-xcb)
-    target_link_libraries(Engine ${PKG_X11_XCB_LIBRARIES})
+option(ENGINE_USE_XCB_INSTEAD_XLIB "Use XCB library, not Xlib")
+
+if (UNIX)
+    if (ENGINE_USE_XCB_INSTEAD_XLIB)
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(PKG_X11_XCB REQUIRED x11-xcb)
+        add_compile_definitions(ENGINE_USE_XCB VK_USE_PLATFORM_XCB_KHR)
+        target_link_libraries(Engine ${PKG_X11_XCB_LIBRARIES})
+        message(FATAL_ERROR "XCB support not implemented yet")
+    else()
+        find_package(X11 REQUIRED)
+        add_compile_definitions(ENGINE_USE_XLIB VK_USE_PLATFORM_XLIB_KHR)
+        target_link_libraries(Engine ${X11_LIBRARIES})
+    endif()
 endif ()
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
 
 if (WIN32)
     target_link_libraries(Engine Dbghelp)
