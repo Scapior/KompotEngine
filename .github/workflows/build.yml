@@ -15,12 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install glm submodule
-        uses: actions/checkout@v2
-        with:
-          repository: g-truc/glm
-          path: ThirdParty/glm
-
       - name: Install VMA submodule
         uses: actions/checkout@v2
         with:

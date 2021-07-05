@@ -53,6 +53,28 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_link_libraries(KompotEngine PRIVATE pthread)
 endif ()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set_target_properties(KompotEngine PROPERTIES
+            PDB_NAME "KompotEngine"
+            PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+
+    set_target_properties(Engine PROPERTIES
+            PDB_NAME "Engine"
+            PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+
+    set_target_properties(Misc PROPERTIES
+            PDB_NAME "Misc"
+            PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+
+    set_target_properties(Math PROPERTIES
+            PDB_NAME "Math"
+            PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
+    )
+endif ()
+
 target_link_libraries(KompotEngine PRIVATE
         Engine
         Misc

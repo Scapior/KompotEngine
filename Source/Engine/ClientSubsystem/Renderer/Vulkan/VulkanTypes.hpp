@@ -35,6 +35,7 @@ struct VulkanWindowRendererAttributes : public WindowRendererAttributes
     vk::Rect2D      scissor;
     vk::Queue       presentQueue;
     VulkanPipeline  pipeline;
+    bool            isRenderingIdle    = false;
     bool            framebufferResized = false;
     bool            isPendingDestroy   = false;
 };

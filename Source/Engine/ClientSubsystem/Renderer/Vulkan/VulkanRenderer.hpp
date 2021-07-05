@@ -16,6 +16,14 @@
 
 namespace Kompot
 {
+
+enum class RendererState
+{
+    Uninitialized,
+    Initialized,
+    DeviceLost
+};
+
 class VulkanRenderer : public Kompot::IRenderer
 {
 public:
@@ -50,7 +58,7 @@ public:
 
 protected:
     void cleanupWindowHandlers(VulkanWindowRendererAttributes* windowAttributes);
-    void recreateWindowHandlers(VulkanWindowRendererAttributes* windowAttributes);
+    void recreateWindowHandlers(VulkanWindowRendererAttributes* windowAttributes, vk::SurfaceCapabilitiesKHR vkSurfaceCapabilities);
 
 private:
     void setupDebugCallback();
@@ -86,6 +94,8 @@ private:
     VulkanShader mFragmentShader;
 
     std::set<Window*> mWindows;
+
+    RendererState mRendererState = RendererState::Uninitialized;
 
 #if 1 // ENGINE_DEBUG
     vk::DebugUtilsMessengerEXT mVkDebugUtilsMessenger;
