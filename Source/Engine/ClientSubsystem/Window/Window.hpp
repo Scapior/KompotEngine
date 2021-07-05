@@ -45,6 +45,7 @@ private:
     std::string mWindowName;
     Kompot::IRenderer* mRenderer;
 
+    std::atomic_bool  mNeedToClose                = false;
     PlatformHandlers* mWindowHandlers             = nullptr;
     const PlatformHandlers* mParentWindowHandlers = nullptr;
 
@@ -53,7 +54,6 @@ private:
     /* Platform-specific definitions */
 
 #ifdef ENGINE_OS_WINDOWS
-    std::atomic_bool mNeedToClose         = false;
     static const std::wstring windowClassNamePrefix;
     static int64_t __stdcall windowProcedure(void* hwnd, uint32_t message, uint64_t wParam, int64_t lParam);
 #endif

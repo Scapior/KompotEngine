@@ -134,9 +134,8 @@ Window::~Window()
 void Window::run()
 {
     Log& log                      = Log::getInstance();
-    bool needToExit               = false;
     xcb_generic_event_t* xcbEvent = xcb_wait_for_event(mWindowHandlers->xcbConnection);
-    while (!needToExit)
+    while (!mNeedToClose)
     {
         xcbEvent = xcb_poll_for_event(mWindowHandlers->xcbConnection);
         if (xcbEvent)
@@ -222,7 +221,7 @@ void Window::run()
                 xcb_client_message_event_t* xcbClientMessageEvent = reinterpret_cast<xcb_client_message_event_t*>(xcbEvent);
                 if (reply2->atom == xcbClientMessageEvent->data.data32[0])
                 {
-                    needToExit = true;
+                    mNeedToClose = true;
                 }
                 xcbClientMessageEvent->data.data16[9] = 4;
                 break;
@@ -249,6 +248,11 @@ void Window::run()
         }
     }
     // conditionVariable.wait()
+}
+
+void Window::closeWindow()
+{
+    mNeedToClose = true;
 }
 
 vk::SurfaceKHR Window::createVulkanSurface() const
