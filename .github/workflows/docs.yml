@@ -42,12 +42,11 @@ jobs:
         force_orphan: true
         publish_branch: gh-pages
 
-    - name: Add domain        
-      uses: actions/write-to-file@v1.0
-      with:
-        filepath: ./CNAME
-        content: kompotengine.tech
-        mode: 0655
+     name: Add domain
+      shell: bash
+      run: |
+        pwd && echo "kompotengine.tech" > CNAME
+
       # uses: DamianReeves/write-file-action@v1.0
       # with:
         # path: ./CNAME
