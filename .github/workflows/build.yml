@@ -3,10 +3,10 @@ name: Build (Ubuntu 20.04)
 on:
   push:
     branches: [ Develop ]
+    paths:
+      - 'Source/*'
     paths-ignore:
-      - '.github/**'
-  pull_request:
-    branches: [ Develop ]
+      - 'Source/Doxyfile'
 
 jobs:
   build:
