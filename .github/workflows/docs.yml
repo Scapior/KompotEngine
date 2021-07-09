@@ -41,4 +41,13 @@ jobs:
         allow_empty_commit: false
         force_orphan: true
         publish_branch: gh-pages
+
+    - name: Add domain        
+        uses: DamianReeves/write-file-action
+        with:
+          path: ./CNAME
+          contents: |
+            echo "kompotengine.tech"
+          write-mode: append
+        
         
