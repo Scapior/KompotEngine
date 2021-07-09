@@ -43,7 +43,7 @@ jobs:
         publish_branch: gh-pages
 
     - name: Add domain        
-        uses: DamianReeves/write-file-action
+        uses: DamianReeves/write-file-action@v1.0
         with:
           path: ./CNAME
           contents: |
