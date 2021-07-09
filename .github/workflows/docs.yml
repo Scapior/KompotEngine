@@ -43,11 +43,16 @@ jobs:
         publish_branch: gh-pages
 
     - name: Add domain        
-      uses: DamianReeves/write-file-action@v1.0
+      uses: actions/write-to-file@v1.0
       with:
-        path: ./CNAME
-        contents: |
-          echo "kompotengine.tech"
-        write-mode: append
+        filepath: ./CNAME
+        content: kompotengine.tech
+        mode: 0655
+      # uses: DamianReeves/write-file-action@v1.0
+      # with:
+        # path: ./CNAME
+        # contents: |
+          # echo "kompotengine.tech"
+        # write-mode: append
         
         
