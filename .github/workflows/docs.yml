@@ -42,7 +42,7 @@ jobs:
         force_orphan: true
         publish_branch: gh-pages
 
-     name: Add domain
+    - name: Add domain
       shell: bash
       run: |
         pwd && echo "kompotengine.tech" > CNAME
