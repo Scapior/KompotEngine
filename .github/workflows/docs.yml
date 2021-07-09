@@ -35,7 +35,7 @@ jobs:
     - name: Add domain
       shell: bash
       run: |
-        pwd && ls && echo "kompotengine.tech" > CNAME
+        pwd && echo "kompotengine.tech" > ./docs/html/CNAME && ls -R
     
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
