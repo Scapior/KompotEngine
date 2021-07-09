@@ -32,11 +32,6 @@ jobs:
         # Working directory
         working-directory: .
     
-    - name: Add domain
-      shell: bash
-      run: |
-        pwd && echo "kompotengine.tech" > ./docs/html/CNAME && ls -R
-    
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
@@ -46,12 +41,4 @@ jobs:
         allow_empty_commit: false
         force_orphan: true
         publish_branch: gh-pages
-
-      # uses: DamianReeves/write-file-action@v1.0
-      # with:
-        # path: ./CNAME
-        # contents: |
-          # echo "kompotengine.tech"
-        # write-mode: append
-        
-        
+        cname: kompotengine.tech
