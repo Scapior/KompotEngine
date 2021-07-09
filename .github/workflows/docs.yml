@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Doxygen
+name: Documentation
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -36,8 +36,9 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/html
+        publish_dir: ./docs/html/
         enable_jekyll: false
         allow_empty_commit: false
         force_orphan: true
         publish_branch: gh-pages
+        
