@@ -20,7 +20,8 @@ set(ENGINE_HEADERS
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanTypes.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanShader.hpp
-        ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.hpp)
+        ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.hpp
+        Platform/MessageDialog.hpp)
 
 set(ENGINE_SOURCES
         Engine.cpp
@@ -34,7 +35,8 @@ set(ENGINE_SOURCES
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanShader.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanPipelineBuilder.cpp
-        ClientSubsystem/Window/Window.cpp)
+        ClientSubsystem/Window/Window.cpp
+        Platform/MessageDialog.cpp)
 
 add_library(Engine STATIC
         ${ENGINE_SOURCES}
