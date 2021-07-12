@@ -77,12 +77,20 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
 endif ()
 
+get_filename_component(VULKAN_SDK_LIBS_PATH ${Vulkan_LIBRARY} DIRECTORY)
+target_link_directories(KompotEngine PRIVATE ${VULKAN_SDK_LIBS_PATH})
+
 target_link_libraries(KompotEngine PRIVATE
         Engine
         Misc
         Math
         VulkanAllocator
-        ${Vulkan_LIBRARY})
+        ${Vulkan_LIBRARY}
+        SPIRV-Tools)
+
+    message("${VULKAN_SDK_LIBS_PATH}")
+
+message(STATUS "VARIABLE PATH ${VULKAN_SDK_LIBS_PATH}/")
 
 set_target_properties(KompotEngine
         PROPERTIES

@@ -31,6 +31,3 @@ message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(Source)
 add_subdirectory(Tests)
-
-add_subdirectory(Shaders)
-add_dependencies(KompotEngine Shaders)

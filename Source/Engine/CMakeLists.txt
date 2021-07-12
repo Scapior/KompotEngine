@@ -14,6 +14,7 @@ set(ENGINE_HEADERS
         DebugUtils/DebugUtils.hpp
         ClientSubsystem/ClientSubsystem.hpp
         ClientSubsystem/Window/Window.hpp
+        ClientSubsystem/Renderer/ShaderCompiler/ShaderCompiler.hpp
         ClientSubsystem/Renderer/IRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.hpp
@@ -30,6 +31,7 @@ set(ENGINE_SOURCES
         Config/ConfigManager.cpp
         DebugUtils/DebugUtils.cpp
         ClientSubsystem/ClientSubsystem.cpp
+        ClientSubsystem/Renderer/ShaderCompiler/ShaderCompiler.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.cpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.cpp

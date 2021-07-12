@@ -6,12 +6,12 @@
 
 #pragma once
 #include "VulkanDevice.hpp"
+#include <Engine/ClientSubsystem/Renderer/IRenderer.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace Kompot
 {
-
-class VulkanShader
+class VulkanShader : IShader
 {
 public:
     VulkanShader();
@@ -28,7 +28,7 @@ public:
         return mShaderModule;
     }
 
-    std::string_view getSourceFilename() const
+    std::string_view getSourceFilename() const override
     {
         return mFilename;
     }

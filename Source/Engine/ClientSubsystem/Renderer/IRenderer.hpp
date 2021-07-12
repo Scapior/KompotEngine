@@ -19,6 +19,13 @@ struct WindowRendererAttributes
     }
 };
 
+class IShader
+{
+public:
+    virtual ~IShader(){};
+    virtual std::string_view getSourceFilename() const = 0;
+};
+
 class IRenderer
 {
 public:
