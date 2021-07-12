@@ -8,6 +8,7 @@
 
 #include "VulkanRenderer.hpp"
 #include <Engine/ClientSubsystem/Window/Window.hpp>
+#include <Engine/ClientSubsystem/Renderer/Shaders/ShaderManager.hpp>
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
@@ -17,6 +18,7 @@
 #define ENGINE_VULKAN_VERSION VK_API_VERSION_1_2
 
 using namespace Kompot;
+using namespace Kompot::ClientSubsystem::Renderer;
 
 //const uint64_t VulkanRenderer::VULKAN_BUFFERS_COUNT = 2;
 
@@ -642,16 +644,19 @@ void VulkanRenderer::createPipeline(VulkanWindowRendererAttributes* windowAttrib
         return;
     }
 
-    if (!mVertexShader.get())
+    if (!mVertexShader)
     {
-        mVertexShader = VulkanShader("triangle.vert.spv", mVulkanDevice->asLogicDevice());
-        check(mVertexShader.load());
+        const auto vertShader = ShaderManager::get().load("Shaders/triangle.vert");
+        mVertexShader = VulkanShader("vert", mVulkanDevice->asLogicDevice());
+        check(mVertexShader.load(vertShader));
     }
 
-    if (!mFragmentShader.get())
+    if (!mFragmentShader)
     {
-        mFragmentShader = VulkanShader("triangle.frag.spv", mVulkanDevice->asLogicDevice());
-        check(mFragmentShader.load());
+        const auto vertShader = ShaderManager::get().load("Shaders/triangle.frag");
+        mVertexShader = VulkanShader("frag", mVulkanDevice->asLogicDevice());
+        check(mVertexShader.load(vertShader));
+
     }
 
     std::vector<VulkanShader> shaders = {mVertexShader, mFragmentShader};

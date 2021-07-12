@@ -4,14 +4,17 @@
  *  Licensed under the MIT license.
  */
 
-#include <Engine/ClientSubsystem/Renderer/IRenderer.hpp>
+#include <string>
+#include <vector>
 
 namespace Kompot::ClientSubsystem::Renderer
 {
 class ShaderCompiler
 {
 public:
-    void Compile(IShader* Shader);
+    static ShaderCompiler& get();
+
+    const std::vector<std::byte> compile(const std::string shaderCode);
 
 private:
     ShaderCompiler();

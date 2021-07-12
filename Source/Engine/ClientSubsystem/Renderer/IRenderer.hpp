@@ -19,6 +19,11 @@ struct WindowRendererAttributes
     }
 };
 
+enum class ShaderType
+{
+    Vertex
+};
+
 class IShader
 {
 public:

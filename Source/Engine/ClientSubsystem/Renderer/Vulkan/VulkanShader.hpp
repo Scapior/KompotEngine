@@ -21,7 +21,12 @@ public:
     void operator=(const VulkanShader& otherShader);
     ~VulkanShader();
 
-    bool load();
+    bool load(const std::vector<std::byte>& shaderBytecode);
+
+    operator bool() const
+    {
+        return mShaderModule;
+    }
 
     vk::ShaderModule get() const
     {
