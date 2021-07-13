@@ -22,8 +22,9 @@ jobs:
 
       - name: Install Vulkan
         run: |
-          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe -OutFile vulkan-sdk.exe
+          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.2.182.0/windows/VulkanSDK-1.2.182.0-Installer.exe -OutFile vulkan-sdk.exe
           Start-Process -Filepath "vulkan-sdk.exe" -ArgumentList /S -Wait
+          [System.Environment]::SetEnvironmentVariable('VULKAN_SDK','C:\VulkanSDK\1.2.182.0',[System.EnvironmentVariableTarget]::Machine)
 
       - name: CMake
         shell: pwsh
