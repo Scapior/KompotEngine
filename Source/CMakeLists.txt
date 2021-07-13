@@ -4,7 +4,7 @@ set(GLOBAL_INCLUDE_PATH
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # include <EngineDefines.hpp>, etc
         )
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED FATAL_ERROR)
 add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
 
 if (WIN32)
