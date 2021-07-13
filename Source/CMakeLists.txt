@@ -51,10 +51,6 @@ add_executable(
         EngineTypes.hpp
         main.cpp)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_link_libraries(KompotEngine PRIVATE pthread)
-endif ()
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_target_properties(KompotEngine PROPERTIES
             PDB_NAME "KompotEngine"
@@ -90,6 +86,11 @@ target_link_libraries(KompotEngine PRIVATE
         shaderc_combined
         SPIRV
         )
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    find_package(Threads REQUIRED)
+    target_link_libraries(KompotEngine PRIVATE Threads::Threads)
+endif ()
 
 set_target_properties(KompotEngine
         PROPERTIES

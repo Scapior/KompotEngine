@@ -28,7 +28,7 @@ ShaderManager& ShaderManager::get()
 
 std::vector<uint32_t> loadCacheFile(const fs::path& path)
 {
-#if !defined(__GNUC__)
+#if defined(__GNUC__)
     std::ifstream file{path, std::ios::binary | std::ios::ate};
     if (!file.is_open())
     {
@@ -67,7 +67,6 @@ const std::vector<uint32_t> ShaderManager::load(const std::filesystem::path& pat
     if (const auto shaderBinary = loadCacheFile(cachePath); !shaderBinary.empty())
     {
         cache.emplace(cachePath, shaderBinary);
-        Log::getInstance() << "Loaded " << cachePath << " from cache" << std::endl;
         return shaderBinary;
     }
 
