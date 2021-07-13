@@ -9,6 +9,7 @@
 #include <Engine/Log/Log.hpp>
 
 using namespace Kompot;
+using namespace Kompot::Rendering::Vulkan;
 
 ClientSubsystem::ClientSubsystem()
 {

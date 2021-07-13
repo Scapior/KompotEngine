@@ -8,6 +8,7 @@
 
 #include "VulkanRenderer.hpp"
 #include <Engine/ClientSubsystem/Window/Window.hpp>
+#include <Engine/ClientSubsystem/Renderer/Shaders/ShaderManager.hpp>
 #include <Engine/ErrorHandling.hpp>
 #include <Engine/Log/Log.hpp>
 #include <EngineDefines.hpp>
@@ -17,10 +18,12 @@
 #define ENGINE_VULKAN_VERSION VK_API_VERSION_1_2
 
 using namespace Kompot;
+using namespace Kompot::Rendering;
+using namespace Kompot::Rendering::Vulkan;
 
 //const uint64_t VulkanRenderer::VULKAN_BUFFERS_COUNT = 2;
 
-VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
+Vulkan::VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
 {
     createInstance();
     setupDebugCallback();
@@ -36,7 +39,7 @@ VulkanRenderer::VulkanRenderer() : mVkInstance(nullptr)
     mRendererState = RendererState::Initialized;
 };
 
-VulkanRenderer::~VulkanRenderer()
+Rendering::Vulkan::VulkanRenderer::~VulkanRenderer()
 {
     mVulkanDevice->asLogicDevice().destroy(mVertexShader.get());
     mVulkanDevice->asLogicDevice().destroy(mFragmentShader.get());
@@ -62,14 +65,14 @@ void VulkanRenderer::createInstance()
 {
     vk::ApplicationInfo vkApplicationInfo{ENGINE_NAME, 0, ENGINE_NAME, 0, ENGINE_VULKAN_VERSION};
 
-    const auto instanceExtensions       = VulkanUtils::getRequiredInstanceExtensions();
-    const auto instanceValidationLayers = VulkanUtils::getRequiredInstanceValidationLayers();
+    const auto instanceExtensions       = Utils::getRequiredInstanceExtensions();
+    const auto instanceValidationLayers = Utils::getRequiredInstanceValidationLayers();
     auto vkInstanceCreateInfo           = vk::InstanceCreateInfo{}
-                                    .setPApplicationInfo(&vkApplicationInfo)
-                                    .setPEnabledExtensionNames(instanceExtensions)
-                                    .setPEnabledLayerNames(instanceValidationLayers)
-                                    .setEnabledLayerCount(static_cast<uint32_t>(instanceValidationLayers.size()))
-                                    .setEnabledExtensionCount(static_cast<uint32_t>(instanceExtensions.size()));
+            .setPApplicationInfo(&vkApplicationInfo)
+            .setPEnabledExtensionNames(instanceExtensions)
+            .setPEnabledLayerNames(instanceValidationLayers)
+            .setEnabledLayerCount(static_cast<uint32_t>(instanceValidationLayers.size()))
+            .setEnabledExtensionCount(static_cast<uint32_t>(instanceExtensions.size()));
 
     if (const auto result = vk::createInstance(vkInstanceCreateInfo); result.result == vk::Result::eSuccess)
     {
@@ -85,14 +88,14 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
 {
     uint32_t physicalDevicesCount = 0;
     if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, nullptr);
-        enumerateCountResult != vk::Result::eSuccess)
+            enumerateCountResult != vk::Result::eSuccess)
     {
         Kompot::ErrorHandling::exit("Failed to get physical devices count, result code \"" + vk::to_string(enumerateCountResult) + "\"");
     }
 
     std::vector<vk::PhysicalDevice> physicalDevices(physicalDevicesCount);
     if (const auto enumerateCountResult = mVkInstance.enumeratePhysicalDevices(&physicalDevicesCount, physicalDevices.data());
-        enumerateCountResult != vk::Result::eSuccess)
+            enumerateCountResult != vk::Result::eSuccess)
     {
         Kompot::ErrorHandling::exit("Failed to enumerate physical devices, result code \"" + vk::to_string(enumerateCountResult) + "\"");
     }
@@ -103,12 +106,12 @@ vk::PhysicalDevice VulkanRenderer::selectPhysicalDevice()
     }
 
     uint32_t selectedDeviceIndex = 0;
-    VulkanUtils::DeviceComparsionAttributes selectedDeviceAttributes{};
+    Utils::DeviceComparsionAttributes selectedDeviceAttributes{};
     bool hasDiscreteDeviceWasFound = false;
     for (auto i = 0u; i < physicalDevices.size(); ++i)
     {
         const auto& physicalDevice   = physicalDevices[i];
-        const auto& deviceAttributes = VulkanUtils::getDeviceComparsionAttributes(physicalDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
+        const auto& deviceAttributes = Utils::getDeviceComparsionAttributes(physicalDevice, vk::MemoryPropertyFlagBits::eDeviceLocal);
 
         const bool isHaveMoreMemory             = deviceAttributes.memorySize > selectedDeviceAttributes.memorySize;
         const bool isMoreBetterDevice           = (deviceAttributes.isDiscreteDevice == hasDiscreteDeviceWasFound) && isHaveMoreMemory;
@@ -158,7 +161,7 @@ WindowRendererAttributes* VulkanRenderer::updateWindowAttributes(Window* window)
     }
 
     if (auto surfaceCapabilitiesResult = mVulkanDevice->asPhysicalDevice().getSurfaceCapabilitiesKHR(windowAttributes->surface);
-        surfaceCapabilitiesResult.result == vk::Result::eSuccess)
+            surfaceCapabilitiesResult.result == vk::Result::eSuccess)
     {
         const auto& surfaceSize = surfaceCapabilitiesResult.value.currentExtent;
         windowAttributes->scissor.extent = surfaceSize;
@@ -214,20 +217,20 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
 
     // VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR  ?
     auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR{}
-                                   .setSurface(windowAttributes->surface)
-                                   .setMinImageCount(vkSurfaceCapabilities.minImageCount)
-                                   .setImageFormat(mVkSwapchainFormat)
-                                   .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
-                                   //.setImageExtent(windowAttributes->scissor.extent)
-                                   .setImageExtent(vkSurfaceCapabilities.currentExtent)
-                                   .setImageArrayLayers(1)
-                                   .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-                                   .setImageSharingMode(bQueuesAreSame ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
-                                   .setQueueFamilyIndices(queueFamilyIndices)
-                                   .setPreTransform(vkSurfaceCapabilities.currentTransform)
-                                   .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-                                   .setPresentMode(vk::PresentModeKHR::eFifo)
-                                   .setClipped(VK_TRUE);
+            .setSurface(windowAttributes->surface)
+            .setMinImageCount(vkSurfaceCapabilities.minImageCount)
+            .setImageFormat(mVkSwapchainFormat)
+            .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
+            //.setImageExtent(windowAttributes->scissor.extent)
+            .setImageExtent(vkSurfaceCapabilities.currentExtent)
+            .setImageArrayLayers(1)
+            .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+            .setImageSharingMode(bQueuesAreSame ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
+            .setQueueFamilyIndices(queueFamilyIndices)
+            .setPreTransform(vkSurfaceCapabilities.currentTransform)
+            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+            .setPresentMode(vk::PresentModeKHR::eFifo)
+            .setClipped(VK_TRUE);
     windowAttributes->scissor.extent = vkSurfaceCapabilities.currentExtent;
 
     const auto& logicalDevice = mVulkanDevice->asLogicDevice();
@@ -245,16 +248,16 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
 
     swapchain.framebuffers.resize(swapchain.swapchainImagesCount);
     auto framebufferCreateInfo = vk::FramebufferCreateInfo{}
-                                     .setRenderPass(mVkRenderPass)
-                                     .setHeight(windowAttributes->scissor.extent.height)
-                                     .setWidth(windowAttributes->scissor.extent.width)
-                                     .setLayers(1)
-                                     .setAttachmentCount(1);
+            .setRenderPass(mVkRenderPass)
+            .setHeight(windowAttributes->scissor.extent.height)
+            .setWidth(windowAttributes->scissor.extent.width)
+            .setLayers(1)
+            .setAttachmentCount(1);
 
     for (std::size_t i = 0; i < swapchain.swapchainImagesCount; ++i)
     {
         const auto imageViewCreateInfo =
-            vk::ImageViewCreateInfo{}
+                vk::ImageViewCreateInfo{}
                 .setImage(swapchain.images[i])
                 .setViewType(vk::ImageViewType::e2D)
                 .setFormat(mVkSwapchainFormat)
@@ -268,7 +271,7 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         else
         {
             Kompot::ErrorHandling::exit(
-                "Failed to create an image view for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
+                        "Failed to create an image view for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
         }
 
         framebufferCreateInfo.setPAttachments(&swapchain.imageViews[i]);
@@ -279,7 +282,7 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
         else
         {
             Kompot::ErrorHandling::exit(
-                "Failed to create a framebuffer for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
+                        "Failed to create a framebuffer for swapchain image, result code \"" + vk::to_string(result.result) + "\"");
         }
     }
 
@@ -289,23 +292,23 @@ void VulkanRenderer::recreateWindowHandlers(VulkanWindowRendererAttributes* wind
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::vulkanDebugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
-    void* userData)
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+        void* userData)
 {
     return vulkanDebugCallbackImpl(
-        vk::DebugUtilsMessageSeverityFlagsEXT(messageSeverity),
-        vk::DebugUtilsMessageTypeFlagsEXT(messageType),
-        vk::DebugUtilsMessengerCallbackDataEXT(*callbackData),
-        userData);
+                vk::DebugUtilsMessageSeverityFlagsEXT(messageSeverity),
+                vk::DebugUtilsMessageTypeFlagsEXT(messageType),
+                vk::DebugUtilsMessengerCallbackDataEXT(*callbackData),
+                userData);
 }
 
 VkBool32 VulkanRenderer::vulkanDebugCallbackImpl(
-    vk::DebugUtilsMessageSeverityFlagsEXT messageSeverite,
-    vk::DebugUtilsMessageTypeFlagsEXT messageType,
-    const vk::DebugUtilsMessengerCallbackDataEXT& callbackData,
-    void* userData)
+        vk::DebugUtilsMessageSeverityFlagsEXT messageSeverite,
+        vk::DebugUtilsMessageTypeFlagsEXT messageType,
+        const vk::DebugUtilsMessengerCallbackDataEXT& callbackData,
+        void* userData)
 {
     Log::getInstance() << Log::DateTimeBlock << "[Validation layer " << vk::to_string(messageType) << vk::to_string(messageSeverite) << "] "
                        << callbackData.pMessage << std::endl;
@@ -316,7 +319,7 @@ void VulkanRenderer::setupDebugCallback()
 {
 #ifdef ENGINE_DEBUG
     auto createDebugUtilsMessengerEXT =
-        reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(mVkInstance, "vkCreateDebugUtilsMessengerEXT"));
+            reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(mVkInstance, "vkCreateDebugUtilsMessengerEXT"));
     if (!mVkInstance || !createDebugUtilsMessengerEXT)
     {
         return;
@@ -325,14 +328,14 @@ void VulkanRenderer::setupDebugCallback()
     using SaverityFlagBits = vk::DebugUtilsMessageSeverityFlagBitsEXT;
     using TypeFlagBits     = vk::DebugUtilsMessageTypeFlagBitsEXT;
     const VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo =
-        vk::DebugUtilsMessengerCreateInfoEXT{}
+            vk::DebugUtilsMessengerCreateInfoEXT{}
             .setMessageSeverity(SaverityFlagBits::eError | SaverityFlagBits::eInfo | SaverityFlagBits::eVerbose | SaverityFlagBits::eWarning)
             .setMessageType(TypeFlagBits::ePerformance | TypeFlagBits::eValidation)
             .setPfnUserCallback(&VulkanRenderer::vulkanDebugCallback);
 
     VkDebugUtilsMessengerEXT DebugUtilsMessengerHandler{};
     if (vk::Result result{createDebugUtilsMessengerEXT(mVkInstance, &debugUtilsMessengerCreateInfo, nullptr, &DebugUtilsMessengerHandler)};
-        result == vk::Result::eSuccess)
+            result == vk::Result::eSuccess)
     {
         mVkDebugUtilsMessenger = DebugUtilsMessengerHandler;
     }
@@ -347,7 +350,7 @@ void VulkanRenderer::deleteDebugCallback()
 {
 #ifdef ENGINE_DEBUG
     auto destroyDebugUtilsMessengerEXT =
-        reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(mVkInstance, "vkDestroyDebugUtilsMessengerEXT"));
+            reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(mVkInstance, "vkDestroyDebugUtilsMessengerEXT"));
     if (destroyDebugUtilsMessengerEXT && mVkInstance && mVkDebugUtilsMessenger)
     {
         destroyDebugUtilsMessengerEXT(mVkInstance, mVkDebugUtilsMessenger, nullptr);
@@ -398,8 +401,8 @@ void VulkanRenderer::cleanupWindowHandlers(VulkanWindowRendererAttributes* windo
 void VulkanRenderer::createCommands()
 {
     const auto commandPoolCreateInfo = vk::CommandPoolCreateInfo{}
-                                           .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                                           .setQueueFamilyIndex(mVulkanDevice->getGraphicsQueueIndex());
+            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+            .setQueueFamilyIndex(mVulkanDevice->getGraphicsQueueIndex());
 
     for (auto& frame : mVulkanFrames)
     {
@@ -413,10 +416,10 @@ void VulkanRenderer::createCommands()
         }
 
         const auto commandBufferAllocateInfo =
-            vk::CommandBufferAllocateInfo{}.setCommandPool(frame.vkCommandPool).setCommandBufferCount(1).setLevel(vk::CommandBufferLevel::ePrimary);
+                vk::CommandBufferAllocateInfo{}.setCommandPool(frame.vkCommandPool).setCommandBufferCount(1).setLevel(vk::CommandBufferLevel::ePrimary);
 
         if (const auto result = mVulkanDevice->asLogicDevice().allocateCommandBuffers(commandBufferAllocateInfo);
-            result.result == vk::Result::eSuccess && result.value.size() == 1)
+                result.result == vk::Result::eSuccess && result.value.size() == 1)
         {
             frame.vkCommandBuffer = result.value[0];
         }
@@ -430,27 +433,27 @@ void VulkanRenderer::createCommands()
 void VulkanRenderer::createRenderpass()
 {
     const auto renderpassAttachmentDescription = vk::AttachmentDescription{}
-                                                     .setFormat(mVkSwapchainFormat)
-                                                     .setSamples(vk::SampleCountFlagBits::e1)
-                                                     .setLoadOp(vk::AttachmentLoadOp::eClear)
-                                                     .setStoreOp(vk::AttachmentStoreOp::eStore)
-                                                     .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-                                                     .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                                                     .setInitialLayout(vk::ImageLayout::eUndefined)
-                                                     .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+            .setFormat(mVkSwapchainFormat)
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
     const auto attachmentReference = vk::AttachmentReference{}.setAttachment(0).setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
     const auto subpassDescription = vk::SubpassDescription{}
-                                        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-                                        .setColorAttachmentCount(1)
-                                        .setPColorAttachments(&attachmentReference);
+            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+            .setColorAttachmentCount(1)
+            .setPColorAttachments(&attachmentReference);
 
     const auto renderpassCreateInfo = vk::RenderPassCreateInfo{}
-                                          .setAttachmentCount(1)
-                                          .setPAttachments(&renderpassAttachmentDescription)
-                                          .setSubpassCount(1)
-                                          .setPSubpasses(&subpassDescription);
+            .setAttachmentCount(1)
+            .setPAttachments(&renderpassAttachmentDescription)
+            .setSubpassCount(1)
+            .setPSubpasses(&subpassDescription);
 
 
     if (const auto result = mVulkanDevice->asLogicDevice().createRenderPass(renderpassCreateInfo); result.result == vk::Result::eSuccess)
@@ -526,7 +529,7 @@ void VulkanRenderer::draw(Window* window)
 
     uint32_t swapchainImageIndex = 0;
     if (const auto result = logicDevice.acquireNextImageKHR(windowAttributes->swapchain.handler, timeout, currentFrame.vkPresentSemaphore, nullptr);
-        result.result == vk::Result::eSuccess)
+            result.result == vk::Result::eSuccess)
     {
         swapchainImageIndex = result.value;
     }
@@ -546,12 +549,12 @@ void VulkanRenderer::draw(Window* window)
     const float flash              = std::abs(std::sin(mFrameNumber / 120.f));
     const auto clearValue          = vk::ClearValue{}.setColor(vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f}));
     const auto renderPassBeginInfo = vk::RenderPassBeginInfo{}
-                                         .setRenderPass(mVkRenderPass)
-                                         .setFramebuffer(windowAttributes->swapchain.framebuffers[swapchainImageIndex])
-                                         //.setRenderArea(vk::Rect2D{}.setExtent(windowAttributes->scissor.extent))
-                                         .setRenderArea(vk::Rect2D{}.setExtent(windowAttributes->scissor.extent))
-                                         .setClearValueCount(1)
-                                         .setPClearValues(&clearValue);
+            .setRenderPass(mVkRenderPass)
+            .setFramebuffer(windowAttributes->swapchain.framebuffers[swapchainImageIndex])
+            //.setRenderArea(vk::Rect2D{}.setExtent(windowAttributes->scissor.extent))
+            .setRenderArea(vk::Rect2D{}.setExtent(windowAttributes->scissor.extent))
+            .setClearValueCount(1)
+            .setPClearValues(&clearValue);
 
     currentFrame.vkCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
@@ -564,13 +567,13 @@ void VulkanRenderer::draw(Window* window)
 
     const auto pipelineStageFlags = vk::PipelineStageFlags{vk::PipelineStageFlagBits::eColorAttachmentOutput};
     const auto submitInfo         = vk::SubmitInfo{}
-                                .setWaitSemaphoreCount(1)
-                                .setPWaitSemaphores(&currentFrame.vkPresentSemaphore)
-                                .setPWaitDstStageMask(&pipelineStageFlags)
-                                .setCommandBufferCount(1)
-                                .setPCommandBuffers(&currentFrame.vkCommandBuffer)
-                                .setSignalSemaphoreCount(1)
-                                .setPSignalSemaphores(&currentFrame.vkRenderSemaphore);
+            .setWaitSemaphoreCount(1)
+            .setPWaitSemaphores(&currentFrame.vkPresentSemaphore)
+            .setPWaitDstStageMask(&pipelineStageFlags)
+            .setCommandBufferCount(1)
+            .setPCommandBuffers(&currentFrame.vkCommandBuffer)
+            .setSignalSemaphoreCount(1)
+            .setPSignalSemaphores(&currentFrame.vkRenderSemaphore);
 
     switch (const auto queueSubmitRresult = mVulkanDevice->getGraphicsQueue().submit(1, &submitInfo, currentFrame.vkRenderFence); queueSubmitRresult)
     {
@@ -592,11 +595,11 @@ void VulkanRenderer::draw(Window* window)
     }
 
     const auto presentInfo = vk::PresentInfoKHR{}
-                                 .setWaitSemaphoreCount(1)
-                                 .setPWaitSemaphores(&currentFrame.vkRenderSemaphore)
-                                 .setSwapchainCount(1)
-                                 .setPSwapchains(&windowAttributes->swapchain.handler)
-                                 .setPImageIndices(&swapchainImageIndex);
+            .setWaitSemaphoreCount(1)
+            .setPWaitSemaphores(&currentFrame.vkRenderSemaphore)
+            .setSwapchainCount(1)
+            .setPSwapchains(&windowAttributes->swapchain.handler)
+            .setPImageIndices(&swapchainImageIndex);
 
     const auto presentResult = windowAttributes->presentQueue.presentKHR(presentInfo);
     if (presentResult == vk::Result::eErrorOutOfDateKHR)
@@ -642,16 +645,21 @@ void VulkanRenderer::createPipeline(VulkanWindowRendererAttributes* windowAttrib
         return;
     }
 
-    if (!mVertexShader.get())
+    if (!mVertexShader)
     {
-        mVertexShader = VulkanShader("triangle.vert.spv", mVulkanDevice->asLogicDevice());
-        check(mVertexShader.load());
+        const auto vertexShader = ShaderManager::get().load("Shaders/triangle.vert");
+        mVertexShader = VulkanShader("vert", mVulkanDevice->asLogicDevice());
+        mVertexShader.setStageFlag(vk::ShaderStageFlagBits::eVertex);
+        check(mVertexShader.load(vertexShader));
     }
 
-    if (!mFragmentShader.get())
+    if (!mFragmentShader)
     {
-        mFragmentShader = VulkanShader("triangle.frag.spv", mVulkanDevice->asLogicDevice());
-        check(mFragmentShader.load());
+        const auto fragmentShader = ShaderManager::get().load("Shaders/triangle.frag");
+        mFragmentShader = VulkanShader("frag", mVulkanDevice->asLogicDevice());
+        mFragmentShader.setStageFlag(vk::ShaderStageFlagBits::eFragment);
+        check(mFragmentShader.load(fragmentShader));
+
     }
 
     std::vector<VulkanShader> shaders = {mVertexShader, mFragmentShader};

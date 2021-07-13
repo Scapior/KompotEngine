@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include "../Renderer/IRenderer.hpp"
+#include "../Renderer/RenderingCommon.hpp"
 #include <EngineDefines.hpp>
 #include <EngineTypes.hpp>
 #include <Misc/Templates/Functions.hpp>
@@ -21,7 +21,7 @@ struct PlatformHandlers;
 class Window
 {
 public:
-    Window(std::string_view windowName, Kompot::IRenderer* renderer = nullptr, const PlatformHandlers* parentWindowHandlers = nullptr);
+    Window(std::string_view windowName, Kompot::Rendering::IRenderer* renderer = nullptr, const PlatformHandlers* parentWindowHandlers = nullptr);
     ~Window();
 
     void run();
@@ -29,27 +29,27 @@ public:
 
     std::array<uint32_t, 2> getExtent() const;
 
-    WindowRendererAttributes* getWindowRendererAttributes() const
+    Kompot::Rendering::WindowRendererAttributes* getWindowRendererAttributes() const
     {
         return mWindowRendererAttributes;
     }
 
     vk::SurfaceKHR createVulkanSurface() const;
 
-    void setWindowRendererAttributes(WindowRendererAttributes* windowRendererAttributes)
+    void setWindowRendererAttributes(Kompot::Rendering::WindowRendererAttributes* windowRendererAttributes)
     {
         mWindowRendererAttributes = windowRendererAttributes;
     }
 
 private:
     std::string mWindowName;
-    Kompot::IRenderer* mRenderer;
+    Kompot::Rendering::IRenderer* mRenderer;
 
     std::atomic_bool  mNeedToClose                = false;
     PlatformHandlers* mWindowHandlers             = nullptr;
     const PlatformHandlers* mParentWindowHandlers = nullptr;
 
-    WindowRendererAttributes* mWindowRendererAttributes = nullptr;
+    Kompot::Rendering::WindowRendererAttributes* mWindowRendererAttributes = nullptr;
 
     /* Platform-specific definitions */
 

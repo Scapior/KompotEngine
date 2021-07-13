@@ -6,7 +6,7 @@
 
 #pragma once
 #include "VulkanShader.hpp"
-#include "../IRenderer.hpp"
+#include "../RenderingCommon.hpp"
 #include "VulkanTypes.hpp"
 #include "VulkanDevice.hpp"
 #include "VulkanPipelineBuilder.hpp"
@@ -14,7 +14,7 @@
 #include <vulkan/vulkan.hpp>
 #include <set>
 
-namespace Kompot
+namespace Kompot::Rendering::Vulkan
 {
 
 enum class RendererState
@@ -24,7 +24,7 @@ enum class RendererState
     DeviceLost
 };
 
-class VulkanRenderer : public Kompot::IRenderer
+class VulkanRenderer : public Kompot::Rendering::IRenderer
 {
 public:
     VulkanRenderer();
@@ -68,10 +68,10 @@ private:
     vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT*, void*);
 
     static VkBool32 vulkanDebugCallbackImpl(
-        vk::DebugUtilsMessageSeverityFlagsEXT messageSeverite,
-        vk::DebugUtilsMessageTypeFlagsEXT messageType,
-        const vk::DebugUtilsMessengerCallbackDataEXT& callbackData,
-        [[maybe_unused]] void* userData);
+            vk::DebugUtilsMessageSeverityFlagsEXT messageSeverite,
+            vk::DebugUtilsMessageTypeFlagsEXT messageType,
+            const vk::DebugUtilsMessengerCallbackDataEXT& callbackData,
+            [[maybe_unused]] void* userData);
 
 private:
     static const uint64_t VULKAN_BUFFERS_COUNT = 2;

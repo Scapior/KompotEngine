@@ -4,6 +4,7 @@ KompotEngine
 log.txt
 build-*
 build/
+Cache/*
 
 
 # Vulkan

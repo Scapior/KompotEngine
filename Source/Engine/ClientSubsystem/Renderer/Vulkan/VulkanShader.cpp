@@ -9,6 +9,7 @@
 #include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
+using namespace Kompot::Rendering::Vulkan;
 
 VulkanShader::VulkanShader()
 {
@@ -46,40 +47,19 @@ void VulkanShader::operator=(const VulkanShader& otherShader)
 
 VulkanShader::~VulkanShader()
 {
-//    if (mDevice && mShaderModule)
-//    {
-//        mDevice.destroy(mShaderModule);
-//    }
+    //    if (mDevice && mShaderModule)
+    //    {
+    //        mDevice.destroy(mShaderModule);
+    //    }
 
     mFilename     = std::string{};
     mDevice       = nullptr;
     mShaderModule = nullptr;
 }
 
-bool VulkanShader::load()
+bool VulkanShader::load(const std::vector<uint32_t>& shaderBytecode)
 {
-    std::ifstream file("Shaders/"s + mFilename, std::ios::ate | std::ios::binary);
-    if (!file.is_open())
-    {
-        Log::getInstance() << "Couldn't open shader file " << mFilename << std::endl;
-        return false;
-    }
-    const auto fileSize = file.tellg();
-    std::vector<char> buffer(static_cast<unsigned long>(fileSize));
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-
-    if (mFilename.find(".frag") != std::string::npos)
-    {
-        mStageFlag = vk::ShaderStageFlagBits::eFragment;
-    }
-    else if (mFilename.find(".vert") != std::string::npos)
-    {
-        mStageFlag = vk::ShaderStageFlagBits::eVertex;
-    }
-
-    const auto shaderModuleCreateInfo = vk::ShaderModuleCreateInfo{}.setCodeSize(fileSize).setPCode(reinterpret_cast<const uint32_t*>(buffer.data()));
+    const auto shaderModuleCreateInfo = vk::ShaderModuleCreateInfo{}.setCodeSize(shaderBytecode.size() * 4).setPCode(shaderBytecode.data());
 
     if (const auto result = mDevice.createShaderModule(shaderModuleCreateInfo); result.result == vk::Result::eSuccess)
     {

@@ -11,7 +11,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vector>
 
-namespace Kompot
+namespace Kompot::Rendering::Vulkan
 {
 class VulkanRenderer;
 
@@ -26,33 +26,33 @@ class VulkanPipelineBuilder
 public:
     void setDevice(vk::Device device);
     vk::Result buildGraphicsPipeline(
-        VulkanWindowRendererAttributes* windowRendererAttributes,
-        VulkanRenderer* renderer,
-        const std::vector<VulkanShader>& shaders);
+            VulkanWindowRendererAttributes* windowRendererAttributes,
+            VulkanRenderer* renderer,
+            const std::vector<VulkanShader>& shaders);
 
 protected: // static create info builders
     static vk::PipelineShaderStageCreateInfo createPipelineShaderStage(
-        const VulkanShader& shaderModule,
-        const std::string_view& entryPointName = "main");
+            const VulkanShader& shaderModule,
+            const std::string_view& entryPointName = "main");
 
     // static vk::PipelineVertexInputStateCreateInfo createVertexInputStateCreateInfo(foo);
 
     static vk::PipelineInputAssemblyStateCreateInfo createInputAssemblyStateCreateInfo(
-        vk::PrimitiveTopology topology,
-        PrimitiveRestartOption primitiveRestartOption);
+            vk::PrimitiveTopology topology,
+            PrimitiveRestartOption primitiveRestartOption);
 
     static vk::PipelineViewportStateCreateInfo createViewportStateCreateInfo(const vk::Viewport& viewport, vk::Rect2D* viewportExtent);
 
     static vk::PipelineRasterizationStateCreateInfo createRasterizationStateCreateInfo(
-        vk::PolygonMode polygonMode,
-        vk::CullModeFlagBits cullMode,
-        vk::FrontFace frontFace);
+            vk::PolygonMode polygonMode,
+            vk::CullModeFlagBits cullMode,
+            vk::FrontFace frontFace);
 
     static vk::PipelineMultisampleStateCreateInfo createMultisampleStateCreateInfo(vk::SampleCountFlagBits samples);
 
     static vk::PipelineColorBlendAttachmentState createPipelineColorBlendAttachmentState();
     static vk::PipelineColorBlendStateCreateInfo createColorBlendStateCreateInfo(
-        const vk::PipelineColorBlendAttachmentState* pipelineColorBlendAttachmentState);
+            const vk::PipelineColorBlendAttachmentState* pipelineColorBlendAttachmentState);
 
 
     static vk::PipelineLayoutCreateInfo createLayoutCreateInfo();

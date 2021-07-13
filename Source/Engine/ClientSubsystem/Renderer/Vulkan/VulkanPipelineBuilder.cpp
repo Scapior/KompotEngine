@@ -10,16 +10,17 @@
 #include <algorithm>
 
 using namespace Kompot;
+using namespace Kompot::Rendering::Vulkan;
 
 void VulkanPipelineBuilder::setDevice(vk::Device device)
 {
     mDevice = device;
 }
 
-vk::Result Kompot::VulkanPipelineBuilder::buildGraphicsPipeline(
-    VulkanWindowRendererAttributes* windowRendererAttributes,
-    VulkanRenderer* renderer,
-    const std::vector<VulkanShader>& shaders)
+vk::Result VulkanPipelineBuilder::buildGraphicsPipeline(
+        VulkanWindowRendererAttributes* windowRendererAttributes,
+        VulkanRenderer* renderer,
+        const std::vector<VulkanShader>& shaders)
 {
     VulkanPipeline pipeline{};
 
@@ -60,16 +61,16 @@ vk::Result Kompot::VulkanPipelineBuilder::buildGraphicsPipeline(
     const vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{};
 
     const auto inputAssemblyStateCreateInfo =
-        createInputAssemblyStateCreateInfo(vk::PrimitiveTopology::eTriangleList, PrimitiveRestartOption::Disabled);
+            createInputAssemblyStateCreateInfo(vk::PrimitiveTopology::eTriangleList, PrimitiveRestartOption::Disabled);
 
     const auto viewport = vk::Viewport{}
-                              .setWidth(static_cast<float>(windowRendererAttributes->scissor.extent.width))
-                              .setHeight(static_cast<float>(windowRendererAttributes->scissor.extent.height))
-                              .setMaxDepth(1.0f);
+            .setWidth(static_cast<float>(windowRendererAttributes->scissor.extent.width))
+            .setHeight(static_cast<float>(windowRendererAttributes->scissor.extent.height))
+            .setMaxDepth(1.0f);
     const auto viewportStateCreateInfo = createViewportStateCreateInfo(viewport, &windowRendererAttributes->scissor);
 
     const auto rasterizationStateCreateInfo =
-        createRasterizationStateCreateInfo(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise);
+            createRasterizationStateCreateInfo(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise);
 
     const auto multisampleStateCreateInfo = createMultisampleStateCreateInfo(vk::SampleCountFlagBits::e1);
 
@@ -87,7 +88,7 @@ vk::Result Kompot::VulkanPipelineBuilder::buildGraphicsPipeline(
     // VkPipelineDynamicStateCreateInfo
 
     if (const auto createPipelineLayoutResult = mDevice.createPipelineLayout(createLayoutCreateInfo());
-        createPipelineLayoutResult.result == vk::Result::eSuccess)
+            createPipelineLayoutResult.result == vk::Result::eSuccess)
     {
         pipeline.pipelineLayout = createPipelineLayoutResult.value;
     }
@@ -99,22 +100,22 @@ vk::Result Kompot::VulkanPipelineBuilder::buildGraphicsPipeline(
 
     // finally build pipeline
     const auto graphicsPipelineCreateInfo = vk::GraphicsPipelineCreateInfo{}
-                                                .setStages(shaderStages)
-                                                .setPVertexInputState(&pipelineVertexInputStateCreateInfo)
-                                                .setPInputAssemblyState(&inputAssemblyStateCreateInfo)
-                                                // tessellation
-                                                .setPViewportState(&viewportStateCreateInfo)
-                                                .setPRasterizationState(&rasterizationStateCreateInfo)
-                                                .setPMultisampleState(&multisampleStateCreateInfo)
-                                                // VkPipelineDepthStencilStateCreateInfo
-                                                .setPColorBlendState(&colorBlendStateCreateInfo)
-                                                // VkPipelineDynamicStateCreateInfo
-                                                .setLayout(pipeline.pipelineLayout)
-                                                .setRenderPass(renderer->getRenderPass())
-                                                .setSubpass(0);
+            .setStages(shaderStages)
+            .setPVertexInputState(&pipelineVertexInputStateCreateInfo)
+            .setPInputAssemblyState(&inputAssemblyStateCreateInfo)
+            // tessellation
+            .setPViewportState(&viewportStateCreateInfo)
+            .setPRasterizationState(&rasterizationStateCreateInfo)
+            .setPMultisampleState(&multisampleStateCreateInfo)
+            // VkPipelineDepthStencilStateCreateInfo
+            .setPColorBlendState(&colorBlendStateCreateInfo)
+            // VkPipelineDynamicStateCreateInfo
+            .setLayout(pipeline.pipelineLayout)
+            .setRenderPass(renderer->getRenderPass())
+            .setSubpass(0);
 
     if (const auto createPipelineResult = mDevice.createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
-        createPipelineResult.result == vk::Result::eSuccess)
+            createPipelineResult.result == vk::Result::eSuccess)
     {
         pipeline.pipeline = createPipelineResult.value;
     }
@@ -131,18 +132,18 @@ vk::Result Kompot::VulkanPipelineBuilder::buildGraphicsPipeline(
 }
 
 vk::PipelineShaderStageCreateInfo VulkanPipelineBuilder::createPipelineShaderStage(
-    const VulkanShader& shaderModule,
-    const std::string_view& entryPointName)
+        const VulkanShader& shaderModule,
+        const std::string_view& entryPointName)
 {
     return vk::PipelineShaderStageCreateInfo{}.setModule(shaderModule.get()).setPName(entryPointName.data()).setStage(shaderModule.getStageFlag());
 }
 
 vk::PipelineInputAssemblyStateCreateInfo VulkanPipelineBuilder::createInputAssemblyStateCreateInfo(
-    vk::PrimitiveTopology topology,
-    PrimitiveRestartOption primitiveRestartOption)
+        vk::PrimitiveTopology topology,
+        PrimitiveRestartOption primitiveRestartOption)
 {
     return vk::PipelineInputAssemblyStateCreateInfo().setTopology(topology).setPrimitiveRestartEnable(
-        primitiveRestartOption == PrimitiveRestartOption::Enabled);
+                primitiveRestartOption == PrimitiveRestartOption::Enabled);
 }
 
 vk::PipelineViewportStateCreateInfo VulkanPipelineBuilder::createViewportStateCreateInfo(const vk::Viewport& viewport, vk::Rect2D* viewportExtent)
@@ -151,9 +152,9 @@ vk::PipelineViewportStateCreateInfo VulkanPipelineBuilder::createViewportStateCr
 }
 
 vk::PipelineRasterizationStateCreateInfo VulkanPipelineBuilder::createRasterizationStateCreateInfo(
-    vk::PolygonMode polygonMode,
-    vk::CullModeFlagBits cullMode,
-    vk::FrontFace frontFace)
+        vk::PolygonMode polygonMode,
+        vk::CullModeFlagBits cullMode,
+        vk::FrontFace frontFace)
 {
     return vk::PipelineRasterizationStateCreateInfo{}.setPolygonMode(polygonMode).setLineWidth(1.0f).setCullMode(cullMode).setFrontFace(frontFace);
 }
@@ -166,11 +167,11 @@ vk::PipelineMultisampleStateCreateInfo VulkanPipelineBuilder::createMultisampleS
 vk::PipelineColorBlendAttachmentState VulkanPipelineBuilder::createPipelineColorBlendAttachmentState()
 {
     return vk::PipelineColorBlendAttachmentState{}.setBlendEnable(false).setColorWriteMask(
-        vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB);
+    vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB);
 }
 
 vk::PipelineColorBlendStateCreateInfo VulkanPipelineBuilder::createColorBlendStateCreateInfo(
-    const vk::PipelineColorBlendAttachmentState* pipelineColorBlendAttachmentState)
+        const vk::PipelineColorBlendAttachmentState* pipelineColorBlendAttachmentState)
 {
     return vk::PipelineColorBlendStateCreateInfo{}.setAttachmentCount(1).setPAttachments(pipelineColorBlendAttachmentState);
 }

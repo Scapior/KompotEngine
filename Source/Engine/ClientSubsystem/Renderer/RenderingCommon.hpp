@@ -1,6 +1,6 @@
 /*
- *  IRenderer.hpp
- *  Copyright (C) 2020 by Maxim Stoianov
+ *  RenderingCommon.hpp
+ *  Copyright (C) 2021 by Maxim Stoianov
  *  Licensed under the MIT license.
  */
 
@@ -11,12 +11,30 @@
 namespace Kompot
 {
 class Window;
+}
+
+namespace Kompot::Rendering
+{
 
 struct WindowRendererAttributes
 {
     virtual ~WindowRendererAttributes()
     {
     }
+};
+
+enum class ShaderType
+{
+    Vertex,
+    Fragment,
+    Compute
+};
+
+class IShader
+{
+public:
+    virtual ~IShader(){};
+    virtual std::string_view getSourceFilename() const = 0;
 };
 
 class IRenderer

@@ -9,10 +9,11 @@
 #include <unordered_set>
 
 using namespace Kompot;
+using namespace Kompot::Rendering::Vulkan;
 
-VulkanUtils::DeviceComparsionAttributes VulkanUtils::getDeviceComparsionAttributes(
-    const vk::PhysicalDevice& vkPhysicalDevice,
-    const vk::MemoryPropertyFlagBits memoryFlags)
+Utils::DeviceComparsionAttributes Utils::getDeviceComparsionAttributes(
+        const vk::PhysicalDevice& vkPhysicalDevice,
+        const vk::MemoryPropertyFlagBits memoryFlags)
 {
     DeviceComparsionAttributes deviceComparsionAttributes{};
     uint64_t deviceMemoryCount = 0;
@@ -40,12 +41,12 @@ VulkanUtils::DeviceComparsionAttributes VulkanUtils::getDeviceComparsionAttribut
     return deviceComparsionAttributes;
 }
 
-std::vector<const char*> VulkanUtils::getRequiredDeviceExtensions()
+std::vector<const char*> Utils::getRequiredDeviceExtensions()
 {
     return {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 }
 
-std::vector<const char*> VulkanUtils::getRequiredDeviceValidationLayers()
+std::vector<const char*> Utils::getRequiredDeviceValidationLayers()
 {
 #ifdef ENGINE_DEBUG
     return {};
@@ -54,7 +55,7 @@ std::vector<const char*> VulkanUtils::getRequiredDeviceValidationLayers()
 #endif
 }
 
-VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalDevice& vkPhysicalDevice)
+Utils::QueueFamilies Utils::selectQueuesFamilies(const vk::PhysicalDevice& vkPhysicalDevice)
 {
     QueueFamilies result;
     const auto queueFamilyProperties = vkPhysicalDevice.getQueueFamilyProperties();
@@ -92,26 +93,26 @@ VulkanUtils::QueueFamilies VulkanUtils::selectQueuesFamilies(const vk::PhysicalD
     return result;
 }
 
-std::vector<const char*> VulkanUtils::getRequiredInstanceExtensions()
+std::vector<const char*> Utils::getRequiredInstanceExtensions()
 {
     return
     {
         VK_KHR_SURFACE_EXTENSION_NAME,
 
-#if defined(ENGINE_OS_WINDOWS)
-            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-#elif defined(ENGINE_USE_XCB)
-            VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-#elif defined(ENGINE_USE_XLIB)
-            VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-#endif
+        #if defined(ENGINE_OS_WINDOWS)
+                VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+        #elif defined(ENGINE_USE_XCB)
+                VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+        #elif defined(ENGINE_USE_XLIB)
+                VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+        #endif
 
-#ifdef ENGINE_DEBUG
-            VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-#endif
+        #ifdef ENGINE_DEBUG
+                VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+        #endif
     };
 }
-std::vector<const char*> VulkanUtils::getRequiredInstanceValidationLayers()
+std::vector<const char*> Utils::getRequiredInstanceValidationLayers()
 {
 #ifdef ENGINE_DEBUG
     return {
@@ -124,11 +125,11 @@ std::vector<const char*> VulkanUtils::getRequiredInstanceValidationLayers()
 #endif
 }
 
-bool VulkanUtils::QueueFamilies::hasAllIndicies() const
+bool Utils::QueueFamilies::hasAllIndicies() const
 {
     return graphicsIndex.has_value() && computeIndex.has_value() && transferIndex.has_value();
 }
-const std::set<std::uint32_t> VulkanUtils::QueueFamilies::getUniqueQueueFamilyIndicies()
+const std::set<std::uint32_t> Utils::QueueFamilies::getUniqueQueueFamilyIndicies()
 {
     if (hasAllIndicies())
     {

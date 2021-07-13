@@ -13,7 +13,7 @@
 #include <utility>
 
 
-namespace Kompot
+namespace Kompot::Rendering::Vulkan
 {
 class VulkanDevice
 {
@@ -69,7 +69,7 @@ private:
     vk::PhysicalDevice mVkPhysicalDevice;
     vk::Device mVkDevice;
 
-    VulkanUtils::QueueFamilies queueFamilies;
+    Kompot::Rendering::Vulkan::Utils::QueueFamilies queueFamilies;
 
     vk::Queue mGraphicsQueue;
     vk::Queue mTransferQueue;
