@@ -4,7 +4,7 @@ on:
   push:
     branches: [ Develop ]
     paths:
-      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/build_windows.yml'
       - 'Source/**'
       - '!Source/Doxyfile'
 
