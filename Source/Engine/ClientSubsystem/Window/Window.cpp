@@ -7,13 +7,14 @@
 #include "Window.hpp"
 #include <Engine/DebugUtils/DebugUtils.hpp>
 #include <Engine/ErrorHandling.hpp>
+#include <Engine/ClientSubsystem/Renderer/RenderingCommon.hpp>
 #include <Engine/ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp>
 #include <Engine/Log/Log.hpp>
 
 
 #ifdef ENGINE_OS_WINDOWS
 
-#include "Windows.h" // winapi
+    #include "Windows.h" // winapi
 
 
 using namespace Kompot;
@@ -235,12 +236,14 @@ std::array<uint32_t, 2> Window::getExtent() const
 #endif // Windows
 
 #if defined(ENGINE_OS_UNIX) and defined(ENGINE_USE_XLIB)
-#include <X11/Xlib.h>
-#include <sys/select.h>
+    #include <X11/Xlib.h>
+    #include <sys/select.h>
+
+using namespace Kompot::Rendering;
 
 struct Kompot::PlatformHandlers
 {
-    //xcb_connection_t* xcbConnection;
+    // xcb_connection_t* xcbConnection;
     Display* xlibDisplay;
     int32_t xlibScreenNumber;
     ::Window xlibWindow;
@@ -250,36 +253,38 @@ struct Kompot::PlatformHandlers
     uint32_t height;
 };
 
-Kompot::Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers) :
+Kompot::Window::Window(std::string_view windowName, Kompot::Rendering::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers) :
     mWindowName(windowName), mRenderer(renderer), mParentWindowHandlers(parentWindowHandlers)
 {
-    Log& log                       = Log::getInstance();
-    mWindowHandlers                = new Kompot::PlatformHandlers{};
+    Log& log                     = Log::getInstance();
+    mWindowHandlers              = new Kompot::PlatformHandlers{};
     mWindowHandlers->xlibDisplay = XOpenDisplay(nullptr);
     assert(mWindowHandlers->xlibDisplay);
     mWindowHandlers->xlibScreenNumber = DefaultScreen(mWindowHandlers->xlibDisplay);
 
-    const ::Window rootWindow = XDefaultRootWindow(mWindowHandlers->xlibDisplay);
+    const ::Window rootWindow   = XDefaultRootWindow(mWindowHandlers->xlibDisplay);
     mWindowHandlers->xlibWindow = XCreateSimpleWindow(
-                mWindowHandlers->xlibDisplay, rootWindow,
-                /* x, y */ 0, 0,
-                /* w, h */ 300, 300, 1,
-                XWhitePixel(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibScreenNumber),
-                XBlackPixel(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibScreenNumber)
-                );
-//    mWindowHandlers->xlibWindow = XCreateWindow(
-//                mWindowHandlers->xlibDisplay, rootWindow,
-//                /* x, y */ 0, 0,
-//                /* w, h */ 300, 300,
-//                /* border */ 1
+        mWindowHandlers->xlibDisplay,
+        rootWindow,
+        /* x, y */ 0,
+        0,
+        /* w, h */ 300,
+        300,
+        1,
+        XWhitePixel(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibScreenNumber),
+        XBlackPixel(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibScreenNumber));
+    //    mWindowHandlers->xlibWindow = XCreateWindow(
+    //                mWindowHandlers->xlibDisplay, rootWindow,
+    //                /* x, y */ 0, 0,
+    //                /* w, h */ 300, 300,
+    //                /* border */ 1
 
-//                );
+    //                );
 
-    XSelectInput(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow,
-                 ExposureMask | StructureNotifyMask |
-                 PointerMotionMask |
-                 KeyPressMask | KeyReleaseMask |
-                 ButtonPressMask | ButtonReleaseMask);
+    XSelectInput(
+        mWindowHandlers->xlibDisplay,
+        mWindowHandlers->xlibWindow,
+        ExposureMask | StructureNotifyMask | PointerMotionMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask);
     XMapWindow(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow);
     XFlush(mWindowHandlers->xlibDisplay);
     mWindowHandlers->xlibConnectionDescriptor = XConnectionNumber(mWindowHandlers->xlibDisplay);
@@ -315,7 +320,7 @@ void Kompot::Window::run()
     ::Atom xlibDeleteWindowMessageAtom = XInternAtom(mWindowHandlers->xlibDisplay, "WM_DELETE_WINDOW", false);
     XSetWMProtocols(mWindowHandlers->xlibDisplay, mWindowHandlers->xlibWindow, &xlibDeleteWindowMessageAtom, 1);
 
-    Log& log                      = Log::getInstance();
+    Log& log = Log::getInstance();
     XEvent xlibEvent;
     while (!mNeedToClose)
     {
@@ -323,8 +328,7 @@ void Kompot::Window::run()
         {
             XNextEvent(mWindowHandlers->xlibDisplay, &xlibEvent);
 
-            if (xlibEvent.type == ClientMessage &&
-                static_cast<Atom>(xlibEvent.xclient.data.l[0]) == xlibDeleteWindowMessageAtom)
+            if (xlibEvent.type == ClientMessage && static_cast<Atom>(xlibEvent.xclient.data.l[0]) == xlibDeleteWindowMessageAtom)
             {
                 mNeedToClose = true;
             }
@@ -345,7 +349,7 @@ void Kompot::Window::closeWindow()
 
 vk::SurfaceKHR Kompot::Window::createVulkanSurface() const
 {
-    VulkanRenderer* vulkanRenderer = dynamic_cast<VulkanRenderer*>(mRenderer);
+    Rendering::Vulkan::VulkanRenderer* vulkanRenderer = dynamic_cast<Rendering::Vulkan::VulkanRenderer*>(mRenderer);
     if (!vulkanRenderer)
     {
         check(!mRenderer);

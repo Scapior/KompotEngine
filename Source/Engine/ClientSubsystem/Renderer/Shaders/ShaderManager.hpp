@@ -12,7 +12,6 @@
 
 namespace Kompot::Rendering
 {
-
 class ShaderManager
 {
 public:
@@ -21,8 +20,7 @@ public:
     const std::vector<uint32_t> load(const std::filesystem::path& path);
 
 private:
-
-    std::unordered_map<std::wstring, std::vector<uint32_t>> cache;
+    std::unordered_map<std::filesystem::path::string_type, std::vector<uint32_t>> cache;
 };
 
-} // namespace Kompot::ClientSubsystem::Renderer
+} // namespace Kompot::Rendering
