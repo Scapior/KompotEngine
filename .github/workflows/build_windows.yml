@@ -12,7 +12,11 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Setup Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.0.2
+      
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Install VMA submodule
         uses: actions/checkout@v2
@@ -20,9 +24,6 @@ jobs:
           repository: GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
           path: ThirdParty/VulkanMemoryAllocator
           
-      - name: Setup Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.0.2
-      
       - name: Build
         shell: pwsh        
         run:  |
