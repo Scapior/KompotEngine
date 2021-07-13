@@ -1,0 +1,35 @@
+name: Build (Windows)
+
+on:
+  push:
+    branches: [ Develop ]
+    paths:
+      - '.github/workflows/build.yml'
+      - 'Source/**'
+      - '!Source/Doxyfile'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install VMA submodule
+        uses: actions/checkout@v2
+        with:
+          repository: GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+          path: ThirdParty/VulkanMemoryAllocator
+
+      - name: Install Vulkan
+        run: |
+          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe -OutFile vulkan-sdk.exe
+          7z x -aoa ./vulkan-sdk.exe -oVulkanSDK
+
+      - name: CMake
+        shell: pwsh
+        run: cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
+        
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake --build build --config Release
