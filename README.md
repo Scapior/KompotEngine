@@ -1,6 +1,7 @@
 # KompotEngine
 
-![Build (Ubuntu 20.04)](https://github.com/Scapior/KompotEngine/workflows/Build%20(Ubuntu%2020.04)/badge.svg)
+[![Build (Ubuntu 20.04)](https://github.com/Scapior/KompotEngine/actions/workflows/build.yml/badge.svg)](https://github.com/Scapior/KompotEngine/actions/workflows/build.yml)
+
 
 
 #### What is it?
