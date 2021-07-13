@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <Engine/ClientSubsystem/Renderer/IRenderer.hpp>
+#include <Engine/ClientSubsystem/Renderer/RenderingCommon.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vector>
 
-namespace Kompot
+namespace Kompot::Rendering::Vulkan
 {
 struct VulkanSwapchain
 {

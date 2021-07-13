@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Renderer/IRenderer.hpp"
+#include "Renderer/RenderingCommon.hpp"
 #include "Window/Window.hpp"
 #include <Engine/EngineConfig.hpp>
 #include <Engine/IEngineSystem.hpp>
@@ -42,7 +42,7 @@ public:
 
 private:
     Window* mMainWindow  = nullptr;
-    IRenderer* mRenderer = nullptr;
+    Kompot::Rendering::IRenderer* mRenderer = nullptr;
     //#ifdef ENGINE_OS_LINUX
     //    xcb_connection_t* m_xcbConnection;
     //    xcb_screen_t* m_xcbScreen;

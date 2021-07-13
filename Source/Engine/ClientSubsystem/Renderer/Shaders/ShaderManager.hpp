@@ -4,13 +4,13 @@
  *  Licensed under the MIT license.
  */
 
-#include <Engine/ClientSubsystem/Renderer/IRenderer.hpp>
+#include <Engine/ClientSubsystem/Renderer/RenderingCommon.hpp>
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
 #include <string>
 
-namespace Kompot::ClientSubsystem::Renderer
+namespace Kompot::Rendering
 {
 
 class ShaderManager
@@ -18,12 +18,11 @@ class ShaderManager
 public:
     static ShaderManager& get();
 
-    const std::vector<std::byte> load(const std::filesystem::path& path);
+    const std::vector<uint32_t> load(const std::filesystem::path& path);
 
 private:
-    ShaderManager();
 
-    std::unordered_map<std::wstring, std::vector<std::byte>> cache;
+    std::unordered_map<std::wstring, std::vector<uint32_t>> cache;
 };
 
 } // namespace Kompot::ClientSubsystem::Renderer

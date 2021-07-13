@@ -11,7 +11,7 @@
 #include <vulkan/vulkan.hpp>
 #include <set>
 
-namespace Kompot::VulkanUtils
+namespace Kompot::Rendering::Vulkan::Utils
 {
 // instance
 std::vector<const char*> getRequiredInstanceExtensions();

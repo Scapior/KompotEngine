@@ -16,7 +16,7 @@ set(ENGINE_HEADERS
         ClientSubsystem/Window/Window.hpp
         ClientSubsystem/Renderer/Shaders/ShaderCompiler.hpp
         ClientSubsystem/Renderer/Shaders/ShaderManager.hpp
-        ClientSubsystem/Renderer/IRenderer.hpp
+        ClientSubsystem/Renderer/RenderingCommon.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanRenderer.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanDevice.hpp
         ClientSubsystem/Renderer/Vulkan/VulkanUtils.hpp
@@ -63,12 +63,6 @@ if (UNIX)
         target_link_libraries(Engine ${X11_LIBRARIES})
     endif()
 endif ()
-
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
 
 if (WIN32)
     target_link_libraries(Engine Dbghelp)

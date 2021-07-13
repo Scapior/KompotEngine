@@ -12,6 +12,8 @@
 #include <set>
 
 using namespace Kompot;
+using namespace Kompot::Rendering::Vulkan;
+
 
 VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDevice& vkPhysicalDevice) :
     mVkInstance(vkInstance), mVkPhysicalDevice(vkPhysicalDevice)
@@ -19,7 +21,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     check(mVkInstance);
     check(mVkPhysicalDevice);
 
-    queueFamilies = VulkanUtils::selectQueuesFamilies(mVkPhysicalDevice);
+    queueFamilies = Utils::selectQueuesFamilies(mVkPhysicalDevice);
     if (!queueFamilies.hasAllIndicies())
     {
         Kompot::ErrorHandling::exit("Not all queue families was found");
@@ -36,16 +38,16 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     {
         queuePriorities[i].resize(queueFamilies.computeCount);
         queuesCreateInfos[i]
-            .setQueueFamilyIndex(*uniqueQueueFamilyIndiciesIterator++)
-            .setQueueCount(queueFamilies.graphicsCount)
-            .setQueuePriorities(queuePriorities[i]);
+                .setQueueFamilyIndex(*uniqueQueueFamilyIndiciesIterator++)
+                .setQueueCount(queueFamilies.graphicsCount)
+                .setQueuePriorities(queuePriorities[i]);
     }
 
-    const auto extensions       = VulkanUtils::getRequiredDeviceExtensions();
-    const auto validationLayers = VulkanUtils::getRequiredDeviceValidationLayers();
+    const auto extensions       = Utils::getRequiredDeviceExtensions();
+    const auto validationLayers = Utils::getRequiredDeviceValidationLayers();
 
     auto vkDeviceCreateInfo =
-        vk::DeviceCreateInfo().setQueueCreateInfos(queuesCreateInfos).setPEnabledExtensionNames(extensions).setPEnabledLayerNames(validationLayers);
+            vk::DeviceCreateInfo().setQueueCreateInfos(queuesCreateInfos).setPEnabledExtensionNames(extensions).setPEnabledLayerNames(validationLayers);
 
     if (const auto result = mVkPhysicalDevice.createDevice(vkDeviceCreateInfo); result.result == vk::Result::eSuccess)
     {
@@ -61,7 +63,7 @@ VulkanDevice::VulkanDevice(const vk::Instance& vkInstance, const vk::PhysicalDev
     }
 }
 
-Kompot::VulkanDevice::~VulkanDevice()
+VulkanDevice::~VulkanDevice()
 {
     if (mVkPhysicalDevice)
     {
@@ -83,7 +85,7 @@ std::pair<vk::Queue, uint32_t> VulkanDevice::findPresentQueue(const VulkanWindow
             const auto& queueFamily    = queueFamilyProperties[i];
             uint32_t currentQueueIndex = static_cast<uint32_t>(i);
             if (auto result = mVkPhysicalDevice.getSurfaceSupportKHR(currentQueueIndex, windowAttributes->surface);
-                result.result == vk::Result::eSuccess)
+                    result.result == vk::Result::eSuccess)
             {
                 if (result.value == VK_TRUE)
                 {

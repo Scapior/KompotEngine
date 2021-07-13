@@ -17,6 +17,7 @@
 
 
 using namespace Kompot;
+using namespace Kompot::Rendering;
 const std::wstring Window::windowClassNamePrefix = L"KompotEngineWindow_";
 
 struct Kompot::PlatformHandlers
@@ -28,7 +29,7 @@ struct Kompot::PlatformHandlers
     std::size_t windowNameWideCharBufferSize;
 };
 
-Window::Window(std::string_view windowName, Kompot::IRenderer* renderer, const PlatformHandlers* parentWindowHandlers) :
+Window::Window(std::string_view windowName, IRenderer* renderer, const PlatformHandlers* parentWindowHandlers) :
     mWindowName(windowName), mRenderer(renderer), mParentWindowHandlers(parentWindowHandlers)
 {
     static const HINSTANCE currentAppHandlerInstance = ::GetModuleHandle(nullptr);
@@ -134,7 +135,7 @@ void Window::run()
 
 vk::SurfaceKHR Window::createVulkanSurface() const
 {
-    VulkanRenderer* vulkanRenderer = dynamic_cast<VulkanRenderer*>(mRenderer);
+    auto vulkanRenderer = dynamic_cast<Vulkan::VulkanRenderer*>(mRenderer);
     if (!vulkanRenderer)
     {
         check(!mRenderer) if (mRenderer)

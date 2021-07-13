@@ -86,11 +86,10 @@ target_link_libraries(KompotEngine PRIVATE
         Math
         VulkanAllocator
         ${Vulkan_LIBRARY}
-        SPIRV-Tools)
-
-    message("${VULKAN_SDK_LIBS_PATH}")
-
-message(STATUS "VARIABLE PATH ${VULKAN_SDK_LIBS_PATH}/")
+        glslang
+        shaderc_combined
+        SPIRV
+        )
 
 set_target_properties(KompotEngine
         PROPERTIES

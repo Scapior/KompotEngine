@@ -9,6 +9,7 @@
 #include <Engine/ErrorHandling.hpp>
 
 using namespace Kompot;
+using namespace Kompot::Rendering::Vulkan;
 
 VulkanShader::VulkanShader()
 {
@@ -46,19 +47,19 @@ void VulkanShader::operator=(const VulkanShader& otherShader)
 
 VulkanShader::~VulkanShader()
 {
-//    if (mDevice && mShaderModule)
-//    {
-//        mDevice.destroy(mShaderModule);
-//    }
+    //    if (mDevice && mShaderModule)
+    //    {
+    //        mDevice.destroy(mShaderModule);
+    //    }
 
     mFilename     = std::string{};
     mDevice       = nullptr;
     mShaderModule = nullptr;
 }
 
-bool VulkanShader::load(const std::vector<std::byte>& shaderBytecode)
+bool VulkanShader::load(const std::vector<uint32_t>& shaderBytecode)
 {
-    const auto shaderModuleCreateInfo = vk::ShaderModuleCreateInfo{}.setCodeSize(shaderBytecode.size()).setPCode(reinterpret_cast<const uint32_t*>(shaderBytecode.data()));
+    const auto shaderModuleCreateInfo = vk::ShaderModuleCreateInfo{}.setCodeSize(shaderBytecode.size() * 4).setPCode(shaderBytecode.data());
 
     if (const auto result = mDevice.createShaderModule(shaderModuleCreateInfo); result.result == vk::Result::eSuccess)
     {

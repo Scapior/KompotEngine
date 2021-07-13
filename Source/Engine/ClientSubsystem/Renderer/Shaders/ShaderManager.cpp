@@ -11,14 +11,13 @@
 #include <fstream>
 
 using namespace Kompot;
-using namespace Kompot::ClientSubsystem::Renderer;
+using namespace Kompot::Rendering;
 
-using ibytestream = std::basic_ifstream<std::byte>;
-using obytestream = std::basic_ofstream<std::byte>;
+namespace fs = std::filesystem;
 
-const inline std::filesystem::path toCachePath(const std::filesystem::path& path)
+const inline fs::path toCachePath(const fs::path& path)
 {
-    return "Cache" / path / ".spv";
+    return L"Cache/" + path.native() + L".spv";
 }
 
 ShaderManager &ShaderManager::get()
@@ -27,50 +26,18 @@ ShaderManager &ShaderManager::get()
     return shaderManagerSingnltone;
 }
 
-const std::vector<std::byte> loadCacheFile(const std::filesystem::path& path)
+std::vector<uint32_t> loadCacheFile(const fs::path& path)
 {
-    ibytestream file{path, std::ios::ate | std::ios::binary};
+    std::basic_ifstream<uint32_t> file{path, std::ios::ate | std::ios::binary};
     if (!file.is_open())
     {
         return {};
     }
-    const auto fileSize = file.tellg();
-    std::vector<std::byte> buffer(static_cast<unsigned long>(fileSize));
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
+    std::vector<uint32_t> buffer{std::istreambuf_iterator<uint32_t>(file), std::istreambuf_iterator<uint32_t>()};
     return buffer;
 }
 
-void saveCache(const std::filesystem::path& path, const std::vector<std::byte> bytecode)
-{
-    obytestream file{path, std::ios::binary};
-    if (!file.is_open())
-    {
-        Log::getInstance() << "Failed to save a shader bytecode to cache file \"" << path << "\"";
-        return;
-    }
-    file.write(bytecode.data(), bytecode.size());
-}
-
-const std::vector<char> loadFile(const std::filesystem::path &path)
-{
-    std::ifstream file{path, std::ios::ate | std::ios::binary};
-    if (!file.is_open())
-    {
-        Log::getInstance() << "File \"" << path << "\" not found!";
-        return {};
-    }
-    const auto fileSize = file.tellg();
-    std::vector<char> buffer(static_cast<unsigned long>(fileSize));
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-    return buffer;
-}
-
-
-const std::vector<std::byte> ShaderManager::load(const std::filesystem::path &path)
+const std::vector<uint32_t> ShaderManager::load(const std::filesystem::path &path)
 {
     if (path.is_absolute())
     {
@@ -85,20 +52,15 @@ const std::vector<std::byte> ShaderManager::load(const std::filesystem::path &pa
         return cacheValue->second;
     }
 
-    if (const auto shaderBinary = loadCacheFile(path); !shaderBinary.empty())
+    if (const auto shaderBinary = loadCacheFile(cachePath); !shaderBinary.empty())
     {
         cache.emplace(cachePath, shaderBinary);
+        Log::getInstance() << "Loaded " << cachePath << " from cache" << std::endl;
         return shaderBinary;
     }
 
-    const auto shaderText = loadFile(path);
-    if (shaderText.empty())
-    {
-        Kompot::ErrorHandling::exit("Failed to load a shader file.");
-    }
-    const auto shaderBinary = ShaderCompiler::get().compile(shaderText);
+    const auto shaderBinary = ShaderCompiler::get().compile(path, cachePath);
     cache.emplace(cachePath, shaderBinary);
-    saveCache(cachePath, shaderBinary);
 
     return shaderBinary;
 }

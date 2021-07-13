@@ -4,20 +4,23 @@
  *  Licensed under the MIT license.
  */
 
+#include <Engine/ClientSubsystem/Renderer/RenderingCommon.hpp>
 #include <string>
 #include <vector>
+#include <filesystem>
 
-namespace Kompot::ClientSubsystem::Renderer
+namespace Kompot::Rendering
 {
 class ShaderCompiler
 {
 public:
     static ShaderCompiler& get();
 
-    const std::vector<std::byte> compile(const std::string shaderCode);
+    std::vector<uint32_t> compile(const std::filesystem::path shaderCodePath, const std::filesystem::path cachePath);
 
 private:
     ShaderCompiler();
+    ~ShaderCompiler();
 };
 
 } // namespace Kompot::ClientSubsystem::Renderer

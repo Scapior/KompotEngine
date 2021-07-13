@@ -6,10 +6,10 @@
 
 #pragma once
 #include "VulkanDevice.hpp"
-#include <Engine/ClientSubsystem/Renderer/IRenderer.hpp>
+#include <Engine/ClientSubsystem/Renderer/RenderingCommon.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace Kompot
+namespace Kompot::Rendering::Vulkan
 {
 class VulkanShader : IShader
 {
@@ -21,7 +21,7 @@ public:
     void operator=(const VulkanShader& otherShader);
     ~VulkanShader();
 
-    bool load(const std::vector<std::byte>& shaderBytecode);
+    bool load(const std::vector<uint32_t>& shaderBytecode);
 
     operator bool() const
     {
@@ -41,6 +41,11 @@ public:
     vk::ShaderStageFlagBits getStageFlag() const
     {
         return mStageFlag;
+    }
+
+    void setStageFlag(vk::ShaderStageFlagBits inFlag)
+    {
+        mStageFlag = inFlag;
     }
 
 private:
