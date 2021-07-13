@@ -5,8 +5,7 @@ on:
     branches: [ Develop ]
     paths:
       - 'Source/*'
-    paths-ignore:
-      - 'Source/Doxyfile'
+      - '!Source/Doxyfile'
 
 jobs:
   build:
