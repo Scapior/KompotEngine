@@ -4,7 +4,8 @@ on:
   push:
     branches: [ Develop ]
     paths:
-      - 'Source/*'
+      - '.github/workflows/build.yml'
+      - 'Source/**'
       - '!Source/Doxyfile'
 
 jobs:
@@ -35,19 +36,6 @@ jobs:
             curl \
             libgl1-mesa-dev \
             libx11-dev \
-            libx11-xcb-dev \
-            libxcb-icccm4-dev \
-            libxcb-image0-dev \
-            libxcb-keysyms1-dev \
-            libxcb-randr0-dev \
-            libxcb-render-util0-dev \
-            libxcb-render0-dev \
-            libxcb-shape0-dev \
-            libxcb-sync-dev \
-            libxcb-xfixes0-dev \
-            libxcb-xinerama0-dev \
-            libxcb-xkb-dev \
-            libgtest-dev \
             xorg-dev
 
       - name: Install Vulkan
