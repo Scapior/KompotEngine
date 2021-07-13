@@ -19,20 +19,11 @@ jobs:
         with:
           repository: GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
           path: ThirdParty/VulkanMemoryAllocator
-
-      - name: Install Vulkan
-        run: |
-          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.2.182.0/windows/VulkanSDK-1.2.182.0-Installer.exe -OutFile vulkan-sdk.exe
-          Start-Process -Filepath "vulkan-sdk.exe" -ArgumentList /S -Wait
           
-      - name: Setup Vulkan SDK
+      - name: Setup Vulkan SDK and build
         uses: humbletim/setup-vulkan-sdk@v1.0.2
-
-      - name: CMake
-        shell: pwsh
-        run: cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
-        
-      - name: Build
-        shell: pwsh
-        run: |
+        shell: pwsh        
+        run:  |
+          cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
           cmake --build build --config Release
+          

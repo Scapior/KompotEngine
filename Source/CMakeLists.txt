@@ -4,12 +4,6 @@ set(GLOBAL_INCLUDE_PATH
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # include <EngineDefines.hpp>, etc
         )
 
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
 find_package(Vulkan REQUIRED FATAL_ERROR)
 add_compile_definitions(VULKAN_HPP_ASSERT_ON_RESULT=static_cast<void>)
 
