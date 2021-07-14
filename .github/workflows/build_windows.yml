@@ -13,7 +13,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.0.2
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.2.182.0/windows/VulkanSDK-1.2.182.0-Installer.exe -OutFile vulkan-sdk.exe
+          $installer = Start-Process -FilePath vulkan-sdk.exe -Wait -PassThru -ArgumentList @("/S");
+          $installer.WaitForExit();
       
       - name: Checkout
         uses: actions/checkout@v2
@@ -25,9 +29,10 @@ jobs:
           path: ThirdParty/VulkanMemoryAllocator
           
       - name: Build
-        shell: pwsh        
+        shell: pwsh
+        env:
+          VULKAN_SDK: "C:\\VulkanSDK\\1.2.182.0"
         run:  |
-          Tree "C:\VulkanSDK" /F
           cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
           cmake --build build --config Release
           
