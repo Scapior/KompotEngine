@@ -44,16 +44,19 @@ jobs:
           cd googletest
           cmake -Bbuild -DCMAKE_INSTALL_PREFIX="$HOME/$env:INSTALL_LOCATION" -Dgtest_force_shared_crt=1
           cmake --build build --config ${{ matrix.config.build_type }}
-          cmake --build build --target install --config ${{ matrix.config.build_type }}
-          cd ../KompotEngine/Tests
+          cmake --build build --target install --config ${{ matrix.config.build_type }}          
                 
       - name: CMake config
-        run: cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
+        run: |
+          cd Tests
+          cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.config.build_type }}
+        run: |
+          cd Tests
+          cmake --build build --config ${{ matrix.config.build_type }}
         
       - name: Run
         run: |
-          cd build
+          cd Tests/build
           ctest
