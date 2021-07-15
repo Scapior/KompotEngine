@@ -13,7 +13,6 @@ jobs:
   build:
     runs-on: ${{ matrix.config.os }}
     strategy:
-      fail-fast: false
       matrix:
         config:
           - {
@@ -47,7 +46,7 @@ jobs:
       - name: CMake config
         env:
           GTEST_ROOT: "${{ github.workspace }}/../googletest/"
-        run: cd Tests && echo $GTEST_ROOT && cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
+        run: cd Tests && cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
 
       - name: Build
         run: cd Tests && cmake --build build --config ${{ matrix.config.build_type }}
