@@ -46,7 +46,7 @@ jobs:
                 
       - name: CMake config
         env:
-          GTEST_ROOT: "${{ env.GITHUB_WORKSPACE }}/../googletest/"
+          GTEST_ROOT: "$GITHUB_WORKSPACE/../googletest/"
         run: cd Tests && echo $GTEST_ROOT && cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
 
       - name: Build
