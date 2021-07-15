@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
+project(Tests)
+
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
 find_package(GTest) # requires defined GTEST_ROOT in system variables
 # if you use win and "build shared libs" flag then add
@@ -7,8 +9,7 @@ find_package(GTest) # requires defined GTEST_ROOT in system variables
 
 if (GTest_FOUND)
 	enable_testing()	
-	
-    project(Tests)
+	    
     set(TESTS_SOURCES
         main_tests.cpp
         Vector_tests.cpp
