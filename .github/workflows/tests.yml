@@ -1,0 +1,57 @@
+name: Tests
+
+on:
+  push:
+    branches: [ Develop ]
+    paths:
+      - '.github/workflows/tests.yml'
+      - 'Shaders/**'
+      - 'Source/**'
+      - 'Tests/**'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.config.os }}
+    env:
+      DEBIAN_FRONTEND: "noninteractive"
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            os: "ubuntu-latest",
+            build_type: "Debug",            
+          }
+          - {
+            os: "ubuntu-latest",
+            build_type: "Release",            
+          }
+          - {
+            os: "windows-latest",
+            build_type: "Debug",            
+          }
+          - {
+            os: "windows-latest",
+            build_type: "Release",            
+          }
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: install GoogleTest
+        run: |
+          cd ..
+          git clone https://github.com/google/googletest.git --branch release-1.11.0
+          cd googletest
+          cmake -Bbuild -DCMAKE_INSTALL_PREFIX="$HOME/$env:INSTALL_LOCATION" -Dgtest_force_shared_crt=1
+          cmake --build build --config ${{ matrix.config.config }}
+          cmake --build build --target install --config ${{ matrix.config.config }}
+          cd ../KompotEngine/Tests
+                
+      - name: CMake config
+        run: cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -Dgtest_force_shared_crt=ON
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.config.config }}
+        
+      - name: Run
+        run: ctest
