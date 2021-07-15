@@ -40,13 +40,13 @@ jobs:
           cd ..
           git clone https://github.com/google/googletest.git --branch release-1.11.0
           cd googletest
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX="../googletest/" -Dgtest_force_shared_crt=1
+          cmake -Bbuild -DCMAKE_INSTALL_PREFIX="${{ env.GITHUB_WORKSPACE }}/../googletest/" -Dgtest_force_shared_crt=1
           cmake --build build --config ${{ matrix.config.build_type }}
           cmake --build build --target install --config ${{ matrix.config.build_type }}          
                 
       - name: CMake config
         env:
-          GTEST_ROOT: "${{ GITHUB_WORKSPACE }}/../googletest/"
+          GTEST_ROOT: "${{ env.GITHUB_WORKSPACE }}/../googletest/"
         run: cd Tests && echo $GTEST_ROOT && cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
 
       - name: Build
