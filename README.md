@@ -1,6 +1,6 @@
 # KompotEngine
 
-![GitHub](https://img.shields.io/github/license/Scapior/KompotEngine) [![Build (Ubuntu 20.04)](https://github.com/Scapior/KompotEngine/actions/workflows/build.yml/badge.svg)](https://github.com/Scapior/KompotEngine/actions/workflows/build.yml) [![Build (Windows)](https://github.com/Scapior/KompotEngine/actions/workflows/build_windows.yml/badge.svg)](https://github.com/Scapior/KompotEngine/actions/workflows/build_windows.yml) 
+![GitHub](https://img.shields.io/github/license/Scapior/KompotEngine) [![Tests](https://github.com/Scapior/KompotEngine/actions/workflows/tests.yml/badge.svg)](https://github.com/Scapior/KompotEngine/actions/workflows/tests.yml) [![Build (Ubuntu 20.04)](https://github.com/Scapior/KompotEngine/actions/workflows/build.yml/badge.svg)](https://github.com/Scapior/KompotEngine/actions/workflows/build.yml) [![Build (Windows)](https://github.com/Scapior/KompotEngine/actions/workflows/build_windows.yml/badge.svg)](https://github.com/Scapior/KompotEngine/actions/workflows/build_windows.yml) 
 
 
 #### What is it?
