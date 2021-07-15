@@ -33,22 +33,8 @@ if (GTest_FOUND)
 		message(STATUS "Standalone build of tests without engine")
 		add_subdirectory(../Source/Math Math)
         target_include_directories(Tests PUBLIC ${googletest_SOURCE_DIR}/googletest/include)
-    endif()
-	
+    endif()	
 	target_link_libraries(Tests PRIVATE ${LINK_LIST} GTest::Main)
-	
-	# if(NOT HAS_PARENT)
-		# message(STATUS "ROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
-		# set_target_properties(Tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-		# if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC") #https://stackoverflow.com/a/999814
-			# set_target_properties(Tests PROPERTIES PREFIX "")
-		# endif()
-		
-		# get_target_property(FOOBAR Tests OUTPUT_NAME)		
-		# message(STATUS "OUTPUT_NAME = ${FOOBAR}")
-		
-	# endif()
-
     gtest_discover_tests(Tests)
-	add_test(NAME KompotEngineTests COMMAND Tests)
+	
 endif()
