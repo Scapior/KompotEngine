@@ -12,8 +12,6 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.config.os }}
-    env:
-      DEBIAN_FRONTEND: "noninteractive"
     strategy:
       fail-fast: false
       matrix:
@@ -49,16 +47,10 @@ jobs:
       - name: CMake config
         env:
           GTEST_ROOT: "$HOME/googletest"
-        run: |
-          cd Tests
-          cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
+        run: cd Tests && cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} -Dgtest_force_shared_crt=ON
 
       - name: Build
-        run: |
-          cd Tests
-          cmake --build build --config ${{ matrix.config.build_type }}
+        run: cd Tests && cmake --build build --config ${{ matrix.config.build_type }}
         
       - name: Run
-        run: |
-          cd Tests/build
-          ctest
+        run: cd Tests/build && ctest
