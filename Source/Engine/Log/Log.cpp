@@ -6,35 +6,32 @@
 
 #include "Log.hpp"
 #include <string>
+#include <ctime>
 
-const Log::DateTimeBlock_t Log::DateTimeBlock{};
 
 Log::Log()
 {
     using namespace Kompot;
     m_logFile.open("log.txt");
-    *this << DateTimeBlock << " Log initialized" << std::endl;
-}
-
-Log& Log::operator<<(const Kompot::DateTimeFormat& dateTimeFormat)
-{
-    m_dateTimeFormatter.setFormat(dateTimeFormat);
-    return *this;
+    *this << '[' << timeNow() << ']' << " Log initialized" << std::endl;
 }
 
 Log& Log::operator<<(const std::chrono::system_clock::time_point& time)
 {
-    m_dateTimeFormatter.printTime(*this, time);
+    std::array<wchar_t, 100> buffer;
+    const auto timeOldFormat = std::chrono::system_clock::to_time_t(time);
+#ifdef ENGINE_COMPILER_MSVC
+    std::tm timeStruct{};
+    std::localtime_s(&timeStruct, &timeOldFormat);
+    std::wcsftime(buffer.data(), buffer.size(), mDateTimeFormat, &timeStruct);
+#else
+    std::wcsftime(buffer.data(), buffer.size(), mDateTimeFormat, std::localtime(&timeOldFormat));
+#endif
     return *this;
 }
 
 Log& Log::write(const char* text, std::streamsize size)
 {
     m_logFile.write(text, size);
-    return *this;
-}
-Log& Log::operator<<(const Log::DateTimeBlock_t& value)
-{
-    *this << '[' << Log::timeNow() << ']';
     return *this;
 }

@@ -22,12 +22,6 @@ class Log
     typedef std::ostream& (*OstreamManipulator)(std::ostream&);
 
 public:
-    struct DateTimeBlock_t
-    {
-    };
-
-    const static DateTimeBlock_t DateTimeBlock;
-
     static Log& getInstance()
     {
         static Log logSingltone;
@@ -50,13 +44,17 @@ public:
         return *this;
     }
 
-    Log& operator<<(const DateTimeBlock_t& value);
     Log& operator<<(OstreamManipulator pf)
     {
         return operator<<<OstreamManipulator>(pf);
     }
 
-    Log& operator<<(const Kompot::DateTimeFormat& dateTimeFormatter);
+    template<Kompot::DateTime::Specifier... specifiers>
+    Log& operator<<(const Kompot::DateTime::DateTimeFormat<specifiers...>& dateTimeFormat)
+    {
+        mDateTimeFormat = dateTimeFormat.get();
+        return *this;
+    }
 
     Log& operator<<(const std::chrono::system_clock::time_point& time);
 
@@ -91,8 +89,8 @@ public:
 private:
     Log();
 
+    char* const mDateTimeFormat = Kompot::DateTime::DateTimeFormat<Kompot::DateTime::Specifier::LogDateTime>().get();
+
     std::ofstream m_logFile;
     std::mutex m_mutex;
-
-    Kompot::DateTimeFormatter m_dateTimeFormatter;
 };

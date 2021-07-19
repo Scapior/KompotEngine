@@ -15,301 +15,218 @@
 #include <vector>
 #include <array>
 
-namespace Kompot
+namespace Kompot::DateTime
 {
-struct DateTimeFormat
+enum Specifier
 {
-    enum FormatSpecifier // also  check ISO 8601
-    {
-        Year,
-        Month,
-        MonthShort,
-        Day,
-        DayShort,
-        Hours24,
-        Hours24Short,
-        Hours12,
-        Hours12Short,
-        Minutes,
-        MinutesShort,
-        Seconds,
-        SecondsShort,
-        Milliseconds,
-        MillisecondsShort,
-        WeeklyName,
-        WeeklyNameShort,
-        MonthName,
-        MonthNameShort,
-        DayOfYear,
-        DayOfYearShort,
-        DayOfWeek,
-        DayOfWeekFromNull,
-        DayPartName,
-        WeekNumber,
-        WeekNumberShort,
-
-        Dot,
-        Comma,
-        Colon,
-        Space
-    };
-    std::vector<FormatSpecifier> data;
-
-    template<std::size_t N>
-    DateTimeFormat(const std::array<FormatSpecifier, N>& format)
-    {
-        data.reserve(N);
-        data.insert(data.begin(), format.begin(), format.end());
-    }
-
-    DateTimeFormat& operator+(const FormatSpecifier& format)
-    {
-        data.push_back(format);
-        return *this;
-    }
+    Year,             /** Year as 1997, 2021 */
+    YearShort,        /** In range [00, 99] (e.g. 97 for 1997) */
+    Month,            /** 01, 09, 12 */
+    MonthName,        /** E.g. "October", depends from locale */
+    MonthNameShort,   /** "Oct" for October, depends from locale */
+    WeekOfYear,       /** ISO 8601 week of the year (range [01,53]) */
+    DayOfYear,        /** Day of the year (range [001,366]) */
+    DayOfMonth,       /** Day of the month (range [01,31]) */
+    DayOfMonthShort,  /** Day of the month (range [1,31]). Single digit is preceded by a space */
+    Weekday,          /** Monday is 1 (ISO 8601 format) (range [1-7]) */
+    WeekdayName,      /** Weekday name, e.g. Friday (locale dependent) */
+    WeekdayNameShort, /** Short weekday name, e.g. "Fri" for Friday (locale dependent) */
+    Hour,             /** 24 hour clock (range [00-23]) */
+    HourShort,        /** 12 hour clock (range [01-12) */
+    Minute,           /** Range [00,59] */
+    Second,           /** Range [00,59] */
+    DateTime,         /** E.g. "Sun Oct 17 04:41:13 2010" (locale dependent) */
+    DayPeriod,        /** Localized a.m. or p.m. (locale dependent) */
+    TimeISO,          /** "%H:%M:%S" (ISO 8601) */
+    DateISO,          /** "%Y-%m-%d" (ISO 8601) */
+    LogDateTime,      /** "%Y.%m.%d %H:%M:S" */
+    Dot,              /** '.' */
+    Comma,            /** ',' */
+    Slash,            /** '/' */
+    Colon,            /** ':' */
+    Hyphen,           /** '-' */
+    Space             /** ' ' */
 };
 
-} // namespace Kompot
-
-inline constexpr auto operator+(const Kompot::DateTimeFormat::FormatSpecifier valueLeft, const Kompot::DateTimeFormat::FormatSpecifier valueRight)
-{
-    return std::array<Kompot::DateTimeFormat::FormatSpecifier, 2>{valueLeft, valueRight};
-}
-
-inline auto operator+(const Kompot::DateTimeFormat::FormatSpecifier& formatSpecifier, Kompot::DateTimeFormat& dateTimeFormat)
-{
-    dateTimeFormat.data.insert(dateTimeFormat.data.begin(), formatSpecifier);
-    return dateTimeFormat;
-}
-
-namespace Kompot
-{
-class DateTimeFormatter
+template<Specifier... specifiers>
+class DateTimeFormat
 {
 public:
-    template<class T>
-    void printTime(T& stream, const std::chrono::system_clock::time_point& timePoint) const
+    constexpr auto get()
     {
-        using Ms    = std::chrono::milliseconds;
-        using Sec   = std::chrono::seconds;
-        using Clock = std::chrono::system_clock;
-
-        const auto timeValue    = Clock::to_time_t(timePoint);
-        const auto timeValueMs  = std::chrono::duration_cast<Ms>(timePoint.time_since_epoch());
-        const auto timeValueSec = Sec(timeValue);
-        m_parsedMilliseconds    = timeValueMs - std::chrono::duration_cast<Ms>(timeValueSec);
-#if defined(ENGINE_OS_WINDOWS)
-        localtime_s(&m_parsedTime, &timeValue); // MSVS version
-#elif defined(ENGINE_OS_LINUX)
-        localtime_r(&timeValue, &m_parsedTime);
-        // gmtime_r(&timeValue, &m_parsedTime);
-#endif
-        printTime(stream);
-    }
-
-    void setFormat(const DateTimeFormat& format)
-    {
-        m_dateTimeFormat = format;
-    }
-    const DateTimeFormat& getFormat() const
-    {
-        return m_dateTimeFormat;
+        return format.data();
     }
 
 private:
-    DateTimeFormat m_dateTimeFormat = DateTimeFormat(std::to_array(
-        {DateTimeFormat::Year,
-         DateTimeFormat::Dot,
-         DateTimeFormat::Month,
-         DateTimeFormat::Dot,
-         DateTimeFormat::Day,
-         DateTimeFormat::Space,
-         DateTimeFormat::Hours24,
-         DateTimeFormat::Colon,
-         DateTimeFormat::Minutes,
-         DateTimeFormat::Colon,
-         DateTimeFormat::Seconds,
-         DateTimeFormat::Dot,
-         DateTimeFormat::Milliseconds}));
+    static constexpr const auto format = getFormat<specifiers...>();
 
-    mutable std::tm m_parsedTime;
-    mutable std::chrono::milliseconds m_parsedMilliseconds;
-
-    static constexpr std::array<const char*, 7> m_daysNames = {
-        "Sunday", // tm::tm_wday with value 0 means Sunday. Fuck the Bible for this
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday"};
-
-    static constexpr std::array<const char*, 12> m_monthsNames =
-        {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
-    template<class T>
-    void printTime(T& stream) const
+    template<Specifier First, Specifier... letters>
+    constexpr const auto getFormat()
     {
-        const char previousCharacter = stream.fill();
-        stream.fill('0');
-        std::streamsize previousWidth = stream.width();
-        for (const DateTimeFormat::FormatSpecifier& formatSpecifier : m_dateTimeFormat.data)
-        {
-            switch (formatSpecifier)
-            {
-            case DateTimeFormat::Year:
-            {
-                stream << m_parsedTime.tm_year + 1900;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Month:
-                stream.width(2);
-            case DateTimeFormat::MonthShort:
-            {
-                stream << m_parsedTime.tm_mon + 1;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Day:
-                stream.width(2);
-            case DateTimeFormat::DayShort:
-            {
-                stream << m_parsedTime.tm_mday;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Hours24:
-                stream.width(2);
-            case DateTimeFormat::Hours24Short:
-            {
-                stream << m_parsedTime.tm_hour;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Hours12:
-                stream.width(2);
-            case DateTimeFormat::Hours12Short:
-            {
-                stream << getHoursInFormat12();
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Minutes:
-                stream.width(2);
-            case DateTimeFormat::MinutesShort:
-            {
-                stream << m_parsedTime.tm_min;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Seconds:
-                stream.width(2);
-            case DateTimeFormat::SecondsShort:
-            {
-                stream << m_parsedTime.tm_sec;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Milliseconds:
-                stream.width(3);
-            case DateTimeFormat::MillisecondsShort:
-            {
-                stream << m_parsedMilliseconds.count();
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::WeeklyName:
-                stream << m_daysNames[m_parsedTime.tm_wday];
-                break;
-            case DateTimeFormat::WeeklyNameShort:
-                stream.write(m_daysNames[m_parsedTime.tm_wday], 3);
-                break;
-
-            case DateTimeFormat::MonthName:
-                stream << m_monthsNames[m_parsedTime.tm_mon];
-                break;
-            case DateTimeFormat::MonthNameShort:
-                stream.write(m_monthsNames[m_parsedTime.tm_mon], 3);
-                break;
-
-            case DateTimeFormat::DayOfYear:
-                stream.width(3);
-            case DateTimeFormat::DayOfYearShort:
-            {
-                stream << m_parsedTime.tm_yday + 1;
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::DayOfWeek:
-                stream << (m_parsedTime.tm_yday != 0 ? m_parsedTime.tm_wday : 7);
-                break;
-            case DateTimeFormat::DayOfWeekFromNull:
-                stream << (m_parsedTime.tm_yday != 0 ? m_parsedTime.tm_wday - 1 : 6);
-                break;
-
-            case DateTimeFormat::DayPartName:
-                stream << (m_parsedTime.tm_hour < 12 ? "AM" : "PM");
-                break;
-
-            case DateTimeFormat::WeekNumber:
-                stream.width(2);
-            case DateTimeFormat::WeekNumberShort:
-            {
-                stream << getWeekNumber();
-                stream.width(previousWidth);
-                break;
-            }
-
-            case DateTimeFormat::Dot:
-                stream << '.';
-                break;
-            case DateTimeFormat::Comma:
-                stream << ',';
-                break;
-            case DateTimeFormat::Colon:
-                stream << ':';
-                break;
-            case DateTimeFormat::Space:
-                stream << ' ';
-                break;
-            default:
-                breakPoint("Unknown enum value");
-                break;
-            }
-        }
-        stream.fill(previousCharacter);
+        return Kompot::TemplateUtils::concatArrays(ImplGetFormat<First>(), ImplGetFormat<letters...>());
     }
 
-    int getWeekNumber() const
+    template<>
+    constexpr const auto getFormat<Specifier::Year>()
     {
-        constexpr int daysPerWeek = 7;
-
-        const int wday  = m_parsedTime.tm_wday;
-        const int delta = wday ? wday - 1 : daysPerWeek - 1;
-        return ((m_parsedTime.tm_yday + daysPerWeek - delta) / daysPerWeek) + 1;
+        return std::to_array("%Y");
     }
 
-    int getHoursInFormat12() const
+    template<>
+    constexpr const auto getFormat<Specifier::YearShort>()
     {
-        if (m_parsedTime.tm_hour == 0)
-        {
-            return 12;
-        }
-        if (m_parsedTime.tm_hour > 12)
-        {
-            return m_parsedTime.tm_hour - 12;
-        }
-        return m_parsedTime.tm_hour;
+        return std::to_array("%y");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Month>()
+    {
+        return std::to_array("%m");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::MonthName>()
+    {
+        return std::to_array("%B");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::MonthNameShort>()
+    {
+        return std::to_array("%b");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::WeekOfYear>()
+    {
+        return std::to_array("%V");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::DayOfYear>()
+    {
+        return std::to_array("%j");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::DayOfMonth>()
+    {
+        return std::to_array("%d");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::DayOfMonthShort>()
+    {
+        return std::to_array("%e");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Weekday>()
+    {
+        return std::to_array("%u");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::WeekdayName>()
+    {
+        return std::to_array("%A");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::WeekdayNameShort>()
+    {
+        return std::to_array("%a");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Hour>()
+    {
+        return std::to_array("%H");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::HourShort>()
+    {
+        return std::to_array("%I");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Minute>()
+    {
+        return std::to_array("%M");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Second>()
+    {
+        return std::to_array("%S");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::DateTime>()
+    {
+        return std::to_array("%c");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::DayPeriod>()
+    {
+        return std::to_array("%p");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::TimeISO>()
+    {
+        return std::to_array("%T");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::DateISO>()
+    {
+        return std::to_array("%F");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::LogDateTime>()
+    {
+        return std::to_array("%Y.%m.%d %H:%M:S");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Dot>()
+    {
+        return std::to_array(".");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Comma>()
+    {
+        return std::to_array(",");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Slash>()
+    {
+        return std::to_array("/");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Colon>()
+    {
+        return std::to_array(":");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Hyphen>()
+    {
+        return std::to_array("-");
+    }
+
+    template<>
+    constexpr const auto getFormat<Specifier::Space>()
+    {
+        return std::to_array(" ");
     }
 };
 
-} // namespace Kompot
+} // namespace Kompot::DateTime

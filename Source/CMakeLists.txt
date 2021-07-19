@@ -52,6 +52,8 @@ add_executable(
         main.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    add_compile_definitions(ENGINE_COMPILER_MSVC)
+
     set_target_properties(KompotEngine PROPERTIES
             PDB_NAME "KompotEngine"
             PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
